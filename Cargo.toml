@@ -1,0 +1,30 @@
+[package]
+name = "the-minstrel"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+songbird = "0.2.0"
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+youtube_dl = { path = "../youtube-dl-rs" }
+dotenv = "0.15"
+
+[dependencies.serenity]
+default-features = false
+# TODO: determine which features actually needed, and remove the rest
+features = [
+    "builder",
+    "cache",
+    "client",
+    "framework",
+    "gateway",
+    "http",
+    "model",
+    "standard_framework",
+    "utils",
+    "rustls_backend",
+    "voice",
+]
+version = "0.10"
