@@ -81,9 +81,9 @@ impl fmt::Display for Song {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let md = self.metadata.as_ref();
 
-        // TODO: Upstream change to ytdl for duration Value -> f64
-        // TODO: make this a bit more robust probably
-        let secs: f64 = md.duration.unwrap().clone() as f64;
+        // TODO: clean up the unwraps here, fail gracefully if for some reason
+        //  there is no duration, or it cannot parse into f64
+        let secs = md.duration.as_ref().unwrap().as_f64().unwrap();
         let mins = (secs / 60f64) as i64;
         let secs = secs as i64 % 60;
 
