@@ -145,6 +145,21 @@ async fn voice_ready(ctx: &Context, msg: &Message) -> Result<(), Reason> {
     Ok(())
 }
 
+// TODO: These can definitely be cleaner, but might as well macro out now to make
+//  life slightly easier if I do end up needing to replace them
+macro_rules! get_mstate {
+    ($mstate:ident, $ctx:ident) => {
+        let $mstate = music::get(&$ctx).await.unwrap();
+        let $mstate = $mstate.lock().await;
+    };
+}
+
+macro_rules! get_mut_mstate {
+    ($mstate:ident, $ctx:ident) => {
+        let $mstate = music::get(&$ctx).await.unwrap();
+        let mut $mstate = $mstate.lock().await;
+    };
+}
 
 #[hook]
 async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
@@ -330,10 +345,7 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 #[only_in(guilds)]
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
-    let mstate = music::get(&ctx).await.unwrap();
-    let mstate = mstate.lock().await;
-
-
+    get_mstate!(mstate, ctx);
 
     if let Some(song) = mstate.current_song() {
         // TODO: consider making this a helper, so the sticky nowplaying can use this
@@ -424,8 +436,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 // TODO: require permissions to do this
 async fn next(ctx: &Context, msg: &Message) -> CommandResult {
-    let mstate = music::get(&ctx).await.unwrap();
-    let mut mstate = mstate.lock().await;
+    get_mut_mstate!(mstate, ctx);
 
     let ret = mstate.skip().await;
 
@@ -444,8 +455,7 @@ async fn next(ctx: &Context, msg: &Message) -> CommandResult {
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 // TODO: require permissions to do this
 async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
-    let mstate = music::get(&ctx).await.unwrap();
-    let mut mstate = mstate.lock().await;
+    get_mut_mstate!(mstate, ctx);
 
     let ret = mstate.stop().await;
 
@@ -463,8 +473,7 @@ async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
 #[only_in(guilds)]
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 async fn start(ctx: &Context, msg: &Message) -> CommandResult {
-    let mstate = music::get(&ctx).await.unwrap();
-    let mut mstate = mstate.lock().await;
+    get_mut_mstate!(mstate, ctx);
 
     let ret = mstate.start().await;
 
@@ -485,8 +494,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 // TODO: permissions
 async fn clearqueue(ctx: &Context, msg: &Message) -> CommandResult {
-    let mstate = music::get(&ctx).await.unwrap();
-    let mut mstate = mstate.lock().await;
+    get_mut_mstate!(mstate, ctx);
 
     let ret = mstate.clear_queue();
 
