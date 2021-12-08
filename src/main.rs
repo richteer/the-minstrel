@@ -45,6 +45,7 @@ fn check_msg(result: SerenityResult<Message>) {
     }
 }
 
+
 struct Handler;
 
 
@@ -117,8 +118,8 @@ async fn voice_ready(ctx: &Context, msg: &Message) -> Result<(), Reason> {
         .and_then(|voice_state| voice_state.channel_id);
 
     let bot_channel_id = guild
-    .voice_states.get(&bot_id)
-    .and_then(|voice_state| voice_state.channel_id);
+        .voice_states.get(&bot_id)
+        .and_then(|voice_state| voice_state.channel_id);
 
     // Get caller's voice channel, bail if they aren't in one
     let connect_to = match caller_channel_id {
@@ -266,11 +267,6 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
-
-
-
-
-
 #[command]
 #[only_in(guilds)]
 #[checks(voice_ready)]
@@ -387,7 +383,6 @@ async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
-
 #[command]
 #[only_in(guilds)]
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
@@ -428,7 +423,6 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     Ok(())
 }
-
 
 #[command]
 #[aliases(skip, n)]
@@ -486,8 +480,6 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
-
-
 
 #[command]
 #[only_in(guilds)]
