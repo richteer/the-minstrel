@@ -153,14 +153,13 @@ macro_rules! get_mstate {
         let $mstate = music::get(&$ctx).await.unwrap();
         let $mstate = $mstate.lock().await;
     };
-}
 
-macro_rules! get_mut_mstate {
-    ($mstate:ident, $ctx:ident) => {
+    ($mut:ident, $mstate:ident, $ctx:ident) => {
         let $mstate = music::get(&$ctx).await.unwrap();
-        let mut $mstate = $mstate.lock().await;
+        let $mut $mstate = $mstate.lock().await;
     };
 }
+
 
 #[hook]
 async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
@@ -430,7 +429,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 // TODO: require permissions to do this
 async fn next(ctx: &Context, msg: &Message) -> CommandResult {
-    get_mut_mstate!(mstate, ctx);
+    get_mstate!(mut, mstate, ctx);
 
     let ret = mstate.skip().await;
 
@@ -449,7 +448,7 @@ async fn next(ctx: &Context, msg: &Message) -> CommandResult {
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 // TODO: require permissions to do this
 async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
-    get_mut_mstate!(mstate, ctx);
+    get_mstate!(mut, mstate, ctx);
 
     let ret = mstate.stop().await;
 
@@ -467,7 +466,7 @@ async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
 #[only_in(guilds)]
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 async fn start(ctx: &Context, msg: &Message) -> CommandResult {
-    get_mut_mstate!(mstate, ctx);
+    get_mstate!(mut, mstate, ctx);
 
     let ret = mstate.start().await;
 
@@ -486,7 +485,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 #[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 // TODO: permissions
 async fn clearqueue(ctx: &Context, msg: &Message) -> CommandResult {
-    get_mut_mstate!(mstate, ctx);
+    get_mstate!(mut, mstate, ctx);
 
     let ret = mstate.clear_queue();
 
