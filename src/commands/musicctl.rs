@@ -10,27 +10,13 @@ use serenity::{
     },
 };
 
-
+use crate::get_mstate;
 use super::check_msg;
 use super::VOICE_READY_CHECK;
 use super::music;
 use super::music::{
     Song,
 };
-
-
-// TODO: figure out how to actually share this, this is a pain.
-macro_rules! get_mstate {
-    ($mstate:ident, $ctx:ident) => {
-        let $mstate = music::get(&$ctx).await.unwrap();
-        let $mstate = $mstate.lock().await;
-    };
-
-    ($mut:ident, $mstate:ident, $ctx:ident) => {
-        let $mstate = music::get(&$ctx).await.unwrap();
-        let $mut $mstate = $mstate.lock().await;
-    };
-}
 
 
 #[command]

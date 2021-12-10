@@ -9,19 +9,8 @@ use serenity::{
     },
 };
 use super::music;
+use crate::get_mstate;
 
-// TODO: figure out how to actually share this, this is a pain.
-macro_rules! get_mstate {
-    ($mstate:ident, $ctx:ident) => {
-        let $mstate = music::get(&$ctx).await.unwrap();
-        let $mstate = $mstate.lock().await;
-    };
-
-    ($mut:ident, $mstate:ident, $ctx:ident) => {
-        let $mstate = music::get(&$ctx).await.unwrap();
-        let $mut $mstate = $mstate.lock().await;
-    };
-}
 
 #[command]
 #[only_in(guilds)]
