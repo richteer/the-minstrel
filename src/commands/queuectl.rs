@@ -157,3 +157,26 @@ async fn autoplay(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
+// TODO: implement an autoplay enabled check?
+// TODO: perhaps make this a subcommand of !autoplay?
+#[command]
+#[aliases(up)]
+#[only_in(guilds)]
+#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
+#[min_args(0)]
+#[max_args(1)]
+async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    get_mstate!(mstate, ctx);
+
+    if !mstate.autoplay.enabled {
+        check_msg(msg.channel_id.say(&ctx.http, "Autoplay is not enabled").await);
+        return Ok(())
+    }
+
+    let num = args.single::<u64>().unwrap_or(10);
+
+    check_msg(msg.channel_id.say(&ctx.http, mstate.autoplay.show_upcoming(num)).await);
+
+    Ok(())
+}
