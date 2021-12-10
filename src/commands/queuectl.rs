@@ -122,13 +122,14 @@ async fn autoplay(ctx: &Context, msg: &Message) -> CommandResult {
 
     // No need to do anything here if autoplay is disabled, it will probably stop itself
     if mstate.autoplay.enabled == false {
+        check_msg(msg.channel_id.say(&ctx.http, "Disabling autoplay.").await);
         return Ok(())
     }
 
     let ret = mstate.start().await;
 
     if let Ok(_) = ret {
-        check_msg(msg.channel_id.say(&ctx.http, "Started autoplay!").await);
+        check_msg(msg.channel_id.say(&ctx.http, "Started autoplay.").await);
     }
     else if let Err(e) = ret {
         check_msg(msg.channel_id.say(&ctx.http, format!("Error starting autoplay: {:?}", e)).await);
