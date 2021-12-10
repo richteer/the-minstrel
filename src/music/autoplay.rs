@@ -81,12 +81,25 @@ impl UserPlaylist {
 
     // TODO: implement a better playlist randomizer logic, especially one that avoids
     //  repeating songs too much
-    // TODO: Probably flip over the playlist if the end is reached
     pub fn next(&mut self) -> Song {
         let ret = self.list.get(self.index);
         self.index += 1;
 
-        ret.unwrap().clone()
+        let ret = ret.unwrap().clone();
+
+        if self.index >= self.list.len() {
+            self.shuffle();
+        }
+
+        ret
+    }
+
+    /// Re-randomize the user's playlist
+    pub fn shuffle(&mut self) {
+        let mut rng = rand::thread_rng();
+
+        self.index = 0;
+        self.list.shuffle(&mut rng);
     }
 }
 
@@ -158,16 +171,16 @@ impl AutoplayState {
             return Err(AutoplayError::UnknownError);
         }
 
-        // TODO: perhaps break this into a dedicated playlist shuffling method on AutoplayState?
-        let mut tmpdata = data.entries.unwrap();
-        let mut rng = rand::thread_rng();
-        tmpdata.shuffle(&mut rng);
+        let tmpdata = data.entries.unwrap();
         let tmpdata = tmpdata.iter()
                         .map(|e| Song::from_video(e.clone(), &requester))
                         .collect();
 
-        // TODO: probably definitely just use time here, this is a lot of clones
-        self.userlists.insert(requester.user.clone(), UserPlaylist::new(tmpdata));
+        let mut tmpdata = UserPlaylist::new(tmpdata);
+        tmpdata.shuffle();
+
+        // TODO: probably definitely just use UserId here, this is a lot of clones
+        self.userlists.insert(requester.user.clone(), tmpdata);
         self.usertime.push(UserTime { user: requester.user.clone(), time: 0 });
 
         Ok(AutoplayOk::RegisteredUser)
