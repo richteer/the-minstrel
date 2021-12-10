@@ -83,7 +83,7 @@ use serenity::{
 //   this instead and make life easier.
 pub struct MusicState {
     songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
-    pub current_track: Option<(TrackHandle, Song)>,
+    current_track: Option<(TrackHandle, Song)>,
     status: MusicStateStatus,
     queue: VecDeque<Song>,
     pub autoplay: AutoplayState,
