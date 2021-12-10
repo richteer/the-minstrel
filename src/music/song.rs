@@ -54,7 +54,7 @@ impl fmt::Display for Song {
         let mins = (secs / 60f64) as i64;
         let secs = secs as i64 % 60;
 
-        write!(f, "**{0}** [{1}:{2}]",
+        write!(f, "**{0}** [{1}:{2:02}]",
             md.title,
             mins, secs,
         )
