@@ -32,8 +32,8 @@ impl PartialOrd for UserTime {
 
 #[derive(Clone, Debug)]
 struct UserPlaylist {
-    pub index: usize, // For non-destructive randomization, keeping consistent
-    pub list: Vec<Song>,
+    index: usize, // For non-destructive randomization, keeping consistent
+    list: Vec<Song>,
 }
 
 impl UserPlaylist {
