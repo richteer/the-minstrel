@@ -1,7 +1,7 @@
 use super::autoplay::AutoplayState;
 use super::song::Song;
-use super::{MusicOk, MusicError};
 
+use std::fmt;
 use std::sync::Arc;
 use std::collections::VecDeque;
 
@@ -16,6 +16,50 @@ use songbird::{
 use serenity::{
     prelude::*,
 };
+
+#[allow(dead_code)]
+#[non_exhaustive]
+#[derive(Debug)]
+pub enum MusicOk {
+    StartedPlaying,
+    StoppedPlaying,
+    NotPlaying,
+    EnqueuedSong,
+    EmptyQueue,
+    NothingToPlay,
+    Unimplemented
+}
+
+impl fmt::Display for MusicOk {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #[allow(unreachable_patterns)]
+        let ret = match self {
+            MusicOk::StartedPlaying => "Started playing.",
+            MusicOk::StoppedPlaying => "Stopped playing.",
+            MusicOk::NotPlaying     => "Not currently playing.",
+            MusicOk::EnqueuedSong   => "Enqueued song.",
+            MusicOk::EmptyQueue     => "Queue is empty.",
+            MusicOk::NothingToPlay  => "Nothing to play.",
+            MusicOk::Unimplemented  => "Unimplemented Ok message",
+            _ => "Unknown response, fill me in!",
+        };
+
+        write!(f, "{}", ret)
+    }
+}
+
+
+#[allow(dead_code)]
+#[non_exhaustive]
+#[derive(Debug)] // TODO: maybe just implement Display here, so that error messages are automatic?
+pub enum MusicError {
+    UnknownError, // TODO: try to replace all UnknownError usages with better errors
+    AlreadyPlaying,
+    QueueFull,
+    InvalidUrl,
+    FailedToRetrieve,
+}
+
 
 #[non_exhaustive]
 #[derive(Clone, Debug)]
