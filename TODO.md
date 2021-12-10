@@ -10,7 +10,7 @@
 [ ] help text (started)
 [ ] display current song as a status/presence
 [x] prefetch a number of autoplay songs so that a "queue" can be displayed for what's up next
-
+[ ] fix stale voice state when killing bot without exiting
 
 commands:
  !skip - end the current playing song
