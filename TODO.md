@@ -9,6 +9,7 @@
 [ ] balance randomized songs from playlist based on # of plays (avoid repeats)
 [ ] help text (started)
 [ ] display current song as a status/presence
+[ ] prefetch a number of autoplay songs so that a "queue" can be displayed for what's up next
 
 
 commands:
