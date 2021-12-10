@@ -208,7 +208,7 @@ async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
     let ret = match mstate.autoplay.enable_user(&msg.author) {
-        Ok(m) => m,
+        Ok(m) => m.to_string(),
         Err(e) => format!("Error enabling user: {:?}", e),
     };
 
@@ -224,7 +224,7 @@ async fn removeuser(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
     let ret = match mstate.autoplay.disable_user(&msg.author) {
-        Ok(m) => m,
+        Ok(m) => m.to_string(),
         Err(e) => format!("Error disabling user: {:?}", e),
     };
 

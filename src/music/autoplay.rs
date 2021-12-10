@@ -1,7 +1,7 @@
 use super::song::Song;
-use super::MusicError;
 use super::Requester;
 
+use std::fmt;
 use std::collections::HashMap;
 use std::collections::BinaryHeap;
 use std::cmp::Ordering;
@@ -12,6 +12,40 @@ use youtube_dl::YoutubeDlOutput;
 use serenity::{
     model::user::User,
 };
+
+#[allow(dead_code)]
+#[non_exhaustive]
+#[derive(Debug)]
+pub enum AutoplayOk {
+    RegisteredUser,
+    EnrolledUser,
+    RemovedUser,
+}
+
+impl fmt::Display for AutoplayOk {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        #[allow(unreachable_patterns)]
+        let ret = match self {
+            AutoplayOk::RegisteredUser => "Registered user and playlist for autoplay",
+            AutoplayOk::EnrolledUser => "Enrolled user for current autoplay",
+            AutoplayOk::RemovedUser => "Removed user from current autoplay",
+            _ => "Unknown response, fill me in!",
+        };
+
+        write!(f, "{}", ret)
+    }
+}
+
+#[allow(dead_code)]
+#[non_exhaustive]
+#[derive(Debug)]
+pub enum AutoplayError {
+    AlreadyEnrolled,
+    UserNotEnrolled,
+    UrlNotPlaylist,
+    UnknownError
+}
+
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 struct UserTime {
@@ -47,6 +81,7 @@ impl UserPlaylist {
 
     // TODO: implement a better playlist randomizer logic, especially one that avoids
     //  repeating songs too much
+    // TODO: Probably flip over the playlist if the end is reached
     pub fn next(&mut self) -> Song {
         let ret = self.list.get(self.index);
         self.index += 1;
@@ -99,7 +134,7 @@ impl AutoplayState {
         Some(song)
     }
 
-    pub fn register(&mut self, requester: Requester, url: &String) -> Result<(), MusicError> {
+    pub fn register(&mut self, requester: Requester, url: &String) -> Result<AutoplayOk, AutoplayError> {
         let data = youtube_dl::YoutubeDl::new(url)
             .flat_playlist(true)
             .run();
@@ -120,7 +155,7 @@ impl AutoplayState {
 
         if data.entries.is_none() {
             println!("user playlist is none");
-            return Err(MusicError::UnknownError);
+            return Err(AutoplayError::UnknownError);
         }
 
         // TODO: perhaps break this into a dedicated playlist shuffling method on AutoplayState?
@@ -135,7 +170,7 @@ impl AutoplayState {
         self.userlists.insert(requester.user.clone(), UserPlaylist::new(tmpdata));
         self.usertime.push(UserTime { user: requester.user.clone(), time: 0 });
 
-        Ok(())
+        Ok(AutoplayOk::RegisteredUser)
     }
 
     fn prefetch(&self, num: u64) -> Option<Vec<Song>> {
@@ -174,15 +209,15 @@ impl AutoplayState {
     /// Enable a user that already has a registered setlist in the autoplay system
     /// Sets the user's playtime to the current minimum value
     // TODO: implement an autoplay equiv to MusicOk/MusicError
-    pub fn enable_user(&mut self, user: &User) -> Result<String, MusicError> {
+    pub fn enable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
         if !self.userlists.contains_key(user) {
-            return Err(MusicError::UnknownError);
+            return Err(AutoplayError::UnknownError);
         }
 
         if self.usertime.iter()
             .fold(false, |acc, u| acc || (u.user.id == user.id)) {
             // user already enabled
-            return Ok(String::from("You are already enabled."))
+            return Err(AutoplayError::AlreadyEnrolled);
         }
 
         let time = match self.usertime.peek() {
@@ -192,16 +227,22 @@ impl AutoplayState {
 
         self.usertime.push(UserTime { user: user.clone(), time: time });
 
-        Ok(String::from("Enrolled for autoplay!"))
+        Ok(AutoplayOk::EnrolledUser)
     }
 
-    pub fn disable_user(&mut self, user: &User) -> Result<String, MusicError> {
+    pub fn disable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
+        let len = self.usertime.len();
         self.usertime = self.usertime.clone()
             .into_iter()
             .filter(|u| u.user.id != user.id)
             .collect();
 
-        Ok(String::from("Unenrolled for autoplay!"))
+        if len == self.usertime.len() {
+            Err(AutoplayError::UserNotEnrolled)
+        }
+        else {
+            Ok(AutoplayOk::RemovedUser)
+        }
     }
 
     pub fn debug_get_usertime(&self) -> String {
