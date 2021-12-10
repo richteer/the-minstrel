@@ -31,6 +31,7 @@ impl PartialOrd for UserTime {
 }
 
 // TODO: perhaps have passthrough functions to mstate, or maybe just put this all in mstate?
+#[derive(Clone)]
 pub struct AutoplayState {
     // TODO: consider just using UserId here for the index?
     // TODO: consider Arc'ing the userlist so AutoplayState can be cloned when prefetching songs
@@ -108,6 +109,39 @@ impl AutoplayState {
         self.usertime.push(UserTime { user: user.clone(), time: 0 });
 
         Ok(())
+    }
+
+    fn prefetch(&self, num: u64) -> Option<Vec<Song>> {
+        // TODO: Config this, also probably return an error here
+        if num > 10 {
+            return None;
+        }
+
+        let mut ap = self.clone();
+        let mut ret = Vec::new();
+
+        for _ in 0..num {
+            if let Some(song) = ap.next() {
+                ret.push(song);
+            }
+            else {
+                return None; // TODO: return an error here
+            }
+        }
+
+        Some(ret)
+    }
+
+    pub fn show_upcoming(&self, num: u64) -> String {
+        let mut ret = String::from("Upcoming Autoplay songs:\n");
+
+        let songs = self.prefetch(num).unwrap();
+
+        for (i,v) in songs.iter().enumerate() {
+            ret += &format!("{}: {}\n", i+1, &v).to_owned();
+        }
+
+        ret
     }
 
     pub fn debug_get_usertime(&self) -> String {
