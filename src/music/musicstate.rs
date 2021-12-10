@@ -27,6 +27,7 @@ pub enum MusicOk {
     EnqueuedSong,
     EmptyQueue,
     NothingToPlay,
+    SkippingSong,
     Unimplemented
 }
 
@@ -40,6 +41,7 @@ impl fmt::Display for MusicOk {
             MusicOk::EnqueuedSong   => "Enqueued song.",
             MusicOk::EmptyQueue     => "Queue is empty.",
             MusicOk::NothingToPlay  => "Nothing to play.",
+            MusicOk::SkippingSong   => "Skipping song.",
             MusicOk::Unimplemented  => "Unimplemented Ok message",
             _ => "Unknown response, fill me in!",
         };
@@ -192,7 +194,7 @@ impl MusicState {
             thandle.stop().ok();
         }
 
-        Ok(MusicOk::Unimplemented)
+        Ok(MusicOk::SkippingSong)
     }
 
     /// Stop the current playing track (if any)
