@@ -15,6 +15,7 @@ use super::check_msg;
 use super::music;
 use super::music::{
     Song,
+    Requester,
 };
 use super::VOICE_READY_CHECK;
 
@@ -39,7 +40,9 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
 
-    let url = match Song::new(url, &msg.author) {
+    let requester = Requester::from_msg(&ctx, &msg).await;
+
+    let url = match Song::new(url, requester) {
         Ok(u) => u,
         Err(_) => { // TODO: actually handle errors, probably make a generic surrender replier
             check_msg(msg.channel_id.say(&ctx.http, "Must provide a URL to a video or audio").await);
@@ -71,7 +74,9 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     let mstate = music::get(&ctx).await.unwrap();
     let mut mstate = mstate.lock().await;
 
-    mstate.autoplay.register(&msg.author, &url).ok();
+    let requester = Requester::from_msg(&ctx, &msg).await;
+
+    mstate.autoplay.register(requester, &url).ok();
 
     check_msg(msg.channel_id.say(&ctx.http, "Setlist Registered!").await);
 

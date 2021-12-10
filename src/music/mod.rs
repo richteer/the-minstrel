@@ -1,6 +1,7 @@
 pub mod autoplay;
 pub mod musicstate;
 pub mod song;
+pub mod requester;
 
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -53,3 +54,4 @@ pub use musicstate::get as get;
 pub use musicstate::MusicState as MusicState;
 pub use musicstate::MusicStateInit as MusicStateInit;
 pub use song::Song as Song;
+pub use requester::Requester as Requester;

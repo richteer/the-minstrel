@@ -17,6 +17,7 @@ use super::music;
 use super::music::{
     Song,
 };
+use super::music::Requester;
 
 
 #[command]
@@ -26,7 +27,9 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // TODO: confirm if this is actually needed
     let url = args.single::<String>()?;
 
-    let url = match Song::new(url, &msg.author) {
+    let requester = Requester::from_msg(&ctx, &msg).await;
+
+    let url = match Song::new(url, requester) {
         Ok(u) => u,
         Err(_) => {
             check_msg(msg.channel_id.say(&ctx.http, "Must provide a URL to a video or audio").await);
@@ -65,11 +68,6 @@ async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
             }
         };
 
-        let nick = match song.requested_by.nick_in(&ctx.http, msg.guild_id.unwrap()).await {
-            Some(n) => n,
-            None => song.requested_by.name.clone()
-        };
-
         check_msg(msg.channel_id.send_message(&ctx.http, |m| {
             m.embed(|e| { e
                 .title(md.title)
@@ -77,8 +75,8 @@ async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
                 .url(song.url)
                 .description(md.uploader.unwrap_or(String::from("Unknown")))
                 .footer(|f| { f
-                    .icon_url(song.requested_by.face())
-                    .text(format!("Requested by: {}", nick))
+                    .icon_url(song.requested_by.user.face())
+                    .text(format!("Requested by: {}", song.requested_by.name))
                 })
             });
 

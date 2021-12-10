@@ -1,5 +1,6 @@
 use super::song::Song;
 use super::MusicError;
+use super::Requester;
 
 use std::collections::HashMap;
 use std::collections::BinaryHeap;
@@ -98,7 +99,7 @@ impl AutoplayState {
         Some(song)
     }
 
-    pub fn register(&mut self, user: &User, url: &String) -> Result<(), MusicError> {
+    pub fn register(&mut self, requester: Requester, url: &String) -> Result<(), MusicError> {
         let data = youtube_dl::YoutubeDl::new(url)
             .flat_playlist(true)
             .run();
@@ -127,12 +128,12 @@ impl AutoplayState {
         let mut rng = rand::thread_rng();
         tmpdata.shuffle(&mut rng);
         let tmpdata = tmpdata.iter()
-                        .map(|e| Song::from_video(e.clone(), user))
+                        .map(|e| Song::from_video(e.clone(), &requester))
                         .collect();
 
         // TODO: probably definitely just use time here, this is a lot of clones
-        self.userlists.insert(user.clone(), UserPlaylist::new(tmpdata));
-        self.usertime.push(UserTime { user: user.clone(), time: 0 });
+        self.userlists.insert(requester.user.clone(), UserPlaylist::new(tmpdata));
+        self.usertime.push(UserTime { user: requester.user.clone(), time: 0 });
 
         Ok(())
     }

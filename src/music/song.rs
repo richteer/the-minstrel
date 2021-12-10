@@ -1,24 +1,21 @@
 use super::MusicError;
+use super::Requester;
 
 use std::fmt;
 
 use youtube_dl::{YoutubeDl, YoutubeDlOutput, SingleVideo};
-
-use serenity::{
-    model::user::User,
-};
 
 #[derive(Clone, Debug)]
 pub struct Song {
     pub url: String,
     // TODO: should metadata actually be an Option, or should this be mandatory for a song?
     pub metadata: Box<SingleVideo>,
-    pub requested_by: User,
+    pub requested_by: Requester,
 }
 
 impl Song {
     /// Create a new song struct from a url and fetch the metadata via ytdl
-    pub fn new(url: String, requester: &User) -> Result<Song, MusicError> {
+    pub fn new(url: String, requester: Requester) -> Result<Song, MusicError> {
         if !url.starts_with("http") {
             return Err(MusicError::InvalidUrl);
         }
@@ -35,7 +32,7 @@ impl Song {
 
     /// Create a new song struct from an existing metadata struct
     /// Mostly needed only for the autoplay playlist feature
-    pub fn from_video(video: SingleVideo, requester: &User) -> Song {
+    pub fn from_video(video: SingleVideo, requester: &Requester) -> Song {
         Song {
             url: format!("https://www.youtube.com/watch?v={}", video.url.as_ref().unwrap()),
             metadata: Box::new(video),
@@ -57,7 +54,7 @@ impl fmt::Display for Song {
         write!(f, "**{0}** [{1}:{2:02}] _(requested by {3})_",
             md.title,
             mins, secs,
-            self.requested_by.tag(), // TODO: use server nick here, may need context...
+            &self.requested_by.name,
         )
     }
 }
