@@ -14,6 +14,7 @@ use commands::{
     general::*,
     musicctl::*,
     queuectl::*,
+    debug::*,
 };
 
 
@@ -60,6 +61,13 @@ struct MusicControlCmd;
 #[description = "Commands to manage the music queue"]
 #[commands(queue, enqueue, clearqueue, setlist, autoplay)]
 struct QueueControlCmd;
+
+#[group]
+#[description = "Commands for debugging purposes"]
+#[prefix("debug")]
+#[commands(usertime)]
+// TODO: require owner
+struct DebugCmd;
 
 
 #[hook]
@@ -128,6 +136,7 @@ async fn main() {
         .group(&GENERAL_GROUP)
         .group(&MUSICCONTROLCMD_GROUP)
         .group(&QUEUECONTROLCMD_GROUP)
+        .group(&DEBUGCMD_GROUP)
         .help(&HELPME);
 
 
