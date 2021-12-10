@@ -1,11 +1,9 @@
-use std::fmt;
+use super::autoplay::AutoplayState;
+use super::song::Song;
+use super::MusicError;
+
 use std::sync::Arc;
 use std::collections::VecDeque;
-use std::collections::HashMap;
-use std::collections::BinaryHeap;
-use std::cmp::Ordering;
-use rand::Rng;
-use youtube_dl::{YoutubeDl, YoutubeDlOutput, SingleVideo};
 
 use songbird::{
     Event,
@@ -16,29 +14,12 @@ use songbird::{
 };
 
 use serenity::{
-    async_trait,
-    client::{ClientBuilder},
     prelude::*,
-    model::user::User,
 };
-
-// TODO: Make this a config setting probably
-const MAX_QUEUE_LEN: usize = 10;
-
-#[allow(dead_code)]
-#[non_exhaustive]
-#[derive(Debug)] // TODO: maybe just implement Display here, so that error messages are automatic?
-pub enum MusicError {
-    UnknownError, // TODO: try to replace all UnknownError usages with better errors
-    AlreadyPlaying,
-    QueueFull,
-    InvalidUrl,
-    FailedToRetrieve,
-}
 
 #[non_exhaustive]
 #[derive(Clone, Debug)]
-enum MusicStateStatus {
+pub enum MusicStateStatus {
     Playing,
     Stopping,
     Stopped,
@@ -46,149 +27,10 @@ enum MusicStateStatus {
     Uninitialized,
 }
 
-#[derive(Clone, Debug)]
-pub struct Song {
-    pub url: String,
-    // TODO: should metadata actually be an Option, or should this be mandatory for a song?
-    pub metadata: Box<SingleVideo>,
-    pub requested_by: User,
-}
-
-impl Song {
-    /// Create a new song struct from a url and fetch the metadata via ytdl
-    pub fn new(url: String, requester: &User) -> Result<Song, MusicError> {
-        if !url.starts_with("http") {
-            return Err(MusicError::InvalidUrl);
-        }
-
-        let data = YoutubeDl::new(&url)
-            .run()
-            .unwrap();
-
-        match data {
-            YoutubeDlOutput::SingleVideo(v) => Ok(Song { url: url, metadata: v, requested_by: requester.clone() }),
-            YoutubeDlOutput::Playlist(_) => Err(MusicError::UnknownError),
-        }
-    }
-
-    /// Create a new song struct from an existing metadata struct
-    /// Mostly needed only for the autoplay playlist feature
-    pub fn from_video(video: SingleVideo, requester: &User) -> Song {
-        Song {
-            url: format!("https://www.youtube.com/watch?v={}", video.url.as_ref().unwrap()),
-            metadata: Box::new(video),
-            requested_by: requester.clone(),
-        }
-    }
-}
-
-impl fmt::Display for Song {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let md = self.metadata.as_ref();
-
-        // TODO: clean up the unwraps here, fail gracefully if for some reason
-        //  there is no duration, or it cannot parse into f64
-        let secs = md.duration.as_ref().unwrap().as_f64().unwrap();
-        let mins = (secs / 60f64) as i64;
-        let secs = secs as i64 % 60;
-
-        write!(f, "**{0}** [{1}:{2}]",
-            md.title,
-            mins, secs,
-        )
-    }
-}
-
-#[derive(Clone, Eq, PartialEq)]
-struct UserTime {
-    user: User,
-    time: u64,
-}
-
-impl Ord for UserTime {
-    fn cmp(&self, other: &Self) -> Ordering {
-        other.time.cmp(&self.time)
-    }
-}
-
-impl PartialOrd for UserTime {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-// TODO: perhaps have passthrough functions to mstate, or maybe just put this all in mstate?
-pub struct AutoplayState {
-    // TODO: consider just using UserId here for the index?
-    userlists: HashMap<User, std::boxed::Box<youtube_dl::Playlist>>,
-    usertime: BinaryHeap<UserTime>,
-    pub enabled: bool,
-}
-
-impl AutoplayState {
-    pub fn new() -> AutoplayState {
-        AutoplayState {
-            userlists: HashMap::new(),
-            usertime: BinaryHeap::new(),
-            enabled: false,
-        }
-    }
-
-    /// Get the next song to play and increment the play state
-    pub fn next(&mut self) -> Option<Song> {
-        let ut = match self.usertime.pop() {
-            Some(ut) => ut,
-            None => return None, // No users
-        };
-
-        let playlist = match self.userlists.get(&ut.user) {
-            Some(p) => p,
-            None => panic!("usertime contains user not in userlist"),
-        };
-
-        let playlist = playlist.entries.as_ref().unwrap();
-
-        // TODO: implement a separate playlist randomizer logic, especially one that avoids
-        //  repeating songs too much
-        let mut rng = rand::thread_rng();
-        let song = playlist.get(rng.gen_range(0..playlist.len())).unwrap();
-
-        let ret = Song::from_video(song.clone(), &ut.user);
-
-        Some(ret)
-    }
-
-    pub fn register(&mut self, user: &User, url: &String) -> Result<(), MusicError> {
-        let data = youtube_dl::YoutubeDl::new(url)
-            .flat_playlist(true)
-            .run();
-
-        let data = match data {
-            Ok(YoutubeDlOutput::SingleVideo(_)) => {
-                //check_msg(msg.channel_id.say(&ctx.http, "Must provide link to a playlist, not a single video").await);
-                todo!();
-                //return Ok(()); // Not ok
-            }
-            Err(_e) => {
-                todo!();
-                //check_msg(msg.channel_id.say(&ctx.http, format!("Error fetching playlist: {:?}", e)).await);
-                //return Ok(()); // Not ok
-            }
-            Ok(YoutubeDlOutput::Playlist(p)) => p,
-        };
-
-        if data.entries.is_none() {
-            println!("user playlist is none");
-            return Err(MusicError::UnknownError);
-        }
-
-        // TODO: probably definitely just use time here, this is a lot of clones
-        self.userlists.insert(user.clone(), data);
-        self.usertime.push(UserTime { user: user.clone(), time: 0 });
-
-        Ok(())
-    }
-}
+use serenity::{
+    async_trait,
+    client::{ClientBuilder},
+};
 
 // Higher level manager for playing music. In theory, should abstract out
 //   a lot of the lower-level magic, so the commands can just operate on
@@ -201,6 +43,8 @@ pub struct MusicState {
     pub autoplay: AutoplayState,
 }
 
+// TODO: Make this a config setting probably
+const MAX_QUEUE_LEN: usize = 10;
 
 impl MusicState {
 
