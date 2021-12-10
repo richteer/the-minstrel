@@ -54,9 +54,10 @@ impl fmt::Display for Song {
         let mins = (secs / 60f64) as i64;
         let secs = secs as i64 % 60;
 
-        write!(f, "**{0}** [{1}:{2:02}]",
+        write!(f, "**{0}** [{1}:{2:02}] _(requested by {3})_",
             md.title,
             mins, secs,
+            self.requested_by.tag(), // TODO: use server nick here, may need context...
         )
     }
 }
