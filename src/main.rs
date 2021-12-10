@@ -8,7 +8,7 @@ use songbird::SerenityInit;
 
 mod music;
 use crate::music::{MusicStateInit, Song};
-use youtube_dl::YoutubeDlOutput;
+//use youtube_dl::YoutubeDlOutput;
 
 use serenity::{
     async_trait,
@@ -60,7 +60,7 @@ struct MusicControlCmd;
 
 #[group]
 #[description = "Commands to manage the music queue"]
-#[commands(queue, enqueue, clearqueue, setlist)]
+#[commands(queue, enqueue, clearqueue, setlist, autoplay)]
 struct QueueControlCmd;
 
 
@@ -390,6 +390,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     let mstate = music::get(&ctx).await.unwrap();
     let mut mstate = mstate.lock().await;
 
+    /*
     println!("getting playlist");
     let data = youtube_dl::YoutubeDl::new(&url)
         .flat_playlist(true)
@@ -419,6 +420,9 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     }
 
     println!("done being weird");
+    */
+    mstate.autoplay.register(&msg.author, &url).ok();
+    // TODO: send some feedback here
 
     Ok(())
 }
@@ -494,6 +498,33 @@ async fn clearqueue(ctx: &Context, msg: &Message) -> CommandResult {
     }
     else if let Err(e) = ret {
         check_msg(msg.channel_id.say(&ctx.http, format!("Error stopping song: {:?}", e)).await);
+    }
+
+    Ok(())
+}
+
+
+#[command]
+#[aliases(ap)]
+#[only_in(guilds)]
+#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
+async fn autoplay(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    mstate.autoplay.enabled = !mstate.autoplay.enabled;
+
+    // No need to do anything here if autoplay is disabled, it will probably stop itself
+    if mstate.autoplay.enabled == false {
+        return Ok(())
+    }
+
+    let ret = mstate.start().await;
+
+    if let Ok(_) = ret {
+        check_msg(msg.channel_id.say(&ctx.http, "Started autoplay!").await);
+    }
+    else if let Err(e) = ret {
+        check_msg(msg.channel_id.say(&ctx.http, format!("Error starting autoplay: {:?}", e)).await);
     }
 
     Ok(())
