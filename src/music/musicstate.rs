@@ -170,6 +170,11 @@ impl MusicState {
 
     /// Helper to play music if state has been stopped or enqueued without playing
     pub async fn start(&mut self) -> Result<String, MusicError> {
+        match self.status {
+            MusicStateStatus::Playing => return Ok(String::from("Already playing")),
+            _ => (),
+        };
+
         if let Some(song) = self.get_next_song() {
             self.play(song).await
         }
@@ -193,11 +198,7 @@ impl MusicState {
     pub async fn enqueue_and_play(&mut self, song: Song) -> Result<String, MusicError> {
         self.queue.push_back(song);
 
-        let ret = self.next().await;
-
-        if let Err(MusicError::AlreadyPlaying) = ret {
-            return Ok(String::from("Enqueued song!"));
-        }
+        let ret = self.start().await; // TODO: probably manage already playing as -> enqueued song
 
         ret
     }
