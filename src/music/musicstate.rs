@@ -203,7 +203,7 @@ impl MusicState {
     }
 
     /// Get a display string for the queue
-    pub async fn show_queue(&self) -> String {
+    pub fn show_queue(&self) -> String {
         let mut ret = String::from("Current play queue:\n");
 
         for (i,v) in self.queue.iter().enumerate() {

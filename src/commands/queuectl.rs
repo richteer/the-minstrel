@@ -27,7 +27,7 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
     let mstate = music::get(&ctx).await.unwrap();
     let mstate = mstate.lock().await;
 
-    check_msg(msg.channel_id.say(&ctx.http, mstate.show_queue().await).await);
+    check_msg(msg.channel_id.say(&ctx.http, mstate.show_queue()).await);
 
     Ok(())
 }
