@@ -10,18 +10,18 @@ use serenity::{
     },
 };
 
-use crate::get_mstate;
+use crate::{get_mstate, join_voice};
 use super::check_msg;
 use super::music;
 use super::music::Requester;
+use super::music::MusicError;
 
-use super::VOICE_READY_CHECK;
+use super::helpers::*;
 
 
 #[command]
 #[aliases(t)]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
@@ -33,14 +33,19 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
         return Ok(())
     }
 
+    check_msg(msg.channel_id.say(&ctx.http, "Enabling autoplay.").await);
+
+    drop(mstate); // Close mstate here, since we're going to need to relock in join_voice()
+    join_voice!(ctx, msg);
+    get_mstate!(mut, mstate, ctx);
+
     let ret = mstate.start().await;
 
-    if let Ok(_) = ret {
-        check_msg(msg.channel_id.say(&ctx.http, "Started autoplay.").await);
-    }
-    else if let Err(e) = ret {
-        check_msg(msg.channel_id.say(&ctx.http, format!("Error starting autoplay: {:?}", e)).await);
-    }
+    match ret {
+        Err(MusicError::AlreadyPlaying) => (), // Suppress AlreadyPlaying, doesn't matter here
+        Err(e) => check_msg(msg.channel_id.say(&ctx.http, format!("Error starting autoplay: {:?}", e)).await),
+        _ => (),
+    };
 
     Ok(())
 }
@@ -48,14 +53,11 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
-    let mstate = music::get(&ctx).await.unwrap();
-    let mut mstate = mstate.lock().await;
-
     let requester = Requester::from_msg(&ctx, &msg).await;
 
+    get_mstate!(mut, mstate, ctx);
     mstate.autoplay.register(requester, &url).ok();
 
     check_msg(msg.channel_id.say(&ctx.http, "Setlist Registered!").await);
@@ -65,11 +67,9 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
 
 // TODO: implement an autoplay enabled check?
-// TODO: perhaps make this a subcommand of !autoplay?
 #[command]
 #[aliases(up)]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 #[min_args(0)]
 #[max_args(1)]
 async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
@@ -92,9 +92,9 @@ async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 }
 
 
-// TODO: definitely make this a subcommand of !autoplay?
 #[command]
 #[only_in(guilds)]
+#[checks(in_same_voice)]
 async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
@@ -109,7 +109,6 @@ async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 
-// TODO: definitely make this a subcommand of !autoplay?
 #[command]
 #[only_in(guilds)]
 async fn removeuser(ctx: &Context, msg: &Message) -> CommandResult {
@@ -128,6 +127,7 @@ async fn removeuser(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
+#[checks(in_same_voice)]
 // TODO: require permissions for this
 async fn rebalance(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);

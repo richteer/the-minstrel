@@ -10,9 +10,9 @@ use serenity::{
     },
 };
 
-use crate::get_mstate;
+use crate::{get_mstate, join_voice};
+use super::helpers::*;
 use super::check_msg;
-use super::VOICE_READY_CHECK;
 use super::music;
 use super::music::{
     Song,
@@ -22,7 +22,6 @@ use super::music::Requester;
 
 #[command]
 #[only_in(guilds)]
-#[checks(voice_ready)]
 async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // TODO: confirm if this is actually needed
     let url = args.single::<String>()?;
@@ -37,8 +36,9 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         }
     };
 
-    let mstate = music::get(&ctx).await;
-    let ret = mstate.unwrap().lock().await.enqueue_and_play(url).await;
+    join_voice!(ctx, msg);
+    get_mstate!(mut, mstate, ctx);
+    let ret = mstate.enqueue_and_play(url).await;
 
     // TODO: maybe factor this out into a generic reply handler?
     match ret {
@@ -52,7 +52,6 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[command]
 #[aliases(np)]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
 
@@ -94,7 +93,7 @@ async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[aliases(skip, n)]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
+#[checks(in_same_voice)]
 // TODO: require permissions to do this
 async fn next(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
@@ -113,7 +112,7 @@ async fn next(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
+#[checks(in_same_voice)]
 // TODO: require permissions to do this
 async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
@@ -132,8 +131,8 @@ async fn stop(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 async fn start(ctx: &Context, msg: &Message) -> CommandResult {
+    join_voice!(ctx, msg);
     get_mstate!(mut, mstate, ctx);
 
     let ret = mstate.start().await;
@@ -143,24 +142,6 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
     }
     else if let Err(e) = ret {
         check_msg(msg.channel_id.say(&ctx.http, format!("Error stopping song: {:?}", e)).await);
-    }
-
-    Ok(())
-}
-
-#[command]
-#[only_in(guilds)]
-#[checks(voice_ready)] // TODO: make a in_voice or is_playing check
-async fn _stop2(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
-    let guild_id = guild.id;
-
-    if let Some(manager) = songbird::get(ctx).await {
-        if let Some(handler) = manager.get(guild_id) {
-            let mut handler = handler.lock().await;
-
-            handler.stop();
-        }
     }
 
     Ok(())

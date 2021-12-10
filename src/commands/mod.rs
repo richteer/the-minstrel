@@ -7,5 +7,5 @@ pub mod debug;
 use super::music;
 
 mod helpers;
-pub use helpers::VOICE_READY_CHECK as VOICE_READY_CHECK;
+pub use helpers::IN_SAME_VOICE_CHECK as IN_SAME_VOICE_CHECK;
 pub use helpers::check_msg as check_msg;

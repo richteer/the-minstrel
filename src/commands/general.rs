@@ -9,7 +9,8 @@ use serenity::{
     },
 };
 
-use super::VOICE_READY_CHECK;
+use crate::join_voice;
+use super::helpers::*;
 
 #[command]
 #[only_in(guilds)]
@@ -21,8 +22,8 @@ async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
-#[checks(voice_ready)]
-async fn join() -> CommandResult {
+async fn join(ctx: &Context, msg: &Message) -> CommandResult {
+    join_voice!(ctx, msg);
     Ok(())
 }
 

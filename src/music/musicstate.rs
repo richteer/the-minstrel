@@ -121,6 +121,13 @@ impl MusicState {
 
     }
 
+    pub fn is_ready(&self) -> bool {
+        match self.status {
+            MusicStateStatus::Uninitialized => false,
+            _ => true,
+        }
+    }
+
     pub fn new() -> MusicState {
         MusicState {
             songcall: None,
@@ -135,6 +142,7 @@ impl MusicState {
     async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
         println!("play called");
         if self.songcall.is_none() {
+            println!("songcall is none somehow?");
             return Err(MusicError::UnknownError);
         }
 

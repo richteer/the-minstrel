@@ -11,19 +11,18 @@ use serenity::{
 };
 
 use crate::get_mstate;
+use super::helpers::*;
 use super::check_msg;
 use super::music;
 use super::music::{
     Song,
     Requester,
 };
-use super::VOICE_READY_CHECK;
 
 
 #[command]
 #[aliases(q, showqueue)]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
     let mstate = music::get(&ctx).await.unwrap();
     let mstate = mstate.lock().await;
@@ -40,7 +39,7 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[aliases(append)]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
+#[checks(in_same_voice)]
 async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
 
@@ -71,7 +70,7 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
 #[command]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
+#[checks(in_same_voice)]
 // TODO: permissions
 async fn clearqueue(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
@@ -89,12 +88,9 @@ async fn clearqueue(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 
-// TODO: implement an autoplay enabled check?
-// TODO: perhaps make this a subcommand of !autoplay?
 #[command]
 #[aliases(qs)]
 #[only_in(guilds)]
-#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
 async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
 

@@ -1,4 +1,4 @@
- - [ ] improve voice_ready checking
+ - [x] improve voice_ready checking
  - [ ] some kind of storage system
  - [x] playlist fetching
  - [x] autoplay
@@ -10,7 +10,7 @@
  - [ ] help text (started)
  - [ ] display current song as a status/presence
  - [x] prefetch a number of autoplay songs so that a "queue" can be displayed for what's up next
- - [ ] fix stale voice state when killing bot without exiting
+ - [x] fix stale voice state when killing bot without exiting
  - [ ] sticky nowplaying message w/ play controls
 
 commands:
