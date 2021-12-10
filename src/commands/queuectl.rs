@@ -105,12 +105,23 @@ async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
         ap = Some(mstate.autoplay.show_upcoming(5));
     }
 
-    let ret = match (q,ap) {
+    let mut ret = String::new();
+
+    if let Some(curr) = &mstate.current_song() {
+        ret += &format!("Now Playing:\n{}\n\n", curr);
+    }
+    else {
+        ret += &format!("_Nothing is currently playing._\n\n");
+    }
+
+    let tmp = match (q,ap) {
         (None,    None    ) => format!("Queue is empty and Autoplay is disabled"),
         (Some(q), None    ) => format!("{}\nAutoplay is disabled", q),
         (None,    Some(ap)) => format!("{}", ap),
         (Some(q), Some(ap)) => format!("{}\n{}", q, ap),
     };
+
+    ret += &tmp;
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|e| { e
