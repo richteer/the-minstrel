@@ -124,3 +124,17 @@ async fn removeuser(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
+
+#[command]
+#[only_in(guilds)]
+// TODO: require permissions for this
+async fn rebalance(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    mstate.autoplay.reset_usertime();
+
+    check_msg(msg.channel_id.say(&ctx.http, "Reset all users' autoplay scores to 0.").await);
+
+    Ok(())
+}

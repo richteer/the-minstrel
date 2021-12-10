@@ -258,6 +258,14 @@ impl AutoplayState {
         }
     }
 
+    /// Reset all usertime scores to zero
+    pub fn reset_usertime(&mut self) {
+        self.usertime = self.usertime.clone()
+            .into_iter()
+            .map(|mut e| { e.time = 0; e })
+            .collect();
+    }
+
     pub fn debug_get_usertime(&self) -> String {
         format!("{:?}", self.usertime)
     }

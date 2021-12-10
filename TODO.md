@@ -5,7 +5,7 @@
  - [x] playlist merging
  - [x] merged playlist balancing
  - [ ] playlist merge based on current active voice users
- - [ ] ability to rebalance / reset playlist merge
+ - [x] ability to rebalance / reset playlist merge
  - [ ] balance randomized songs from playlist based on # of plays (avoid repeats)
  - [ ] help text (started)
  - [ ] display current song as a status/presence
