@@ -1,6 +1,6 @@
 use super::autoplay::AutoplayState;
 use super::song::Song;
-use super::MusicError;
+use super::{MusicOk, MusicError};
 
 use std::sync::Arc;
 use std::collections::VecDeque;
@@ -86,7 +86,7 @@ impl MusicState {
     }
 
     /// Start playing a song
-    async fn play(&mut self, song: Song) -> Result<String, MusicError> {
+    async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
         println!("play called");
         if self.songcall.is_none() {
             return Err(MusicError::UnknownError);
@@ -111,11 +111,11 @@ impl MusicState {
 
         self.status = MusicStateStatus::Playing;
 
-        Ok(String::from("Started playing song!"))
+        Ok(MusicOk::StartedPlaying)
     }
 
     /// Play the next song in the queue (autoplay?)
-    async fn next(&mut self) -> Result<String, MusicError> {
+    async fn next(&mut self) -> Result<MusicOk, MusicError> {
         println!("next called: curr = {:?}", &self.current_track);
         let song = self.get_next_song();
 
@@ -123,7 +123,7 @@ impl MusicState {
             self.play(song).await
         }
         else {
-            Ok(String::from("Music queue empty!"))
+            Ok(MusicOk::EmptyQueue)
         }
     }
 
@@ -143,16 +143,16 @@ impl MusicState {
 
     // Stop the current track, but don't signal to the event handler to actually cease playing
     // This is stupid, and I don't like it.
-    pub async fn skip(&mut self) -> Result<String, MusicError> {
+    pub async fn skip(&mut self) -> Result<MusicOk, MusicError> {
         if let Some((thandle, _)) = &self.current_track {
             thandle.stop().ok();
         }
 
-        Ok(String::from("idk"))
+        Ok(MusicOk::Unimplemented)
     }
 
     /// Stop the current playing track (if any)
-    pub async fn stop(&mut self) -> Result<String, MusicError> {
+    pub async fn stop(&mut self) -> Result<MusicOk, MusicError> {
         self.status = MusicStateStatus::Stopping;
 
         if let Some((thandle, _)) = &self.current_track {
@@ -162,16 +162,16 @@ impl MusicState {
         }
         else {
             self.status = MusicStateStatus::Stopped;
-            return Ok(String::from("Not currently playing"));
+            return Ok(MusicOk::NotPlaying);
         }
 
-        Ok(String::from("Stopped current track"))
+        Ok(MusicOk::StoppedPlaying)
     }
 
     /// Helper to play music if state has been stopped or enqueued without playing
-    pub async fn start(&mut self) -> Result<String, MusicError> {
+    pub async fn start(&mut self) -> Result<MusicOk, MusicError> {
         match self.status {
-            MusicStateStatus::Playing => return Ok(String::from("Already playing")),
+            MusicStateStatus::Playing => return Err(MusicError::AlreadyPlaying),
             _ => (),
         };
 
@@ -179,28 +179,30 @@ impl MusicState {
             self.play(song).await
         }
         else {
-            Ok(String::from("Nothing to play"))
+            Ok(MusicOk::NothingToPlay)
         }
     }
 
     /// Only enqueue a track to be played, do not start playing
-    pub async fn enqueue(&mut self, song: Song) -> Result<String, MusicError> {
+    pub async fn enqueue(&mut self, song: Song) -> Result<MusicOk, MusicError> {
         if self.queue.len() > MAX_QUEUE_LEN {
             return Err(MusicError::QueueFull)
         }
 
         self.queue.push_back(song);
 
-        Ok(String::from("Enqueued Song!"))
+        Ok(MusicOk::EnqueuedSong)
     }
 
     /// Enqueue a track, and start playing music if not already playing
-    pub async fn enqueue_and_play(&mut self, song: Song) -> Result<String, MusicError> {
+    pub async fn enqueue_and_play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
         self.queue.push_back(song);
 
-        let ret = self.start().await; // TODO: probably manage already playing as -> enqueued song
-
-        ret
+        match self.start().await {
+            Ok(m) => Ok(m),
+            Err(MusicError::AlreadyPlaying) => Ok(MusicOk::EnqueuedSong),
+            Err(e) => Err(e),
+        }
     }
 
     /// Get a display string for the queue
@@ -221,10 +223,10 @@ impl MusicState {
         }
     }
 
-    pub fn clear_queue(&mut self) -> Result<String, MusicError> {
+    pub fn clear_queue(&mut self) -> Result<MusicOk, MusicError> {
         self.queue.clear();
 
-        Ok(String::from("Queue emptied"))
+        Ok(MusicOk::EmptyQueue)
     }
 
     pub fn is_queue_empty(&self) -> bool {
