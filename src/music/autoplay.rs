@@ -33,11 +33,11 @@ impl PartialOrd for UserTime {
 #[derive(Clone, Debug)]
 struct UserPlaylist {
     pub index: usize, // For non-destructive randomization, keeping consistent
-    pub list: Vec<youtube_dl::SingleVideo>,
+    pub list: Vec<Song>,
 }
 
 impl UserPlaylist {
-    pub fn new(list: Vec<youtube_dl::SingleVideo>) -> UserPlaylist {
+    pub fn new(list: Vec<Song>) -> UserPlaylist {
         UserPlaylist {
             index: 0,
             list: list
@@ -46,11 +46,11 @@ impl UserPlaylist {
 
     // TODO: implement a better playlist randomizer logic, especially one that avoids
     //  repeating songs too much
-    pub fn next(&mut self) -> &youtube_dl::SingleVideo {
+    pub fn next(&mut self) -> Song {
         let ret = self.list.get(self.index);
         self.index += 1;
 
-        ret.unwrap()
+        ret.unwrap().clone()
     }
 }
 
@@ -87,16 +87,15 @@ impl AutoplayState {
         };
 
         let song = up.next();
-        let ret = Song::from_video(song.clone(), &ut.user);
 
         // This is absolutely required for autoplay to work, just panic if we have problems here
         // TODO: better handle a problematic song on a player's playlist
-        let secs = ret.metadata.duration.as_ref().unwrap().as_f64().unwrap() as u64;
+        let secs = song.metadata.duration.as_ref().unwrap().as_f64().unwrap() as u64;
 
         ut.time += secs;
         self.usertime.push(ut);
 
-        Some(ret)
+        Some(song)
     }
 
     pub fn register(&mut self, user: &User, url: &String) -> Result<(), MusicError> {
@@ -127,6 +126,9 @@ impl AutoplayState {
         let mut tmpdata = data.entries.unwrap();
         let mut rng = rand::thread_rng();
         tmpdata.shuffle(&mut rng);
+        let tmpdata = tmpdata.iter()
+                        .map(|e| Song::from_video(e.clone(), user))
+                        .collect();
 
         // TODO: probably definitely just use time here, this is a lot of clones
         self.userlists.insert(user.clone(), UserPlaylist::new(tmpdata));
