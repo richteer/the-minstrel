@@ -4,7 +4,7 @@ use super::MusicError;
 use std::collections::HashMap;
 use std::collections::BinaryHeap;
 use std::cmp::Ordering;
-use rand::Rng;
+use rand::seq::SliceRandom;
 
 use youtube_dl::YoutubeDlOutput;
 
@@ -30,12 +30,37 @@ impl PartialOrd for UserTime {
     }
 }
 
+#[derive(Clone, Debug)]
+struct UserPlaylist {
+    pub index: usize, // For non-destructive randomization, keeping consistent
+    pub list: Vec<youtube_dl::SingleVideo>,
+}
+
+impl UserPlaylist {
+    pub fn new(list: Vec<youtube_dl::SingleVideo>) -> UserPlaylist {
+        UserPlaylist {
+            index: 0,
+            list: list
+        }
+    }
+
+    // TODO: implement a better playlist randomizer logic, especially one that avoids
+    //  repeating songs too much
+    pub fn next(&mut self) -> &youtube_dl::SingleVideo {
+        let ret = self.list.get(self.index);
+        self.index += 1;
+
+        ret.unwrap()
+    }
+}
+
+
 // TODO: perhaps have passthrough functions to mstate, or maybe just put this all in mstate?
 #[derive(Clone)]
 pub struct AutoplayState {
     // TODO: consider just using UserId here for the index?
     // TODO: consider Arc'ing the userlist so AutoplayState can be cloned when prefetching songs
-    userlists: HashMap<User, std::boxed::Box<youtube_dl::Playlist>>,
+    userlists: HashMap<User, UserPlaylist>,
     usertime: BinaryHeap<UserTime>,
     pub enabled: bool,
 }
@@ -56,18 +81,12 @@ impl AutoplayState {
             None => return None, // No users
         };
 
-        let playlist = match self.userlists.get(&ut.user) {
+        let up = match self.userlists.get_mut(&ut.user) {
             Some(p) => p,
             None => panic!("usertime contains user not in userlist"),
         };
 
-        let playlist = playlist.entries.as_ref().unwrap();
-
-        // TODO: implement a separate playlist randomizer logic, especially one that avoids
-        //  repeating songs too much
-        let mut rng = rand::thread_rng();
-        let song = playlist.get(rng.gen_range(0..playlist.len())).unwrap();
-
+        let song = up.next();
         let ret = Song::from_video(song.clone(), &ut.user);
 
         // This is absolutely required for autoplay to work, just panic if we have problems here
@@ -104,8 +123,13 @@ impl AutoplayState {
             return Err(MusicError::UnknownError);
         }
 
+        // TODO: perhaps break this into a dedicated playlist shuffling method on AutoplayState?
+        let mut tmpdata = data.entries.unwrap();
+        let mut rng = rand::thread_rng();
+        tmpdata.shuffle(&mut rng);
+
         // TODO: probably definitely just use time here, this is a lot of clones
-        self.userlists.insert(user.clone(), data);
+        self.userlists.insert(user.clone(), UserPlaylist::new(tmpdata));
         self.usertime.push(UserTime { user: user.clone(), time: 0 });
 
         Ok(())
