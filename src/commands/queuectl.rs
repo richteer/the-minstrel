@@ -28,7 +28,11 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
     let mstate = music::get(&ctx).await.unwrap();
     let mstate = mstate.lock().await;
 
-    check_msg(msg.channel_id.say(&ctx.http, mstate.show_queue()).await);
+    check_msg(msg.channel_id.send_message(&ctx.http, |m| {
+        m.embed(|e| { e
+            .description(mstate.show_queue())
+        })
+    }).await);
 
     Ok(())
 }
@@ -151,7 +155,11 @@ async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     let num = args.single::<u64>().unwrap_or(10);
 
-    check_msg(msg.channel_id.say(&ctx.http, mstate.autoplay.show_upcoming(num)).await);
+    check_msg(msg.channel_id.send_message(&ctx.http, |m| {
+        m.embed(|e| { e
+            .description(mstate.autoplay.show_upcoming(num))
+        })
+    }).await);
 
     Ok(())
 }
@@ -183,7 +191,11 @@ async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
         (Some(q), Some(ap)) => format!("{}\n{}", q, ap),
     };
 
-    check_msg(msg.channel_id.say(&ctx.http, ret).await);
+    check_msg(msg.channel_id.send_message(&ctx.http, |m| {
+        m.embed(|e| { e
+            .description(ret)
+        })
+    }).await);
 
     Ok(())
 }
