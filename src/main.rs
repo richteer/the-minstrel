@@ -59,7 +59,7 @@ struct MusicControlCmd;
 
 #[group]
 #[description = "Commands to manage the music queue"]
-#[commands(queue, enqueue, clearqueue, setlist, autoplay, upcoming)]
+#[commands(queue, enqueue, clearqueue, setlist, autoplay, upcoming, queuestatus)]
 struct QueueControlCmd;
 
 #[group]

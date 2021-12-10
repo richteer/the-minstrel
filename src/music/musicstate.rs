@@ -226,6 +226,10 @@ impl MusicState {
         Ok(String::from("Queue emptied"))
     }
 
+    pub fn is_queue_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
+
 }
 
 /* Possible mess for queue support */

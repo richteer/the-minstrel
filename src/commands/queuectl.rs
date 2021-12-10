@@ -150,3 +150,35 @@ async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     Ok(())
 }
+
+// TODO: implement an autoplay enabled check?
+// TODO: perhaps make this a subcommand of !autoplay?
+#[command]
+#[aliases(qs)]
+#[only_in(guilds)]
+#[checks(voice_ready)] // TODO: implement "in same voice channel" and use here, don't need to join
+async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mstate, ctx);
+
+    let mut q = None;
+    let mut ap = None;
+
+    if !mstate.is_queue_empty() {
+        q = Some(mstate.show_queue());
+    }
+
+    if mstate.autoplay.enabled {
+        ap = Some(mstate.autoplay.show_upcoming(5));
+    }
+
+    let ret = match (q,ap) {
+        (None,    None    ) => format!("Queue is empty and Autoplay is disabled"),
+        (Some(q), None    ) => format!("{}\nAutoplay is disabled", q),
+        (None,    Some(ap)) => format!("{}", ap),
+        (Some(q), Some(ap)) => format!("{}\n{}", q, ap),
+    };
+
+    check_msg(msg.channel_id.say(&ctx.http, ret).await);
+
+    Ok(())
+}
