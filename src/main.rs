@@ -14,6 +14,7 @@ use commands::{
     general::*,
     musicctl::*,
     queuectl::*,
+    autoplay::*,
     debug::*,
 };
 
@@ -59,8 +60,14 @@ struct MusicControlCmd;
 
 #[group]
 #[description = "Commands to manage the music queue"]
-#[commands(queue, enqueue, clearqueue, setlist, autoplay, upcoming, queuestatus, enrolluser, removeuser)]
+#[commands(queue, enqueue, clearqueue, queuestatus)]
 struct QueueControlCmd;
+
+#[group]
+#[description = "Commands to manage autoplay state"]
+#[prefixes("autoplay", "ap")]
+#[commands(toggle, setlist, upcoming, enrolluser, removeuser)]
+struct AutoplayCmd;
 
 #[group]
 #[description = "Commands for debugging purposes"]
@@ -136,6 +143,7 @@ async fn main() {
         .group(&GENERAL_GROUP)
         .group(&MUSICCONTROLCMD_GROUP)
         .group(&QUEUECONTROLCMD_GROUP)
+        .group(&AUTOPLAYCMD_GROUP)
         .group(&DEBUGCMD_GROUP)
         .help(&HELPME);
 
