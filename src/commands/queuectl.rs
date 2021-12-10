@@ -71,39 +71,9 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     let mstate = music::get(&ctx).await.unwrap();
     let mut mstate = mstate.lock().await;
 
-    /*
-    println!("getting playlist");
-    let data = youtube_dl::YoutubeDl::new(&url)
-        .flat_playlist(true)
-        .run();
-
-    let data = match data {
-        Ok(YoutubeDlOutput::SingleVideo(_)) => {
-            check_msg(msg.channel_id.say(&ctx.http, "Must provide link to a playlist, not a single video").await);
-            return Ok(()); // Not ok
-        }
-        Err(e) => {
-            check_msg(msg.channel_id.say(&ctx.http, format!("Error fetching playlist: {:?}", e)).await);
-            return Ok(()); // Not ok
-        }
-        Ok(YoutubeDlOutput::Playlist(p)) => p,
-    };
-
-    println!("done fetching playlist");
-
-
-    for (i,e) in data.entries.unwrap().iter().enumerate() {
-        if i == 9 {
-            mstate.enqueue_and_play(Song::_from_video(e.clone(), &msg.author)).await.ok();
-            break;
-        }
-        mstate.enqueue(Song::_from_video(e.clone(), &msg.author)).await.ok();
-    }
-
-    println!("done being weird");
-    */
     mstate.autoplay.register(&msg.author, &url).ok();
-    // TODO: send some feedback here
+
+    check_msg(msg.channel_id.say(&ctx.http, "Setlist Registered!").await);
 
     Ok(())
 }
