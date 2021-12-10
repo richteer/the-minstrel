@@ -65,7 +65,7 @@ struct QueueControlCmd;
 #[group]
 #[description = "Commands for debugging purposes"]
 #[prefix("debug")]
-#[commands(usertime)]
+#[commands(usertime, dropapuser)]
 // TODO: require owner
 struct DebugCmd;
 

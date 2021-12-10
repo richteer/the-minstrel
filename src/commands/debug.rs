@@ -4,6 +4,7 @@ use serenity::{
     },
     prelude::*,
     framework::standard::{
+        Args,
         macros::command,
         CommandResult,
     },
@@ -20,6 +21,28 @@ async fn usertime(ctx: &Context, msg: &Message) -> CommandResult {
     let ut = mstate.autoplay.debug_get_usertime();
 
     msg.channel_id.say(&ctx.http, format!("```{}```", ut)).await?;
+
+    Ok(())
+}
+
+
+#[command]
+#[only_in(guilds)]
+#[num_args(1)]
+async fn dropapuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    let user = args.single::<String>().unwrap();
+    let guild = ctx.cache
+                .guild(msg.guild_id.unwrap())
+                .await.unwrap();
+    let member = guild.member_named(&user).unwrap();
+
+    mstate.autoplay.disable_user(&member.user.clone()).unwrap();
+
+    let ut = mstate.autoplay.debug_get_usertime();
+
+    msg.channel_id.say(&ctx.http, format!("In theory dropped user:\n```{}```", ut)).await?;
 
     Ok(())
 }
