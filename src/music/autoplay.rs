@@ -171,6 +171,39 @@ impl AutoplayState {
         ret
     }
 
+    /// Enable a user that already has a registered setlist in the autoplay system
+    /// Sets the user's playtime to the current minimum value
+    // TODO: implement an autoplay equiv to MusicOk/MusicError
+    pub fn enable_user(&mut self, user: &User) -> Result<String, MusicError> {
+        if !self.userlists.contains_key(user) {
+            return Err(MusicError::UnknownError);
+        }
+
+        if self.usertime.iter()
+            .fold(false, |acc, u| acc || (u.user.id == user.id)) {
+            // user already enabled
+            return Ok(String::from("You are already enabled."))
+        }
+
+        let time = match self.usertime.peek() {
+            Some(tmp) => tmp.time,
+            None => 0,
+        };
+
+        self.usertime.push(UserTime { user: user.clone(), time: time });
+
+        Ok(String::from("Enrolled for autoplay!"))
+    }
+
+    pub fn disable_user(&mut self, user: &User) -> Result<String, MusicError> {
+        self.usertime = self.usertime.clone()
+            .into_iter()
+            .filter(|u| u.user.id != user.id)
+            .collect();
+
+        Ok(String::from("Unenrolled for autoplay!"))
+    }
+
     pub fn debug_get_usertime(&self) -> String {
         format!("{:?}", self.usertime)
     }

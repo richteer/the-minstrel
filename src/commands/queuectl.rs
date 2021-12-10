@@ -200,3 +200,35 @@ async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
+// TODO: definitely make this a subcommand of !autoplay?
+#[command]
+#[only_in(guilds)]
+async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    let ret = match mstate.autoplay.enable_user(&msg.author) {
+        Ok(m) => m,
+        Err(e) => format!("Error enabling user: {:?}", e),
+    };
+
+    check_msg(msg.channel_id.say(&ctx.http, ret).await);
+
+    Ok(())
+}
+
+// TODO: definitely make this a subcommand of !autoplay?
+#[command]
+#[only_in(guilds)]
+async fn removeuser(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    let ret = match mstate.autoplay.disable_user(&msg.author) {
+        Ok(m) => m,
+        Err(e) => format!("Error disabling user: {:?}", e),
+    };
+
+    check_msg(msg.channel_id.say(&ctx.http, ret).await);
+
+    Ok(())
+}
