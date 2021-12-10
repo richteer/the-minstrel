@@ -12,7 +12,7 @@ use serenity::{
     model::user::User,
 };
 
-#[derive(Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 struct UserTime {
     user: User,
     time: u64,
@@ -108,5 +108,9 @@ impl AutoplayState {
         self.usertime.push(UserTime { user: user.clone(), time: 0 });
 
         Ok(())
+    }
+
+    pub fn debug_get_usertime(&self) -> String {
+        format!("{:?}", self.usertime)
     }
 }
