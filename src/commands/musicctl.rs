@@ -55,37 +55,9 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
 
-    if let Some(song) = mstate.current_song() {
-        // TODO: consider making this a helper, so the sticky nowplaying can use this
-
-        let md = song.metadata;
-        let thumb = match md.thumbnail.clone() {
-            Some(t) => t,
-            None => String::from(
-                format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", &md.id)),
-                // This URL might change in the future, but meh, it works.
-                // TODO: Config the thumbnail resolution probably
-        };
-
-        check_msg(msg.channel_id.send_message(&ctx.http, |m| {
-            m.embed(|e| { e
-                .title(md.title)
-                .thumbnail(thumb)
-                .url(song.url)
-                .description(md.uploader.unwrap_or(String::from("Unknown")))
-                .footer(|f| { f
-                    .icon_url(song.requested_by.user.face())
-                    .text(format!("Requested by: {}", song.requested_by.name))
-                })
-            });
-
-            m
-        }).await);
-    }
-    else {
-        check_msg(msg.channel_id.say(&ctx.http, "Nothing currently playing!").await);
-    }
-
+    check_msg(msg.channel_id.send_message(&ctx.http, |m| {
+        m.set_embed(mstate.get_nowplay_embed())
+    }).await);
 
     Ok(())
 }

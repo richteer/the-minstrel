@@ -4,6 +4,7 @@ use super::song::Song;
 use std::fmt;
 use std::sync::Arc;
 use std::collections::VecDeque;
+use std::collections::HashMap;
 
 use songbird::{
     Event,
@@ -15,6 +16,7 @@ use songbird::{
 
 use serenity::{
     prelude::*,
+    builder::CreateEmbed,
 };
 
 #[allow(dead_code)]
@@ -270,6 +272,37 @@ impl MusicState {
         ret
     }
 
+    pub fn show_queuestate(&self) -> String {
+        let mut q = None;
+        let mut ap = None;
+
+        if !self.is_queue_empty() {
+            q = Some(self.show_queue());
+        }
+
+        if self.autoplay.enabled {
+            ap = Some(self.autoplay.show_upcoming(10));
+        }
+
+        let mut ret = String::new();
+
+        if let Some(curr) = &self.current_song() {
+            ret += &format!("Now Playing:\n{}\n\n", curr);
+        }
+        else {
+            ret += &format!("_Nothing is currently playing._\n\n");
+        }
+
+        let tmp = match (q,ap) {
+            (None,    None    ) => format!("Queue is empty and Autoplay is disabled"),
+            (Some(q), None    ) => format!("{}\nAutoplay is disabled", q),
+            (None,    Some(ap)) => format!("{}", ap),
+            (Some(q), Some(ap)) => format!("{}\n{}", q, ap),
+        };
+
+        ret + &tmp
+    }
+
     pub fn current_song(&self) -> Option<Song> {
         match &self.current_track {
             Some((_, song)) => Some(song.clone()),
@@ -287,7 +320,48 @@ impl MusicState {
         self.queue.is_empty()
     }
 
+    pub fn get_queuestate_embed(&self) -> CreateEmbed {
+        let mut ret = CreateEmbed { 0: HashMap::new() };
+
+        ret.description(self.show_queuestate());
+
+        return ret;
+    }
+
+    pub fn get_nowplay_embed(&self) -> CreateEmbed {
+        let mut ret = CreateEmbed { 0: HashMap::new() };
+
+        let song = match self.current_song() {
+            Some(s) => s,
+            None => {
+                ret.description("Nothing currently playing");
+                return ret;
+            }
+        };
+
+        let md = song.metadata;
+        let thumb = match md.thumbnail.clone() {
+            Some(t) => t,
+            None => String::from(
+                format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", &md.id)),
+                // This URL might change in the future, but meh, it works.
+                // TODO: Config the thumbnail resolution probably
+        };
+
+        ret.thumbnail(thumb)
+            .title(md.title)
+            .url(song.url)
+            .description(md.uploader.unwrap_or(String::from("Unknown")))
+            .footer(|f| { f
+                .icon_url(song.requested_by.user.face())
+                .text(format!("Requested by: {}", song.requested_by.name))
+            });
+
+        ret
+    }
+
 }
+
 
 /* Possible mess for queue support */
 

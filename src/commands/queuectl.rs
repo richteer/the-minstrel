@@ -94,39 +94,8 @@ async fn clearqueue(ctx: &Context, msg: &Message) -> CommandResult {
 async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
 
-    let mut q = None;
-    let mut ap = None;
-
-    if !mstate.is_queue_empty() {
-        q = Some(mstate.show_queue());
-    }
-
-    if mstate.autoplay.enabled {
-        ap = Some(mstate.autoplay.show_upcoming(10));
-    }
-
-    let mut ret = String::new();
-
-    if let Some(curr) = &mstate.current_song() {
-        ret += &format!("Now Playing:\n{}\n\n", curr);
-    }
-    else {
-        ret += &format!("_Nothing is currently playing._\n\n");
-    }
-
-    let tmp = match (q,ap) {
-        (None,    None    ) => format!("Queue is empty and Autoplay is disabled"),
-        (Some(q), None    ) => format!("{}\nAutoplay is disabled", q),
-        (None,    Some(ap)) => format!("{}", ap),
-        (Some(q), Some(ap)) => format!("{}\n{}", q, ap),
-    };
-
-    ret += &tmp;
-
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
-        m.embed(|e| { e
-            .description(ret)
-        })
+        m.set_embed(mstate.get_queuestate_embed())
     }).await);
 
     Ok(())
