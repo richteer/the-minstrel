@@ -157,7 +157,7 @@ impl MusicState {
 
         let mut handler = self.songcall.as_ref().unwrap().lock().await;
 
-        let source = match songbird::ytdl(&song.url).await {
+        let source = match songbird::ytdl_ffmpeg_args(&song.url, &[], &["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"]).await {
             Ok(source) => source,
             Err(why) => {
                 println!("Err starting source: {:?}", why);
