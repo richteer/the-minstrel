@@ -138,3 +138,18 @@ async fn rebalance(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
+
+#[command]
+#[only_in(guilds)]
+#[checks(in_same_voice)]
+// TODO: require permissions for this
+async fn shuffle(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    mstate.autoplay.shuffle_user(&msg.author).unwrap();
+
+    check_msg(msg.channel_id.say(&ctx.http, "Shuffled your playlist.").await);
+
+    Ok(())
+}

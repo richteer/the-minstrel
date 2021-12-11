@@ -66,7 +66,7 @@ struct QueueControlCmd;
 #[group]
 #[description = "Commands to manage autoplay state"]
 #[prefixes("autoplay", "ap")]
-#[commands(toggle, setlist, upcoming, enrolluser, removeuser, rebalance)]
+#[commands(toggle, setlist, upcoming, enrolluser, removeuser, rebalance, shuffle)]
 struct AutoplayCmd;
 
 #[group]

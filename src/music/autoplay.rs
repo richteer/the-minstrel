@@ -308,4 +308,19 @@ impl AutoplayState {
     pub fn debug_get_usertime(&self) -> String {
         format!("{:?}", self.usertime)
     }
+
+    pub fn shuffle_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
+        if let Some(list) = self.userlists.get(user) {
+            let mut list = list.clone();
+            list.shuffle();
+            self.userlists.insert(user.clone(), list);
+            // TODO: shuffled ok
+            Ok(AutoplayOk::EnrolledUser)
+        }
+        else {
+            Err(AutoplayError::UnknownError)
+        }
+
+
+    }
 }
