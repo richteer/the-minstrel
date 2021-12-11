@@ -102,7 +102,7 @@ async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
     }
 
     if mstate.autoplay.enabled {
-        ap = Some(mstate.autoplay.show_upcoming(5));
+        ap = Some(mstate.autoplay.show_upcoming(10));
     }
 
     let mut ret = String::new();
