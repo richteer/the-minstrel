@@ -22,7 +22,12 @@ impl Song {
 
         let data = YoutubeDl::new(&url)
             .run()
-            .unwrap();
+            .map_err(|e|
+                match e {
+                    // TODO: Probably actually handle the cases here
+                    _ => MusicError::FailedToRetrieve,
+                }
+            )?;
 
         match data {
             YoutubeDlOutput::SingleVideo(v) => Ok(Song { url: url, metadata: v, requested_by: requester.clone() }),
