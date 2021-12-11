@@ -323,4 +323,20 @@ impl AutoplayState {
 
 
     }
+
+    pub fn add_time_to_user(&mut self, user: &User, delta: i64) {
+        self.usertime = self.usertime.clone()
+            .into_iter()
+            .map(|mut u| {
+                if u.user.id == user.id {
+                    u.time += delta;
+                    u
+                }
+                else {
+                    u
+                }
+            })
+            .collect();
+
+    }
 }

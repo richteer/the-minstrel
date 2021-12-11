@@ -46,3 +46,25 @@ async fn dropapuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 
     Ok(())
 }
+
+
+#[command]
+#[only_in(guilds)]
+#[num_args(2)]
+async fn modutime(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    let user = args.single::<String>()?;
+    let delta = args.single::<i64>()?;
+    let guild = ctx.cache
+                .guild(msg.guild_id.unwrap())
+                .await.unwrap();
+
+    let member = guild.member_named(&user).unwrap();
+
+    mstate.autoplay.add_time_to_user(&member.user.clone(), delta);
+
+    msg.channel_id.say(&ctx.http, format!("In theory modified usertime")).await?;
+
+    Ok(())
+}

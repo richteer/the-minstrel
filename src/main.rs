@@ -73,7 +73,7 @@ struct AutoplayCmd;
 #[group]
 #[description = "Commands for debugging purposes"]
 #[prefix("debug")]
-#[commands(usertime, dropapuser)]
+#[commands(usertime, dropapuser, modutime)]
 // TODO: require owner
 struct DebugCmd;
 
@@ -156,7 +156,7 @@ async fn main() {
             .with_whitespace(true)
             //.on_mention(Some(bot_id)) // TODO: not sure
             .prefix("!")
-            .delimiters(vec![", ", ","])
+            .delimiters(vec![", ", ",", " "])
             //.owners(owners) // TODO: set owners so adminy commands work
             )
         .after(stickymessage_hook)
