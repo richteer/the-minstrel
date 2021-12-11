@@ -187,10 +187,14 @@ impl MusicState {
     }
 
     fn get_next_song(&mut self) -> Option<Song> {
-        let ret = self.queue.pop_front();
+        if let Some(song) = self.queue.pop_front() {
+            // TODO: Config this
+            // TODO: probably reconsider where this needs to go
+            if self.autoplay.enabled {
+                self.autoplay.add_time_to_user(&song.requested_by.user, song.duration);
+            }
 
-        if ret.is_some() {
-            return ret;
+            return Some(song);
         }
 
         if self.autoplay.enabled {
