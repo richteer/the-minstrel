@@ -52,7 +52,7 @@ pub enum AutoplayError {
 #[derive(Clone, Eq, PartialEq, Debug)]
 struct UserTime {
     user: User,
-    time: u64,
+    time: i64,
 }
 
 impl Ord for UserTime {
@@ -167,7 +167,7 @@ impl AutoplayState {
 
         // This is absolutely required for autoplay to work, just panic if we have problems here
         // TODO: better handle a problematic song on a player's playlist
-        let secs = song.metadata.duration.as_ref().unwrap().as_f64().unwrap() as u64;
+        let secs = song.metadata.duration.as_ref().unwrap().as_f64().unwrap() as i64;
 
         ut.time += secs;
         self.usertime.push(ut);
@@ -273,7 +273,7 @@ impl AutoplayState {
         }
 
         let time = match self.usertime.peek() {
-            Some(tmp) => tmp.time,
+            Some(tmp) => tmp.time - 1,
             None => 0,
         };
 
