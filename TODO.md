@@ -1,5 +1,5 @@
  - [x] improve voice_ready checking
- - [ ] some kind of storage system
+ - [ ] some kind of storage system (started)
  - [x] playlist fetching
  - [x] autoplay
  - [x] playlist merging

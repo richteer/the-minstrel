@@ -1,10 +1,11 @@
 use serenity::model::user::User;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// Struct to hold requested-by information for MusicState and friends
 /// Fill with anything that is not in the User struct that might be useful
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Requester {
     pub user: User,
     // User nickname in server or name without discriminator

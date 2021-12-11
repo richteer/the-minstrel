@@ -2,11 +2,13 @@ use super::song::Song;
 use super::Requester;
 
 use std::fmt;
+use std::sync::{RwLock, Arc};
 use std::collections::HashMap;
 use std::collections::BinaryHeap;
 use std::cmp::Ordering;
 use rand::seq::SliceRandom;
 
+use pickledb::{PickleDb, PickleDbDumpPolicy};
 use youtube_dl::YoutubeDlOutput;
 
 use serenity::{
@@ -112,15 +114,41 @@ pub struct AutoplayState {
     userlists: HashMap<User, UserPlaylist>,
     usertime: BinaryHeap<UserTime>,
     pub enabled: bool,
+    // TODO: make this a global db that all things can access. this is fine for now though.
+    storage: Arc<RwLock<PickleDb>>,
 }
 
 impl AutoplayState {
     pub fn new() -> AutoplayState {
-        AutoplayState {
+        // TODO: lock all this storage behind a feature
+        let db = match PickleDb::load_json("autoplay.json", PickleDbDumpPolicy::AutoDump) {
+            Err(_) => {
+                println!("creating new autoplay db");
+                PickleDb::new_json("autoplay.json", PickleDbDumpPolicy::AutoDump)
+            },
+            Ok(d) => d,
+        };
+
+        let users: Vec<(Requester, String)> = db.iter().map(|e|
+                e.get_value::<(Requester, String)>().unwrap()
+            ).collect();
+
+        println!("{:?}", users);
+
+        let mut ret = AutoplayState {
             userlists: HashMap::new(),
             usertime: BinaryHeap::new(),
             enabled: false,
+            storage: Arc::new(RwLock::new(db)),
+        };
+
+        for (req, url) in users {
+            // Panicking here is fine for now, if there's bad date in the json, let that be caught
+            println!("loading setlist for user {} from storage", &req.user.name);
+            ret.register(req, &url).unwrap();
         }
+
+        ret
     }
 
     /// Get the next song to play and increment the play state
@@ -148,6 +176,17 @@ impl AutoplayState {
     }
 
     pub fn register(&mut self, requester: Requester, url: &String) -> Result<AutoplayOk, AutoplayError> {
+        {
+            if let Ok(mut lock) = self.storage.write() {
+                let write = (requester.clone(), url.clone());
+                match lock.set(&requester.user.id.to_string(), &write) {
+                    Ok(_) => (),
+                    Err(e) => println!("Error writing to autoplay storage: {:?}", e),
+                    // Continue on failure, storage isn't important
+                }
+            }
+        }
+
         let data = youtube_dl::YoutubeDl::new(url)
             .flat_playlist(true)
             .run();
