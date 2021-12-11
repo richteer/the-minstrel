@@ -61,10 +61,10 @@ async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
         let md = song.metadata;
         let thumb = match md.thumbnail.clone() {
             Some(t) => t,
-            None => {
-                // TODO: attempt to fetch thumb?
-                String::from("")
-            }
+            None => String::from(
+                format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", &md.id)),
+                // This URL might change in the future, but meh, it works.
+                // TODO: Config the thumbnail resolution probably
         };
 
         check_msg(msg.channel_id.send_message(&ctx.http, |m| {
