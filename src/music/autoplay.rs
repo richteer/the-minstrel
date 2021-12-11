@@ -165,11 +165,7 @@ impl AutoplayState {
 
         let song = up.next();
 
-        // This is absolutely required for autoplay to work, just panic if we have problems here
-        // TODO: better handle a problematic song on a player's playlist
-        let secs = song.metadata.duration.as_ref().unwrap().as_f64().unwrap() as i64;
-
-        ut.time += secs;
+        ut.time += song.duration;
         self.usertime.push(ut);
 
         Some(song)

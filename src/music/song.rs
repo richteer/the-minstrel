@@ -11,6 +11,16 @@ pub struct Song {
     // TODO: should metadata actually be an Option, or should this be mandatory for a song?
     pub metadata: Box<SingleVideo>,
     pub requested_by: Requester,
+    pub duration: i64,
+}
+
+macro_rules! get_duration {
+    ($video:ident) => {
+        $video.duration.as_ref().expect("Duration missing from video")
+            .as_f64()
+            .expect("Could not parse as an f64 for some reason")
+            as i64
+    };
 }
 
 impl Song {
@@ -30,7 +40,15 @@ impl Song {
             )?;
 
         match data {
-            YoutubeDlOutput::SingleVideo(v) => Ok(Song { url: url, metadata: v, requested_by: requester.clone() }),
+            YoutubeDlOutput::SingleVideo(v) => {
+                let duration = get_duration!(v);
+                Ok(Song {
+                    url: url,
+                    metadata: v,
+                    requested_by: requester.clone(),
+                    duration: duration
+                })
+            },
             YoutubeDlOutput::Playlist(_) => Err(MusicError::UnknownError),
         }
     }
@@ -38,26 +56,24 @@ impl Song {
     /// Create a new song struct from an existing metadata struct
     /// Mostly needed only for the autoplay playlist feature
     pub fn from_video(video: SingleVideo, requester: &Requester) -> Song {
+        let duration = get_duration!(video);
         Song {
             url: format!("https://www.youtube.com/watch?v={}", video.url.as_ref().unwrap()),
             metadata: Box::new(video),
             requested_by: requester.clone(),
+            duration: duration,
         }
     }
 }
 
 impl fmt::Display for Song {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let md = self.metadata.as_ref();
-
-        // TODO: clean up the unwraps here, fail gracefully if for some reason
-        //  there is no duration, or it cannot parse into f64
-        let secs = md.duration.as_ref().unwrap().as_f64().unwrap();
-        let mins = (secs / 60f64) as i64;
-        let secs = secs as i64 % 60;
+        let secs = self.duration;
+        let mins = secs / 60;
+        let secs = secs % 60;
 
         write!(f, "**{0}** [{1}:{2:02}] _(requested by {3})_",
-            md.title,
+            self.metadata.title,
             mins, secs,
             &self.requested_by.name,
         )
