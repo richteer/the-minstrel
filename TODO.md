@@ -14,6 +14,9 @@
  - [x] sticky nowplaying message
  - [ ] reaction-based music controls
  - [ ] refetch information that is cached that shouldn't be
+ - [ ] add configuration options loaded from file
+ - [ ] add command to modify config at runtime
+ - [ ] implement some kind of permissions control
 
 commands:
  - `!skip` - end the current playing song
