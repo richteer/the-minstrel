@@ -91,7 +91,7 @@ async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
-#[aliases(skip, n)]
+#[aliases(skip)]
 #[only_in(guilds)]
 #[checks(in_same_voice)]
 // TODO: require permissions to do this
