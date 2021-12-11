@@ -16,6 +16,7 @@ use songbird::{
 
 use serenity::{
     prelude::*,
+    model::channel::Message,
     builder::CreateEmbed,
 };
 
@@ -89,6 +90,7 @@ pub struct MusicState {
     status: MusicStateStatus,
     queue: VecDeque<Song>,
     pub autoplay: AutoplayState,
+    pub sticky: Option<Message>,
 }
 
 // TODO: Make this a config setting probably
@@ -137,6 +139,7 @@ impl MusicState {
             queue: VecDeque::<Song>::new(),
             status: MusicStateStatus::Uninitialized,
             autoplay: AutoplayState::new(),
+            sticky: None,
         }
     }
 
@@ -392,6 +395,12 @@ impl VoiceEventHander for TrackEndNotifier {
         }
         else if let Err(e) = ret {
             println!("{:?}", e);
+        }
+
+        if let Some(sticky) = &mstate.sticky {
+            sticky.channel_id.edit_message(&self.ctx.http, sticky, |m| {
+                m.set_embeds(vec![mstate.get_queuestate_embed(), mstate.get_nowplay_embed()])
+            }).await.unwrap();
         }
 
         None

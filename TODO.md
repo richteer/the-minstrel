@@ -11,7 +11,8 @@
  - [ ] display current song as a status/presence
  - [x] prefetch a number of autoplay songs so that a "queue" can be displayed for what's up next
  - [x] fix stale voice state when killing bot without exiting
- - [ ] sticky nowplaying message w/ play controls
+ - [x] sticky nowplaying message
+ - [ ] reaction-based music controls
  - [ ] refetch information that is cached that shouldn't be
 
 commands:

@@ -33,6 +33,7 @@ use serenity::{
         macros::{group, help, hook},
         Args,
         CommandGroup,
+        CommandError,
 //        CommandOptions,
         CommandResult,
         DispatchError,
@@ -55,7 +56,7 @@ struct General;
 
 #[group]
 #[description = "Commands for controlling the music player"]
-#[commands(play, nowplaying, next, stop, start)]
+#[commands(play, nowplaying, next, stop, start, display)]
 struct MusicControlCmd;
 
 #[group]
@@ -87,10 +88,29 @@ async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
     };
 }
 
+#[hook]
+async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _error: Result<(), CommandError>) {
+    get_mstate!(mut, mstate, ctx);
+
+    if let Some(m) = &mstate.sticky {
+        m.channel_id.delete_message(&ctx.http, m).await.unwrap();
+
+        let new = m.channel_id.send_message(&ctx.http, |m| {
+            m.add_embeds(vec![mstate.get_queuestate_embed(), mstate.get_nowplay_embed()])
+        }).await.unwrap();
+
+        mstate.sticky = Some(new);
+    }
+}
+
 #[async_trait]
 impl EventHandler for Handler {
     // TODO: probably not need this
-    async fn message(&self, _ctx: Context, msg: Message) {
+    async fn message(&self, ctx: Context, msg: Message) {
+        // Ignore self
+        if msg.author.id == ctx.cache.current_user().await.id {
+            return
+        }
         // TODO: use an actual logging system
         println!("{}", msg.content);
     }
@@ -139,6 +159,7 @@ async fn main() {
             .delimiters(vec![", ", ","])
             //.owners(owners) // TODO: set owners so adminy commands work
             )
+        .after(stickymessage_hook)
         .on_dispatch_error(dispatch_error)
         .group(&GENERAL_GROUP)
         .group(&MUSICCONTROLCMD_GROUP)

@@ -118,3 +118,27 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
+#[command]
+#[only_in(guilds)]
+// TODO: consider permissions here, this might be annoying if regular users can toggle it
+async fn display(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    if let Some(_) = mstate.sticky {
+        mstate.sticky = None;
+
+        check_msg(msg.channel_id.say(&ctx.http, "Disabled sticky display.").await);
+
+        return Ok(());
+    }
+
+    check_msg(msg.channel_id.say(&ctx.http, "Enabling sticky display message.").await);
+
+    // Just send a blank message to fill in sticky, let the hook actually send the first output
+    let sticky = msg.channel_id.say(&ctx.http, ".").await.unwrap();
+
+    mstate.sticky = Some(sticky);
+
+    Ok(())
+}
