@@ -22,7 +22,7 @@
  - [ ] general statistics logging, average song length, etc
  - [ ] consider having the queue balance with autoplay fairness, don't always take queue prio
  - [x] implement some kind of logging system
- - [ ] record a cache of last played songs
+ - [x] record a cache of last played songs
  - [ ] reaction-based "starring" or "thumbs-up" of songs
  - [ ] look into weird playback speed problems
  - [ ] nowplaying should state where it sourced the song (autoplay, queue, etc)

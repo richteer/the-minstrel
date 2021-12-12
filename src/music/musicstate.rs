@@ -90,6 +90,7 @@ pub struct MusicState {
     current_track: Option<(TrackHandle, Song)>,
     status: MusicStateStatus,
     queue: VecDeque<Song>,
+    pub history: VecDeque<Song>,
     pub autoplay: AutoplayState,
     pub sticky: Option<Message>,
 }
@@ -138,6 +139,7 @@ impl MusicState {
             songcall: None,
             current_track: None,
             queue: VecDeque::<Song>::new(),
+            history: VecDeque::<Song>::new(),
             status: MusicStateStatus::Uninitialized,
             autoplay: AutoplayState::new(),
             sticky: None,
@@ -295,8 +297,12 @@ impl MusicState {
 
         let mut ret = String::new();
 
+        if let Some(his) = self.show_history(5) {
+            ret += &format!("{}\n", his);
+        }
+
         if let Some(curr) = &self.current_song() {
-            ret += &format!("Now Playing:\n{}\n\n", curr);
+            ret += &format!("Now Playing:\n:musical_note: {}\n\n", curr);
         }
         else {
             ret += &format!("_Nothing is currently playing._\n\n");
@@ -369,6 +375,31 @@ impl MusicState {
         ret
     }
 
+    pub fn show_history(&self, num: usize) -> Option<String> {
+        if self.history.len() == 0 {
+            return None
+        }
+
+        let mut ret = String::from("Last played songs:\n");
+
+        for (i,s) in self.history.iter().take(num).enumerate().rev() {
+            ret += &format!("{0}: {1}\n", i+1, s);
+        }
+
+        Some(ret)
+    }
+
+    pub fn get_history_embed(&self, num: usize) -> CreateEmbed {
+        let mut ret = CreateEmbed { 0: HashMap::new() };
+
+        ret.description(match self.show_history(num) {
+            Some(s) => s,
+            None => String::from("No songs have been played"),
+        });
+
+        ret
+    }
+
 }
 
 
@@ -386,7 +417,13 @@ impl VoiceEventHandler for TrackEndNotifier {
         let mstate = get(&self.ctx).await.unwrap();
         let mut mstate = mstate.lock().await;
 
-        mstate.current_track = None;
+        if let Some((_, song)) = &mstate.current_track.take() {
+            mstate.history.push_front(song.clone());
+            mstate.history.truncate(10); // TODO: config max history buffer length
+        }
+        else {
+            debug!("TrackEnd handler somehow called with mstate.current_track = None");
+        }
 
         match mstate.status {
             MusicStateStatus::Stopping => {
