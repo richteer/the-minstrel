@@ -153,3 +153,60 @@ async fn shuffle(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
+
+#[command]
+#[only_in(guilds)]
+#[checks(in_same_voice)]
+#[num_args(1)]
+// TODO: require permissions for this
+// TODO: come up with a better name for this command
+async fn dump(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let num = match args.single::<u64>() {
+        Ok(n) => n,
+        Err(e) => {
+            check_msg(msg.channel_id.say(&ctx.http,
+                format!("Must provide a number of songs to dump from autoplay into queue: {:?}", e)).await);
+            return Ok(());
+        }
+    };
+
+    // TODO: use config autoplay prefetch maximum here
+    let max = 20;
+
+    if num > max {
+        check_msg(msg.channel_id.say(&ctx.http, format!("Requested dump exceeds maximum allowed, max is {}", max)).await);
+
+        return Ok(());
+    }
+
+    get_mstate!(mut, mstate, ctx);
+
+    if !mstate.autoplay.enabled {
+        // TODO: this can probably work without autoplay enabled, but users need to be registered, etc etc
+        check_msg(msg.channel_id.say(&ctx.http, "Autoplay is not enabled.").await);
+        return Ok(())
+    }
+
+    for i in 0..num {
+        if let Some(song) = mstate.autoplay.next() {
+            match mstate.enqueue(song) {
+                Ok(_) => (),
+                Err(MusicError::QueueFull) => {
+                    check_msg(msg.channel_id.say(&ctx.http, format!("Queue capacity reached, only could add {}", i)).await);
+                    break;
+                },
+                Err(e) => panic!("dump: {:?}", e),
+            };
+        }
+        else {
+            // TODO: probably better error handle this, this implies there's no autoplay users registered
+            break;
+        }
+    }
+
+    mstate.autoplay.enabled = false;
+    check_msg(msg.channel_id.say(&ctx.http, "Autoplay has been disabled.").await);
+
+    Ok(())
+}
