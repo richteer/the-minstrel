@@ -17,6 +17,20 @@
  - [ ] add configuration options loaded from file
  - [ ] add command to modify config at runtime
  - [ ] implement some kind of permissions control
+ - [ ] time remaining in queue, how much time has played, etc
+ - [ ] command to dump songs from autoplay into actual queue (and stop autoplay maybe?)
+ - [ ] general statistics logging, average song length, etc
+ - [ ] consider having the queue balance with autoplay fairness, don't always take queue prio
+ - [ ] implement some kind of logging system
+ - [ ] record a cache of last played songs
+ - [ ] reaction-based "starring" or "thumbs-up" of songs
+ - [ ] look into weird playback speed problems
+ - [ ] nowplaying should state where it sourced the song (autoplay, queue, etc)
+ - [ ] allow users to store multiple playlists
+ - [ ] cache playlists and metadata, fetch them in a background thread on launch
+ - [ ] show removed/privated songs from cache?
+ - [ ] investigate what happens on a playback error mid queue/autoplay (privated vid between add and play)
+ - [ ] write a dang README
 
 commands:
  - `!skip` - end the current playing song
