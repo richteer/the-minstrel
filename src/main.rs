@@ -18,6 +18,7 @@ use commands::{
     debug::*,
 };
 
+use log::*;
 
 use serenity::{
     async_trait,
@@ -112,7 +113,7 @@ impl EventHandler for Handler {
             return
         }
         // TODO: use an actual logging system
-        println!("{}", msg.content);
+        trace!("{}", msg.content);
     }
 
     // Set a handler to be called on the `ready` event. This is called when a
@@ -122,9 +123,9 @@ impl EventHandler for Handler {
     //
     // In this case, just print what the current user's username is.
     async fn ready(&self, ctx: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
+        info!("{} is connected!", ready.user.name);
 
-        println!("operating as {:?}", ctx.cache.current_user().await);
+        info!("operating as {:?}", ctx.cache.current_user().await);
 
     }
 }
@@ -150,6 +151,8 @@ async fn helpme(
 async fn main() {
     dotenv::dotenv().ok();
     let token = env::var("DISCORD_TOKEN").expect("Must provide env var DISCORD_TOKEN");
+
+    env_logger::init();
 
     let framework = StandardFramework::new()
         .configure(|c| c
@@ -185,6 +188,6 @@ async fn main() {
     // Shards will automatically attempt to reconnect, and will perform
     // exponential backoff until it reconnects.
     if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
+        error!("Client error: {:?}", why);
     }
 }

@@ -5,6 +5,7 @@ use std::fmt;
 use std::sync::Arc;
 use std::collections::VecDeque;
 use std::collections::HashMap;
+use log::*;
 
 use songbird::{
     Event,
@@ -145,9 +146,9 @@ impl MusicState {
 
     /// Start playing a song
     async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
-        println!("play called");
+        debug!("play called");
         if self.songcall.is_none() {
-            println!("songcall is none somehow?");
+            error!("songcall is none somehow?");
             return Err(MusicError::UnknownError);
         }
 
@@ -160,7 +161,7 @@ impl MusicState {
         let source = match songbird::ytdl(&song.url).await {
             Ok(source) => source,
             Err(why) => {
-                println!("Err starting source: {:?}", why);
+                error!("Err starting source: {:?}", why);
                 return Err(MusicError::UnknownError);
             },
         };
@@ -175,7 +176,7 @@ impl MusicState {
 
     /// Play the next song in the queue (autoplay?)
     async fn next(&mut self) -> Result<MusicOk, MusicError> {
-        println!("next called: curr = {:?}", &self.current_track);
+        debug!("next called: curr = {:?}", &self.current_track);
         let song = self.get_next_song();
 
         if let Some(song) = song {
@@ -398,7 +399,7 @@ impl VoiceEventHander for TrackEndNotifier {
 
         }
         else if let Err(e) = ret {
-            println!("{:?}", e);
+            error!("{:?}", e);
         }
 
         if let Some(sticky) = &mstate.sticky {

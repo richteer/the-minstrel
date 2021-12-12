@@ -11,6 +11,7 @@ use serenity::{
 
 use crate::join_voice;
 use super::helpers::*;
+use log::*;
 
 #[command]
 #[only_in(guilds)]
@@ -40,8 +41,8 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
             handler.stop();
 
             match handler.leave().await {
-                Ok(()) => println!("left channel"),
-                Err(e) => println!("failed to disconnect: {}", e),
+                Ok(()) => info!("left channel"),
+                Err(e) => error!("failed to disconnect: {}", e),
             };
         }
     }

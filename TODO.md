@@ -21,7 +21,7 @@
  - [ ] command to dump songs from autoplay into actual queue (and stop autoplay maybe?)
  - [ ] general statistics logging, average song length, etc
  - [ ] consider having the queue balance with autoplay fairness, don't always take queue prio
- - [ ] implement some kind of logging system
+ - [x] implement some kind of logging system
  - [ ] record a cache of last played songs
  - [ ] reaction-based "starring" or "thumbs-up" of songs
  - [ ] look into weird playback speed problems

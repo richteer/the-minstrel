@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::collections::BinaryHeap;
 use std::cmp::Ordering;
 use rand::seq::SliceRandom;
+use log::*;
 
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use youtube_dl::YoutubeDlOutput;
@@ -123,7 +124,7 @@ impl AutoplayState {
         // TODO: lock all this storage behind a feature
         let db = match PickleDb::load_json("autoplay.json", PickleDbDumpPolicy::AutoDump) {
             Err(_) => {
-                println!("creating new autoplay db");
+                info!("creating new autoplay db");
                 PickleDb::new_json("autoplay.json", PickleDbDumpPolicy::AutoDump)
             },
             Ok(d) => d,
@@ -132,8 +133,6 @@ impl AutoplayState {
         let users: Vec<(Requester, String)> = db.iter().map(|e|
                 e.get_value::<(Requester, String)>().unwrap()
             ).collect();
-
-        println!("{:?}", users);
 
         let mut ret = AutoplayState {
             userlists: HashMap::new(),
@@ -144,7 +143,7 @@ impl AutoplayState {
 
         for (req, url) in users {
             // Panicking here is fine for now, if there's bad date in the json, let that be caught
-            println!("loading setlist for user {} from storage", &req.user.name);
+            info!("loading setlist for user {} from storage", &req.user.name);
             ret.register(req, &url).unwrap();
         }
 
@@ -177,7 +176,7 @@ impl AutoplayState {
                 let write = (requester.clone(), url.clone());
                 match lock.set(&requester.user.id.to_string(), &write) {
                     Ok(_) => (),
-                    Err(e) => println!("Error writing to autoplay storage: {:?}", e),
+                    Err(e) => error!("Error writing to autoplay storage: {:?}", e),
                     // Continue on failure, storage isn't important
                 }
             }
@@ -202,7 +201,7 @@ impl AutoplayState {
         };
 
         if data.entries.is_none() {
-            println!("user playlist is none");
+            error!("user playlist is none");
             return Err(AutoplayError::UnknownError);
         }
 

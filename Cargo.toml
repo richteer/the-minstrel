@@ -13,6 +13,8 @@ dotenv = "0.15"
 rand = "0.8.4"
 pickledb = "0.4.1" # Eventually replace with a real db maybe for scale
 serde = "1.0"
+env_logger = "0.9"
+log = "0.4"
 
 [dependencies.serenity]
 default-features = false
