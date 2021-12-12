@@ -10,7 +10,7 @@ use log::*;
 use songbird::{
     Event,
     EventContext,
-    EventHandler as VoiceEventHander,
+    EventHandler as VoiceEventHandler,
     TrackEvent,
     tracks::TrackHandle,
 };
@@ -146,7 +146,7 @@ impl MusicState {
 
     /// Start playing a song
     async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
-        debug!("play called");
+        debug!("play called on song = {:?}", song);
         if self.songcall.is_none() {
             error!("songcall is none somehow?");
             return Err(MusicError::UnknownError);
@@ -178,6 +178,7 @@ impl MusicState {
     async fn next(&mut self) -> Result<MusicOk, MusicError> {
         debug!("next called: curr = {:?}", &self.current_track);
         let song = self.get_next_song();
+        debug!("next song is {:?}", song);
 
         if let Some(song) = song {
             self.play(song).await
@@ -378,7 +379,7 @@ struct TrackEndNotifier {
 }
 
 #[async_trait]
-impl VoiceEventHander for TrackEndNotifier {
+impl VoiceEventHandler for TrackEndNotifier {
 
     // TODO: somehow make this a signaling thing so we don't have to await here
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
@@ -387,16 +388,17 @@ impl VoiceEventHander for TrackEndNotifier {
 
         mstate.current_track = None;
 
-        let s = mstate.status.clone();
-        mstate.status = MusicStateStatus::Stopped;
-        match s {
-            MusicStateStatus::Stopping => return None, // We're done here
+        match mstate.status {
+            MusicStateStatus::Stopping => {
+                debug!("stopping music play via event handler");
+                return None; // We're done here
+            }
             _ => {}
         };
 
         let ret = mstate.next().await;
         if let Ok(_) = ret {
-
+            debug!("TrackEnd handler mstate.next() = {:?}", ret);
         }
         else if let Err(e) = ret {
             error!("{:?}", e);
