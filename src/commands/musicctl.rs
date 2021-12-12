@@ -142,3 +142,20 @@ async fn display(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
+#[command]
+#[only_in(guilds)]
+#[min_args(0)]
+#[max_args(1)]
+// TODO: probably add a bunch of other args to manage the output, order and such
+async fn history(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let num = args.single::<usize>().unwrap_or(5);
+
+    get_mstate!(mstate, ctx);
+
+    check_msg(msg.channel_id.send_message(&ctx.http, |m|
+        m.set_embed(mstate.get_history_embed(num))
+    ).await);
+
+    Ok(())
+}

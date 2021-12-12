@@ -57,7 +57,7 @@ struct General;
 
 #[group]
 #[description = "Commands for controlling the music player"]
-#[commands(play, nowplaying, next, stop, start, display)]
+#[commands(play, nowplaying, next, stop, start, display, history)]
 struct MusicControlCmd;
 
 #[group]
