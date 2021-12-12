@@ -56,7 +56,7 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     let mstate = music::get(&ctx).await.unwrap();
     let mut mstate = mstate.lock().await;
 
-    let ret = mstate.enqueue(url).await;
+    let ret = mstate.enqueue(url);
 
     // TODO: maybe factor this out into a generic reply handler?
     match ret {

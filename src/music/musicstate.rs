@@ -251,7 +251,7 @@ impl MusicState {
     }
 
     /// Only enqueue a track to be played, do not start playing
-    pub async fn enqueue(&mut self, song: Song) -> Result<MusicOk, MusicError> {
+    pub fn enqueue(&mut self, song: Song) -> Result<MusicOk, MusicError> {
         if self.queue.len() > MAX_QUEUE_LEN {
             return Err(MusicError::QueueFull)
         }
@@ -263,7 +263,7 @@ impl MusicState {
 
     /// Enqueue a track, and start playing music if not already playing
     pub async fn enqueue_and_play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
-        self.queue.push_back(song);
+        self.enqueue(song)?;
 
         match self.start().await {
             Ok(m) => Ok(m),
