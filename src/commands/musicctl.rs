@@ -16,6 +16,7 @@ use super::check_msg;
 use super::music;
 use super::music::{
     Song,
+    MusicOk,
 };
 use super::music::Requester;
 
@@ -156,6 +157,29 @@ async fn history(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     check_msg(msg.channel_id.send_message(&ctx.http, |m|
         m.set_embed(mstate.get_history_embed(num))
     ).await);
+
+    Ok(())
+}
+
+
+#[command]
+#[only_in(guilds)]
+#[checks(in_same_voice)]
+async fn previous(ctx: &Context, msg: &Message) -> CommandResult {
+
+
+    get_mstate!(mut, mstate, ctx);
+
+    if let Some(song) = mstate.history.pop_front() {
+        check_msg(msg.channel_id.say(&ctx.http, match mstate.enqueue_and_play(song).await {
+            Ok(MusicOk::EnqueuedSong) => format!("Enqueued last played song."),
+            Ok(o) => format!("{}", o),
+            Err(e) => format!("{:?}", e),
+        }).await);
+    }
+    else {
+        check_msg(msg.channel_id.say(&ctx.http, "Nothing in history to re-enqueue.").await);
+    }
 
     Ok(())
 }
