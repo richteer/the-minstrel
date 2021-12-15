@@ -14,7 +14,14 @@ use youtube_dl::YoutubeDlOutput;
 
 use serenity::{
     model::user::User,
+    prelude::*,
+    model::id::GuildId,
+    model::voice::VoiceState,
 };
+
+// TODO: perhaps get_mstate_should live higher?
+use crate::music;
+use crate::get_mstate;
 
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -343,4 +350,87 @@ impl AutoplayState {
             .collect();
 
     }
+}
+
+
+pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>, old: Option<VoiceState>, new: VoiceState) {
+    let bot = ctx.cache.current_user_id().await;
+    let guild = ctx.cache.guild(guildid.unwrap()).await.unwrap(); // TODO: don't unwrap here, play nice
+    let bot_voice = guild.voice_states.get(&bot);
+
+    if bot_voice.is_none() {
+        debug!("bot is not in voice, ignoring voice state change");
+        return;
+    }
+
+    get_mstate!(mut, mstate, ctx);
+    if !mstate.autoplay.enabled {
+        debug!("autoplay is not enabled, ignoring voice state change");
+        return;
+    }
+
+    let bot_voice = bot_voice.unwrap();
+    let bot_chan = bot_voice.channel_id.unwrap();
+
+    if new.member.as_ref().unwrap().user.id == bot {
+        if let Some(chan) = new.channel_id {
+            mstate.autoplay.disable_all_users();
+
+            for (uid, vs) in guild.voice_states.iter() {
+                if *uid == bot || vs.channel_id.unwrap() != chan {
+                    continue;
+                }
+                // Use the cache lookup based on key, because voicestate.member may be None.
+                // Find a non-async way instead if possible
+                let user = ctx.cache.user(uid).await.unwrap();
+                match mstate.autoplay.enable_user(&user) {
+                    Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
+                    Err(e) => debug!("did not enroll user {}: {:?}", user.tag(), e),
+                };
+            }
+        }
+
+        return;
+    }
+
+    // Connect-to-voice check, enroll if in correct channel
+    if let Some(chan) = new.channel_id {
+        if chan == bot_chan {
+            let user = new.member.unwrap().user;
+            match mstate.autoplay.enable_user(&user) {
+                Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
+                Err(e) => debug!("did not enroll {}: {:?}", user.tag(), e)
+            }
+            return;
+        }
+        else {
+            debug!("received voice connect for another channel, trying disconnect checks");
+        }
+    }
+
+    // Disconnect from voice checks, unenroll if old voice state matches bot's channel
+    if old.is_none() {
+        debug!("join received for another channel, ignoring!");
+        return;
+    }
+
+    let old_vs = old.unwrap();
+    if old_vs.channel_id.is_none() {
+        warn!("not sure, apparently no old state channel, but also no new state channel?");
+        return;
+    }
+    let chan = old_vs.channel_id.unwrap();
+
+    if chan == bot_chan {
+        let user = new.member.unwrap().user;
+        match mstate.autoplay.disable_user(&user) {
+            Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
+            Err(e) => debug!("did not enroll {}: {:?}", user.tag(), e)
+        }
+    }
+    else {
+        debug!("received voice disconnect for another channel, ignorning");
+    }
+
+    return;
 }

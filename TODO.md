@@ -4,7 +4,8 @@
  - [x] autoplay
  - [x] playlist merging
  - [x] merged playlist balancing
- - [ ] playlist merge based on current active voice users
+ - [x] playlist merge based on current active voice users
+ - [ ] use a hashmap-backed priority queue for autoplay usertime, cache user scores to prevent cheating by re-entering
  - [x] ability to rebalance / reset playlist merge
  - [ ] balance randomized songs from playlist based on # of plays (avoid repeats)
  - [ ] help text (started)

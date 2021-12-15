@@ -26,6 +26,8 @@ use serenity::{
         channel::Message,
         gateway::Ready,
         id::UserId,
+        id::GuildId,
+        voice::VoiceState,
     },
     prelude::*,
 //    client::bridge::gateway::{GatewayIntents, ShardId, ShardManager},
@@ -127,6 +129,10 @@ impl EventHandler for Handler {
 
         info!("operating as {:?}", ctx.cache.current_user().await);
 
+    }
+
+    async fn voice_state_update(&self, ctx: Context, guildid: Option<GuildId>, old: Option<VoiceState>, new: VoiceState) {
+        music::autoplay::autoplay_voice_state_update(ctx, guildid, old, new).await;
     }
 }
 
