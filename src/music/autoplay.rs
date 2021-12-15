@@ -195,17 +195,9 @@ impl AutoplayState {
             .run();
 
         let data = match data {
-            Ok(YoutubeDlOutput::SingleVideo(_)) => {
-                //check_msg(msg.channel_id.say(&ctx.http, "Must provide link to a playlist, not a single video").await);
-                todo!();
-                //return Ok(()); // Not ok
-            }
-            Err(_e) => {
-                todo!();
-                //check_msg(msg.channel_id.say(&ctx.http, format!("Error fetching playlist: {:?}", e)).await);
-                //return Ok(()); // Not ok
-            }
             Ok(YoutubeDlOutput::Playlist(p)) => p,
+            Ok(YoutubeDlOutput::SingleVideo(_)) => return Err(AutoplayError::UrlNotPlaylist),
+            Err(e) => panic!("something broke: {:?}", e),
         };
 
         if data.entries.is_none() {
