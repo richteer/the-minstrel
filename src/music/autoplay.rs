@@ -46,7 +46,8 @@ pub enum AutoplayError {
     AlreadyEnrolled,
     UserNotEnrolled,
     UrlNotPlaylist,
-    UnknownError
+    UserNotRegistered,
+    UnknownError,
 }
 
 
@@ -258,7 +259,7 @@ impl AutoplayState {
     // TODO: implement an autoplay equiv to MusicOk/MusicError
     pub fn enable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
         if !self.userlists.contains_key(user) {
-            return Err(AutoplayError::UnknownError);
+            return Err(AutoplayError::UserNotRegistered);
         }
 
         if self.usertime.iter()
