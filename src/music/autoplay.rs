@@ -243,9 +243,13 @@ impl AutoplayState {
     }
 
     pub fn show_upcoming(&self, num: u64) -> String {
-        let mut ret = String::from("Upcoming Autoplay songs:\n");
+        let songs = self.prefetch(num);
+        if songs.is_none() {
+            return String::from("No users enrolled in Autoplay\n");
+        }
+        let songs = songs.unwrap();
 
-        let songs = self.prefetch(num).unwrap();
+        let mut ret = String::from("Upcoming Autoplay songs:\n");
 
         for (i,v) in songs.iter().enumerate() {
             ret += &format!("{}: {}\n", i+1, &v).to_owned();
