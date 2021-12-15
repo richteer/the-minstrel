@@ -297,6 +297,10 @@ impl AutoplayState {
         }
     }
 
+    pub fn disable_all_users(&mut self) {
+        self.usertime.clear();
+    }
+
     /// Reset all usertime scores to zero
     pub fn reset_usertime(&mut self) {
         self.usertime = self.usertime.clone()
