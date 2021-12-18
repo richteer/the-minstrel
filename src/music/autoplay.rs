@@ -4,7 +4,7 @@ use super::Requester;
 use std::fmt;
 use std::sync::{RwLock, Arc};
 use std::collections::HashMap;
-use std::collections::BinaryHeap;
+use priority_queue::PriorityQueue;
 use std::cmp::Ordering;
 use rand::seq::SliceRandom;
 use log::*;
@@ -121,7 +121,7 @@ pub struct AutoplayState {
     // TODO: consider just using UserId here for the index?
     // TODO: consider Arc'ing the userlist so AutoplayState can be cloned when prefetching songs
     userlists: HashMap<User, UserPlaylist>,
-    usertime: BinaryHeap<UserTime>,
+    usertime: PriorityQueue<User, i64>,
     pub enabled: bool,
     // TODO: make this a global db that all things can access. this is fine for now though.
     storage: Arc<RwLock<PickleDb>>,
@@ -144,7 +144,7 @@ impl AutoplayState {
 
         let mut ret = AutoplayState {
             userlists: HashMap::new(),
-            usertime: BinaryHeap::new(),
+            usertime: PriorityQueue::new(),
             enabled: false,
             storage: Arc::new(RwLock::new(db)),
         };
@@ -160,20 +160,21 @@ impl AutoplayState {
 
     /// Get the next song to play and increment the play state
     pub fn next(&mut self) -> Option<Song> {
-        let mut ut = match self.usertime.pop() {
+        let ut = match self.usertime.pop() {
             Some(ut) => ut,
             None => return None, // No users
         };
+        let (user, mut time) = ut;
 
-        let up = match self.userlists.get_mut(&ut.user) {
+        let up = match self.userlists.get_mut(&user) {
             Some(p) => p,
             None => panic!("usertime contains user not in userlist"),
         };
 
         let song = up.next();
 
-        ut.time += song.duration;
-        self.usertime.push(ut);
+        time += song.duration;
+        self.usertime.push(user, time);
 
         Some(song)
     }
@@ -215,7 +216,7 @@ impl AutoplayState {
 
         // TODO: probably definitely just use UserId here, this is a lot of clones
         self.userlists.insert(requester.user.clone(), tmpdata);
-        self.usertime.push(UserTime { user: requester.user.clone(), time: 0 });
+        self.usertime.push(requester.user.clone(), 0);
 
         Ok(AutoplayOk::RegisteredUser)
     }
@@ -265,34 +266,25 @@ impl AutoplayState {
             return Err(AutoplayError::UserNotRegistered);
         }
 
-        if self.usertime.iter()
-            .fold(false, |acc, u| acc || (u.user.id == user.id)) {
+        if self.usertime.get(user).is_some() {
             // user already enabled
             return Err(AutoplayError::AlreadyEnrolled);
         }
 
         let time = match self.usertime.peek() {
-            Some(tmp) => tmp.time - 1,
+            Some(tmp) => tmp.1 - 1,
             None => 0,
         };
 
-        self.usertime.push(UserTime { user: user.clone(), time: time });
+        self.usertime.push(user.clone(), time);
 
         Ok(AutoplayOk::EnrolledUser)
     }
 
     pub fn disable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
-        let len = self.usertime.len();
-        self.usertime = self.usertime.clone()
-            .into_iter()
-            .filter(|u| u.user.id != user.id)
-            .collect();
-
-        if len == self.usertime.len() {
-            Err(AutoplayError::UserNotEnrolled)
-        }
-        else {
-            Ok(AutoplayOk::RemovedUser)
+        match self.usertime.remove(user) {
+            Some(_) => Ok(AutoplayOk::RemovedUser),
+            None => Err(AutoplayError::UserNotEnrolled),
         }
     }
 
@@ -302,9 +294,10 @@ impl AutoplayState {
 
     /// Reset all usertime scores to zero
     pub fn reset_usertime(&mut self) {
+        // TODO: there might be a more efficient way to do this
         self.usertime = self.usertime.clone()
             .into_iter()
-            .map(|mut e| { e.time = 0; e })
+            .map(|e| (e.0, 0))
             .collect();
     }
 
@@ -328,19 +321,7 @@ impl AutoplayState {
     }
 
     pub fn add_time_to_user(&mut self, user: &User, delta: i64) {
-        self.usertime = self.usertime.clone()
-            .into_iter()
-            .map(|mut u| {
-                if u.user.id == user.id {
-                    u.time += delta;
-                    u
-                }
-                else {
-                    u
-                }
-            })
-            .collect();
-
+        self.usertime.change_priority_by(user, |v| *v += delta);
     }
 }
 
