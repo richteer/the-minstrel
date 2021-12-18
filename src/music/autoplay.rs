@@ -104,6 +104,7 @@ pub struct AutoplayState {
     // TODO: consider Arc'ing the userlist so AutoplayState can be cloned when prefetching songs
     userlists: HashMap<User, UserPlaylist>,
     usertime: PriorityQueue<User, Reverse<i64>>,
+    usertimecache: HashMap<User, i64>,
     pub enabled: bool,
     // TODO: make this a global db that all things can access. this is fine for now though.
     storage: Arc<RwLock<PickleDb>>,
@@ -127,6 +128,7 @@ impl AutoplayState {
         let mut ret = AutoplayState {
             userlists: HashMap::new(),
             usertime: PriorityQueue::new(),
+            usertimecache: HashMap::new(),
             enabled: false,
             storage: Arc::new(RwLock::new(db)),
         };
@@ -156,7 +158,8 @@ impl AutoplayState {
         let song = up.next();
 
         time += song.duration;
-        self.usertime.push(user, Reverse(time));
+        self.usertime.push(user.clone(), Reverse(time));
+        self.usertimecache.insert(user, time);
 
         Some(song)
     }
@@ -199,6 +202,7 @@ impl AutoplayState {
         // TODO: probably definitely just use UserId here, this is a lot of clones
         self.userlists.insert(requester.user.clone(), tmpdata);
         self.usertime.push(requester.user.clone(), Reverse(0));
+        self.usertimecache.insert(requester.user.clone(), 0);
 
         Ok(AutoplayOk::RegisteredUser)
     }
@@ -248,29 +252,54 @@ impl AutoplayState {
             return Err(AutoplayError::UserNotRegistered);
         }
 
+        let prevtime = if let Some(p) = self.usertimecache.get(user) {
+            p
+        } else {
+            // TODO: maybe just set a default value here?
+            error!("Somehow user was in userlist but not in usertimecache: {:?}", user);
+            return Err(AutoplayError::UnknownError);
+        };
+
         if self.usertime.get(user).is_some() {
             // user already enabled
             return Err(AutoplayError::AlreadyEnrolled);
         }
 
         let time = match self.usertime.peek() {
-            Some((_, Reverse(tmp))) => tmp - 1,
+            Some((_, Reverse(lowest))) => {
+                debug!("user re-enabling with a cached score of {}, lowest is {}", prevtime, lowest);
+                if prevtime >= lowest {
+                    *prevtime
+                }
+                else {
+                    lowest - 1
+                }
+            }
             None => 0,
         };
+        debug!("user re-enabled with a score of {}", time);
 
         self.usertime.push(user.clone(), Reverse(time));
+        self.usertimecache.insert(user.clone(), time);
 
         Ok(AutoplayOk::EnrolledUser)
     }
 
     pub fn disable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
         match self.usertime.remove(user) {
-            Some(_) => Ok(AutoplayOk::RemovedUser),
+            Some((user, Reverse(time))) => {
+                self.usertimecache.insert(user, time);
+                Ok(AutoplayOk::RemovedUser)
+            },
             None => Err(AutoplayError::UserNotEnrolled),
         }
     }
 
     pub fn disable_all_users(&mut self) {
+        self.usertime.iter()
+            .for_each(
+                |(user, Reverse(time))| { self.usertimecache.insert(user.clone(), time.clone()); }
+            );
         self.usertime.clear();
     }
 
@@ -281,6 +310,7 @@ impl AutoplayState {
             .into_iter()
             .map(|e| (e.0, Reverse(0)))
             .collect();
+        self.usertimecache.iter_mut().for_each(|(_, time)| *time = 0);
     }
 
     pub fn debug_get_usertime(&self) -> String {
@@ -304,6 +334,8 @@ impl AutoplayState {
 
     pub fn add_time_to_user(&mut self, user: &User, delta: i64) {
         self.usertime.change_priority_by(user, |Reverse(v)| *v += delta);
+        let us = self.usertimecache.entry(user.clone()).or_insert(0);
+        *us += delta;
     }
 }
 

@@ -6,7 +6,8 @@
  - [x] merged playlist balancing
  - [x] playlist merge based on current active voice users
  - [x] use a hashmap-backed priority queue for autoplay usertime
- - [ ] cache user scores to prevent cheating by re-entering
+ - [x] cache user scores to prevent cheating by re-entering
+ - [ ] consider re-entering user's "catch-up" score (maybe don't re-enter at lowest-1, consider average?)
  - [ ] don't autoplay from the same person twice in a row
  - [x] ability to rebalance / reset playlist merge
  - [ ] balance randomized songs from playlist based on # of plays (avoid repeats)
