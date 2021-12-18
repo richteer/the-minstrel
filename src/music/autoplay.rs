@@ -5,7 +5,7 @@ use std::fmt;
 use std::sync::{RwLock, Arc};
 use std::collections::HashMap;
 use priority_queue::PriorityQueue;
-use std::cmp::Ordering;
+use std::cmp::Reverse;
 use rand::seq::SliceRandom;
 use log::*;
 
@@ -58,24 +58,6 @@ pub enum AutoplayError {
 }
 
 
-#[derive(Clone, Eq, PartialEq, Debug)]
-struct UserTime {
-    user: User,
-    time: i64,
-}
-
-impl Ord for UserTime {
-    fn cmp(&self, other: &Self) -> Ordering {
-        other.time.cmp(&self.time)
-    }
-}
-
-impl PartialOrd for UserTime {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 #[derive(Clone, Debug)]
 struct UserPlaylist {
     index: usize, // For non-destructive randomization, keeping consistent
@@ -121,7 +103,7 @@ pub struct AutoplayState {
     // TODO: consider just using UserId here for the index?
     // TODO: consider Arc'ing the userlist so AutoplayState can be cloned when prefetching songs
     userlists: HashMap<User, UserPlaylist>,
-    usertime: PriorityQueue<User, i64>,
+    usertime: PriorityQueue<User, Reverse<i64>>,
     pub enabled: bool,
     // TODO: make this a global db that all things can access. this is fine for now though.
     storage: Arc<RwLock<PickleDb>>,
@@ -164,7 +146,7 @@ impl AutoplayState {
             Some(ut) => ut,
             None => return None, // No users
         };
-        let (user, mut time) = ut;
+        let (user, Reverse(mut time)) = ut;
 
         let up = match self.userlists.get_mut(&user) {
             Some(p) => p,
@@ -174,7 +156,7 @@ impl AutoplayState {
         let song = up.next();
 
         time += song.duration;
-        self.usertime.push(user, time);
+        self.usertime.push(user, Reverse(time));
 
         Some(song)
     }
@@ -216,7 +198,7 @@ impl AutoplayState {
 
         // TODO: probably definitely just use UserId here, this is a lot of clones
         self.userlists.insert(requester.user.clone(), tmpdata);
-        self.usertime.push(requester.user.clone(), 0);
+        self.usertime.push(requester.user.clone(), Reverse(0));
 
         Ok(AutoplayOk::RegisteredUser)
     }
@@ -272,11 +254,11 @@ impl AutoplayState {
         }
 
         let time = match self.usertime.peek() {
-            Some(tmp) => tmp.1 - 1,
+            Some((_, Reverse(tmp))) => tmp - 1,
             None => 0,
         };
 
-        self.usertime.push(user.clone(), time);
+        self.usertime.push(user.clone(), Reverse(time));
 
         Ok(AutoplayOk::EnrolledUser)
     }
@@ -297,7 +279,7 @@ impl AutoplayState {
         // TODO: there might be a more efficient way to do this
         self.usertime = self.usertime.clone()
             .into_iter()
-            .map(|e| (e.0, 0))
+            .map(|e| (e.0, Reverse(0)))
             .collect();
     }
 
@@ -321,7 +303,7 @@ impl AutoplayState {
     }
 
     pub fn add_time_to_user(&mut self, user: &User, delta: i64) {
-        self.usertime.change_priority_by(user, |v| *v += delta);
+        self.usertime.change_priority_by(user, |Reverse(v)| *v += delta);
     }
 }
 
