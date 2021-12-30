@@ -378,10 +378,13 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
     let bot_voice = bot_voice.unwrap();
     let bot_chan = bot_voice.channel_id.unwrap();
 
+    // Bot has joined a channel
     if new.member.as_ref().unwrap().user.id == bot {
         if let Some(chan) = new.channel_id {
+            // Clear out current autoplay users
             mstate.autoplay.disable_all_users();
 
+            // ...and enable only users in this new channel
             for (uid, vs) in guild.voice_states.iter() {
                 if *uid == bot || vs.channel_id.unwrap() != chan {
                     continue;
