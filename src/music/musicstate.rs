@@ -388,10 +388,16 @@ impl MusicState {
                 // TODO: Config the thumbnail resolution probably
         };
 
+        let mins = song.duration / 60;
+        let secs = song.duration % 60;
+
         ret.thumbnail(thumb)
-            .title(md.title)
+            .title(format!("{} [{}:{:02}]", md.title, mins, secs))
             .url(song.url)
-            .description(md.uploader.unwrap_or(String::from("Unknown")))
+            .description(format!("Uploaded by: {}",
+                md.uploader.unwrap_or(String::from("Unknown")),
+                )
+            )
             .footer(|f| { f
                 .icon_url(song.requested_by.user.face())
                 .text(format!("Requested by: {}", song.requested_by.name))
