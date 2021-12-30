@@ -208,11 +208,6 @@ impl AutoplayState {
     }
 
     fn prefetch(&self, num: u64) -> Option<Vec<Song>> {
-        // TODO: Config this, also probably return an error here
-        if num > 10 {
-            return None;
-        }
-
         let mut ap = self.clone();
         let mut ret = Vec::new();
 
@@ -229,6 +224,13 @@ impl AutoplayState {
     }
 
     pub fn show_upcoming(&self, num: u64) -> String {
+        // TODO: Config this. Perhaps notice that the upcoming list was truncated
+        let num = if num > 10 {
+            10
+        } else {
+            num
+        };
+
         let songs = self.prefetch(num);
         if songs.is_none() {
             return String::from("No users enrolled in Autoplay\n");
