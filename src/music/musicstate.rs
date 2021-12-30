@@ -95,6 +95,31 @@ pub struct MusicState {
     pub sticky: Option<Message>,
 }
 
+impl fmt::Debug for MusicState {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "MusicState {{ \
+            songcall: {:?}, \
+            current_track: {}, \
+            status: {:?}, \
+            queue: <{} songs>, \
+            history: <{} songs>, \
+            autoplay: ..., \
+            sticky: {}, \
+        }}",
+            &self.songcall,
+            match &self.current_track {
+                Some((th, _)) => format!("{:?}", th),
+                None => format!("None"),
+            },
+            &self.status,
+            &self.queue.len(),
+            &self.history.len(),
+            // Autoplay
+            if self.sticky.is_some() { "Enabled" } else { "Disabled" },
+        )
+    }
+}
+
 // TODO: Make this a config setting probably
 const MAX_QUEUE_LEN: usize = 10;
 

@@ -68,3 +68,17 @@ async fn modutime(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     Ok(())
 }
+
+#[command]
+#[only_in(guilds)]
+async fn musicstate(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mstate, ctx);
+
+    msg.channel_id.send_message(&ctx.http, |m| {
+        m.embed(|e| {
+            e.description(format!("```{:?}```", mstate))
+        })
+    }).await.unwrap();
+
+    Ok(())
+}

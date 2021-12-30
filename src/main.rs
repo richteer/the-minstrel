@@ -76,7 +76,7 @@ struct AutoplayCmd;
 #[group]
 #[description = "Commands for debugging purposes"]
 #[prefix("debug")]
-#[commands(usertime, dropapuser, modutime)]
+#[commands(usertime, dropapuser, modutime, musicstate)]
 // TODO: require owner
 struct DebugCmd;
 
