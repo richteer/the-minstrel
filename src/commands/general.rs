@@ -9,9 +9,10 @@ use serenity::{
     },
 };
 
+use crate::get_mstate;
 use crate::join_voice;
 use super::helpers::*;
-use log::*;
+use super::music;
 
 #[command]
 #[only_in(guilds)]
@@ -30,22 +31,10 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
-async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
-    let guild_id = guild.id;
+async fn leave(ctx: &Context, _msg: &Message) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
 
-    if let Some(manager) = songbird::get(ctx).await {
-        if let Some(handler) = manager.get(guild_id) {
-            let mut handler = handler.lock().await;
-
-            handler.stop();
-
-            match handler.leave().await {
-                Ok(()) => info!("left channel"),
-                Err(e) => error!("failed to disconnect: {}", e),
-            };
-        }
-    }
+    mstate.leave().await;
 
     Ok(())
 }

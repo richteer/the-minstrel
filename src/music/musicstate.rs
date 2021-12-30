@@ -400,6 +400,31 @@ impl MusicState {
         ret
     }
 
+    pub async fn leave(&mut self) {
+        if let Some(call) = &mut self.songcall.take() {
+            let mut call = call.lock().await;
+
+            match call.leave().await {
+                Ok(()) => info!("left channel"),
+                Err(e) => error!("failed to disconnect: {}", e),
+            };
+
+            if let Some((thandle, _)) = &self.current_track {
+                self.status = MusicStateStatus::Stopping;
+                match thandle.stop() {
+                    Ok(()) => debug!("song stopped"),
+                    Err(e) => warn!("song failed to stop: {:?}", e),
+                };
+                // TrackEnd handler will set current_track to None
+            }
+
+            self.queue.clear();
+            self.autoplay.enabled = false;
+            self.autoplay.disable_all_users();
+            self.sticky = None;
+            call.remove_all_global_events();
+        }
+    }
 }
 
 
@@ -414,6 +439,7 @@ impl VoiceEventHandler for TrackEndNotifier {
 
     // TODO: somehow make this a signaling thing so we don't have to await here
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
+        debug!("TrackEndNotifier fired");
         let mstate = get(&self.ctx).await.unwrap();
         let mut mstate = mstate.lock().await;
 
