@@ -248,7 +248,6 @@ impl AutoplayState {
 
     /// Enable a user that already has a registered setlist in the autoplay system
     /// Sets the user's playtime to the current minimum value
-    // TODO: implement an autoplay equiv to MusicOk/MusicError
     pub fn enable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
         if !self.userlists.contains_key(user) {
             return Err(AutoplayError::UserNotRegistered);
@@ -297,11 +296,9 @@ impl AutoplayState {
         }
     }
 
+    /// Remove all users from the PriorityQueue, and set all cached scores to 0.
     pub fn disable_all_users(&mut self) {
-        self.usertime.iter()
-            .for_each(
-                |(user, Reverse(time))| { self.usertimecache.insert(user.clone(), time.clone()); }
-            );
+        self.usertimecache.iter_mut().for_each(|(_, time)| *time = 0);
         self.usertime.clear();
     }
 
