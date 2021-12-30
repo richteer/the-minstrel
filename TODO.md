@@ -40,7 +40,9 @@
 
 
 tasks needed for 24/7 operation:
- - [ ] refetch playlist info periodically -> may depend on randomization changes, as it might squash current random
+ - [x] add ability to refetch playlist without needing url
+   - [ ] clean up playlist fetching, perhaps break this into multiple helpers, and don't depend on the .register() function
+   - [ ] refetch playlist info periodically -> may depend on randomization changes, as it might squash current random
  - [x] clean up leave/stop etc behavior
    - [x] clear all autoplay scores when exiting voice
    - [x] disable auto-sticky

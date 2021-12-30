@@ -53,12 +53,28 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 #[only_in(guilds)]
+#[num_args(1)]
 async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
     let requester = Requester::from_msg(&ctx, &msg).await;
 
-    get_mstate!(mut, mstate, ctx);
-    mstate.autoplay.register(requester, &url).ok();
+    {
+        get_mstate!(mut, mstate, ctx);
+
+        match url.as_str() {
+            "refetch"|"refresh"|"update" => {
+                match mstate.autoplay.update_userplaylist(requester) {
+                    Ok(m)  => check_msg(msg.channel_id.say(&ctx.http, m).await),
+                    Err(e) => check_msg(msg.channel_id.say(&ctx.http, format!("{:?}", e)).await),
+                };
+
+                return Ok(());
+            },
+            _ => (),
+        };
+
+        mstate.autoplay.register(requester, &url).ok();
+    }
 
     check_msg(msg.channel_id.say(&ctx.http, "Setlist Registered!").await);
 

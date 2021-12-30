@@ -28,6 +28,7 @@ use crate::get_mstate;
 #[derive(Debug)]
 pub enum AutoplayOk {
     RegisteredUser,
+    UpdatedPlaylist,
     EnrolledUser,
     RemovedUser,
 }
@@ -37,6 +38,7 @@ impl fmt::Display for AutoplayOk {
         #[allow(unreachable_patterns)]
         let ret = match self {
             AutoplayOk::RegisteredUser => "Registered user and playlist for autoplay",
+            AutoplayOk::UpdatedPlaylist => "Refreshed playlist, upcoming songs have been shuffled",
             AutoplayOk::EnrolledUser => "Enrolled user for current autoplay",
             AutoplayOk::RemovedUser => "Removed user from current autoplay",
             _ => "Unknown response, fill me in!",
@@ -62,13 +64,15 @@ pub enum AutoplayError {
 struct UserPlaylist {
     index: usize, // For non-destructive randomization, keeping consistent
     list: Vec<Song>,
+    url: String, // For refetching purposes
 }
 
 impl UserPlaylist {
-    pub fn new(list: Vec<Song>) -> UserPlaylist {
+    pub fn new(list: Vec<Song>, url: String) -> UserPlaylist {
         UserPlaylist {
             index: 0,
-            list: list
+            list: list,
+            url: url,
         }
     }
 
@@ -196,7 +200,7 @@ impl AutoplayState {
                         .map(|e| Song::from_video(e.clone(), &requester))
                         .collect();
 
-        let mut tmpdata = UserPlaylist::new(tmpdata);
+        let mut tmpdata = UserPlaylist::new(tmpdata, url.clone());
         tmpdata.shuffle();
 
         // TODO: probably definitely just use UserId here, this is a lot of clones
@@ -335,6 +339,22 @@ impl AutoplayState {
         self.usertime.change_priority_by(user, |Reverse(v)| *v += delta);
         let us = self.usertimecache.entry(user.clone()).or_insert(0);
         *us += delta;
+    }
+
+    pub fn update_userplaylist(&mut self, requester: Requester) -> Result<AutoplayOk, AutoplayError> {
+
+        let url = if let Some(ul) = &self.userlists.get(&requester.user) {
+            ul.url.clone()
+        }
+        else {
+            return Err(AutoplayError::UserNotRegistered);
+        };
+
+        match self.register(requester, &url) {
+            Ok(AutoplayOk::RegisteredUser) => Ok(AutoplayOk::UpdatedPlaylist),
+            Ok(o) => panic!("unknown ok response from register trying to update: {:?}", o),
+            Err(e) => Err(e)
+        }
     }
 }
 
