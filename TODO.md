@@ -22,7 +22,7 @@
  - [ ] add command to modify config at runtime
  - [ ] implement some kind of permissions control
  - [ ] time remaining in queue, how much time has played, etc
- - [ ] command to dump songs from autoplay into actual queue (and stop autoplay maybe?)
+ - [x] command to dump songs from autoplay into actual queue (and stop autoplay maybe?)
  - [ ] general statistics logging, average song length, etc
  - [ ] consider having the queue balance with autoplay fairness, don't always take queue prio
  - [x] implement some kind of logging system
