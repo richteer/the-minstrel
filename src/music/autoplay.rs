@@ -407,6 +407,8 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
     }
 
     // Disconnect from voice checks, unenroll if old voice state matches bot's channel
+
+    // new has already been checked, so this is a join for another channel likely?
     if old.is_none() {
         debug!("join received for another channel, ignoring!");
         return;
@@ -422,8 +424,8 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
     if chan == bot_chan {
         let user = new.member.unwrap().user;
         match mstate.autoplay.disable_user(&user) {
-            Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
-            Err(e) => debug!("did not enroll {}: {:?}", user.tag(), e)
+            Ok(o) => debug!("unenrolling user {}: {:?}", user.tag(), o),
+            Err(e) => debug!("did not unenroll {}: {:?}", user.tag(), e)
         }
     }
     else {
