@@ -86,8 +86,7 @@ async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
     match error {
         DispatchError::CheckFailed(s, reason) =>
             msg.channel_id.say(&ctx.http, format!("Command failed: {:?} {:?}", s, reason)).await.unwrap(),
-
-            _ => msg.channel_id.say(&ctx.http, "Unknown error").await.unwrap(),
+        err => msg.channel_id.say(&ctx.http, format!("Error executing command: {:?}", err)).await.unwrap(),
     };
 }
 
