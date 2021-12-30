@@ -36,6 +36,14 @@
  - [ ] investigate what happens on a playback error mid queue/autoplay (privated vid between add and play)
  - [ ] write a dang README
 
+
+tasks needed for 24/7 operation:
+ - [ ] refetch playlist info periodically -> may depend on randomization changes, as it might squash current random
+ - [ ] clean up leave/stop etc behavior
+   - [ ] clear all autoplay scores when exiting voice
+   - [ ] disable auto-sticky
+ - [ ] clean up logging, make logging songs nicer. maybe impl Debug for Song
+
 commands:
  - `!skip` - end the current playing song
  - `!play` - append a song to the queue
