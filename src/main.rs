@@ -132,7 +132,63 @@ impl EventHandler for Handler {
     }
 
     async fn voice_state_update(&self, ctx: Context, guildid: Option<GuildId>, old: Option<VoiceState>, new: VoiceState) {
+        // TODO: maybe factor out common useful values like, botid, guild, etc
+        last_one_in_checker(&ctx, &guildid, &old, &new).await;
         music::autoplay::autoplay_voice_state_update(ctx, guildid, old, new).await;
+    }
+}
+
+// TODO: perhaps move this elsewhere
+async fn last_one_in_checker(ctx: &Context, guildid: &Option<GuildId>, old: &Option<VoiceState>, new: &VoiceState) {
+    let bot = ctx.cache.current_user_id().await;
+    let guild = ctx.cache.guild(guildid.unwrap()).await.unwrap(); // TODO: don't unwrap here, play nice
+    let bot_voice = guild.voice_states.get(&bot);
+
+    if bot_voice.is_none() {
+        // Don't bother if bot isn't in voice
+        return;
+    }
+    let bot_voice = bot_voice.unwrap();
+    let bot_chan = bot_voice.channel_id.unwrap();
+
+    if let Some(n) = new.channel_id {
+        if n == bot_chan {
+            debug!("connect detected to bot's channel");
+            // TODO: disable disconnect timer if enabled
+        }
+
+        return;
+    }
+
+    // old == None implies join, already handled the join case we care about
+    if old.is_none() {
+        return;
+    }
+    let old = old.as_ref().unwrap();
+
+    // Bail if for some reason there's no channel_id in the old
+    if old.channel_id.is_none() {
+        return;
+    }
+    let old_chan = old.channel_id.unwrap();
+
+    // Someone left the bot's channel...
+    if old_chan == bot_chan {
+        debug!("disconnect detected from bot's channel");
+
+        // Count how many users are still connected, ignoring the bot itself
+        let cnt = guild.voice_states.iter()
+            .filter(|(_, vs)| vs.channel_id.unwrap() == bot_chan)
+            .filter(|(u, _)| **u != bot)
+            .count();
+
+        // No users remaining -> start the timer
+        if cnt == 0 {
+            info!("channel appears empty, disconnecting...");
+
+            get_mstate!(mut, mstate, ctx);
+            mstate.leave().await;
+        }
     }
 }
 

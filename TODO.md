@@ -34,16 +34,18 @@
  - [ ] cache playlists and metadata, fetch them in a background thread on launch
  - [ ] show removed/privated songs from cache?
  - [ ] investigate what happens on a playback error mid queue/autoplay (privated vid between add and play)
+ - [ ] recreate a songcall on reconnect if bot has a voicestate?
+ - [ ] implement a timeout on the last person to leave a channel, rather than leaving immediately
  - [ ] write a dang README
 
 
 tasks needed for 24/7 operation:
  - [ ] refetch playlist info periodically -> may depend on randomization changes, as it might squash current random
- - [ ] clean up leave/stop etc behavior
+ - [x] clean up leave/stop etc behavior
    - [x] clear all autoplay scores when exiting voice
    - [x] disable auto-sticky
-   - [ ] auto-leave if voice channel is empty
- - [ ] clean up logging, make logging songs nicer. maybe impl Debug for Song
+   - [x] auto-leave if voice channel is empty
+ - [x] clean up logging, make logging songs nicer. maybe impl Debug for Song
 
 commands:
  - `!skip` - end the current playing song
