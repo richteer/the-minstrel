@@ -36,10 +36,19 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
     check_msg(msg.channel_id.say(&ctx.http, "Enabling autoplay.").await);
 
     drop(mstate); // Close mstate here, since we're going to need to relock in join_voice()
-    join_voice!(ctx, msg);
-    get_mstate!(mut, mstate, ctx);
+    let joined = join_voice!(ctx, msg);
 
-    let ret = mstate.start().await;
+    // TODO: This is really stupidly hacky. There should be a unified approach to
+    //  enabling all users when autoplay is toggled on
+    if !joined {
+        check_msg(msg.channel_id.say(&ctx.http, "starting autoplay while the bot is joined to a channel is currently buggy. use `!leave` to disconnect the bot and then try `!autoplay toggle`").await);
+        return Ok(());
+    }
+
+    let ret = {
+        get_mstate!(mut, mstate, ctx);
+        mstate.start().await
+    };
 
     match ret {
         Err(MusicError::AlreadyPlaying) => (), // Suppress AlreadyPlaying, doesn't matter here

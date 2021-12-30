@@ -41,7 +41,7 @@ pub fn check_msg(result: SerenityResult<Message>) {
 /// Join voice chat of the command caller
 /// Call this function *BEFORE* get_mstate!, as this will need to access mstate first
 /// TODO: this is still pretty messy, consider cleaning up
-pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<(), String> {
+pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
     let guild = msg.guild(&ctx.cache).await.unwrap();
     let guild_id = guild.id;
     let bot_id = ctx.cache.current_user_id().await;
@@ -68,7 +68,7 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<(), String> {
     if let Some(bot_channel) = bot_channel_id {
         if bot_channel == connect_to {
             if mstate.is_ready() {
-                return Ok(()); // We're done here, otherwise fall through and init
+                return Ok(false); // We're done here, otherwise fall through and init
             }
         }
         else {
@@ -78,20 +78,22 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<(), String> {
 
     mstate.init(&ctx, guild_id, connect_to).await;
 
-    Ok(())
+    Ok(true)
 }
 
 #[macro_export]
+/// Joins the channel if not already, otherwise dumps a message to the channel for why it didn't
+/// Returns true if a channel was joined, false if was already in the channel
 macro_rules! join_voice {
     ($ctx:ident, $msg:ident) => {{
         let ret = _join_voice($ctx, $msg).await;
         match ret {
-            Ok(_) => (),
+            Ok(b) => b,
             Err(e) => {
                 check_msg($msg.channel_id.say(&$ctx.http, format!("{}", e)).await);
                 return Ok(());
             },
-        };
+        }
     }};
 }
 
