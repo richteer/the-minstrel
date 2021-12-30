@@ -369,9 +369,18 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
                 if *uid == bot || vs.channel_id.unwrap() != chan {
                     continue;
                 }
+
+                let user = if let &Some(mem) = &vs.member.as_ref() {
+                    debug!("vs.member not None, using from there");
+                    mem.user.clone()
+                } else {
                 // Use the cache lookup based on key, because voicestate.member may be None.
                 // Find a non-async way instead if possible
-                let user = ctx.cache.user(uid).await.unwrap();
+                // This may also fail and we'll be sad here
+                    debug!("attempting to get user from cache");
+                    ctx.cache.user(uid).await.unwrap()
+                };
+
                 match mstate.autoplay.enable_user(&user) {
                     Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
                     Err(e) => debug!("did not enroll user {}: {:?}", user.tag(), e),
