@@ -148,7 +148,7 @@ impl MusicState {
 
     /// Start playing a song
     async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
-        debug!("play called on song = {:?}", song);
+        debug!("play called on song = {}", song);
         if self.songcall.is_none() {
             error!("songcall is none somehow?");
             return Err(MusicError::UnknownError);
@@ -178,14 +178,14 @@ impl MusicState {
 
     /// Play the next song in the queue (autoplay?)
     async fn next(&mut self) -> Result<MusicOk, MusicError> {
-        debug!("next called: curr = {:?}", &self.current_track);
         let song = self.get_next_song();
-        debug!("next song is {:?}", song);
 
         if let Some(song) = song {
+            debug!("next song is {}", song);
             self.play(song).await
         }
         else {
+            debug!("no next song, ending");
             Ok(MusicOk::EmptyQueue)
         }
     }
