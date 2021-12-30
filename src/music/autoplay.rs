@@ -394,11 +394,21 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
                     debug!("vs.member not None, using from there");
                     mem.user.clone()
                 } else {
-                // Use the cache lookup based on key, because voicestate.member may be None.
-                // Find a non-async way instead if possible
-                // This may also fail and we'll be sad here
-                    debug!("attempting to get user from cache");
-                    ctx.cache.user(uid).await.unwrap()
+                    // Use the cache lookup based on key, because voicestate.member may be None.
+                    if let Some(user) = ctx.cache.user(uid).await {
+                        debug!("obtained user from cache");
+                        user
+                    }
+                    // If cache fails for some reason, rely on making a direct http request
+                    else if let Ok(user) = ctx.http.get_user(*uid.as_u64()).await {
+                        debug!("obtained user from http call");
+                        user
+                    }
+                    // This may also fail and we'll be sad here
+                    else {
+                        panic!("failed to obtain user {:?} from both cache and http", uid);
+                    }
+
                 };
 
                 match mstate.autoplay.enable_user(&user) {
