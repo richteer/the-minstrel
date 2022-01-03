@@ -235,3 +235,25 @@ async fn dump(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     Ok(())
 }
+
+
+#[command]
+#[only_in(guilds)]
+#[aliases(adv, skip, next)]
+#[checks(in_same_voice)]
+#[min_args(0)]
+#[max_args(1)]
+async fn advance(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    let num = args.single::<u64>().unwrap_or(1);
+
+    get_mstate!(mut, mstate, ctx);
+
+    let out = match mstate.autoplay.advance_userplaylist(&msg.author, num) {
+        Ok(_)  => format!("Advanced your playlist ahead {} song(s)", num),
+        Err(e) => format!("Could not advance playlist: {:?}", e),
+    };
+
+    check_msg(msg.channel_id.say(&ctx.http, out).await);
+
+    Ok(())
+}

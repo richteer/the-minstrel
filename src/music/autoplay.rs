@@ -356,6 +356,19 @@ impl AutoplayState {
             Err(e) => Err(e)
         }
     }
+
+    pub fn advance_userplaylist(&mut self, user: &User, num: u64) -> Result<AutoplayOk, AutoplayError> {
+        if let Some(ul) = self.userlists.get_mut(user) {
+            for _ in 0..num {
+                ul.next();
+            }
+
+            // TODO: probably define a generic OK?
+            Ok(AutoplayOk::UpdatedPlaylist)
+        } else {
+            Err(AutoplayError::UserNotRegistered)
+        }
+    }
 }
 
 
