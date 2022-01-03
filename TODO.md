@@ -37,6 +37,8 @@
  - [ ] recreate a songcall on reconnect if bot has a voicestate?
  - [ ] implement a timeout on the last person to leave a channel, rather than leaving immediately
  - [ ] unify autoplay enable/disable behavior across multiple methods of starting. autoplay has no enabled users if started while already in a voice channel
+ - [ ] investigate what happens when prefetch forces a playlist reshuffle (hits end of list)
+ - [ ] fix voice event to ignore muting and unmuting, because apparently that will count as a re-enter
  - [ ] write a dang README
 
 
