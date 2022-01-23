@@ -1,5 +1,6 @@
 use std::{
     env,
+    path::Path,
     collections::HashSet,
 };
 use dotenv;
@@ -210,6 +211,17 @@ async fn helpme(
 
 #[tokio::main]
 async fn main() {
+    if let Ok(path) = env::var("PATH") {
+        if path.split(":").into_iter()
+            .find(|p| Path::new(p).join("yt-dlp").exists())
+            .is_none() {
+            panic!("yt-dlp could not be found in $PATH");
+        }
+    }
+    else {
+        panic!("Could not read $PATH variable!");
+    }
+
     dotenv::dotenv().ok();
     let token = env::var("DISCORD_TOKEN").expect("Must provide env var DISCORD_TOKEN");
 
