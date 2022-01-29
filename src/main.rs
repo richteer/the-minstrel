@@ -133,6 +133,27 @@ impl EventHandler for Handler {
 
     async fn voice_state_update(&self, ctx: Context, guildid: Option<GuildId>, old: Option<VoiceState>, new: VoiceState) {
         // TODO: maybe factor out common useful values like, botid, guild, etc
+
+        // Common cases to ignore this voice state change
+        if let Some(o) = &old {
+            if o.self_mute ^ new.self_mute {
+                debug!("ignoring self-mute voice state change");
+                return;
+            }
+            if o.self_deaf ^ new.self_deaf {
+                debug!("ignoring self-deafen voice state change");
+                return;
+            }
+            if o.mute ^ new.mute {
+                debug!("ignoring mute voice state change");
+                return;
+            }
+            if o.deaf ^ new.deaf {
+                debug!("ignoring deafen voice state change");
+                return;
+            }
+        }
+
         last_one_in_checker(&ctx, &guildid, &old, &new).await;
         music::autoplay::autoplay_voice_state_update(ctx, guildid, old, new).await;
     }
