@@ -4,13 +4,10 @@ use super::song::Song;
 use std::fmt;
 use std::sync::Arc;
 use std::collections::VecDeque;
-use std::collections::HashMap;
 use log::*;
 
 use songbird::{
     Event,
-    EventContext,
-    EventHandler as VoiceEventHandler,
     TrackEvent,
     tracks::TrackHandle,
 };
@@ -18,7 +15,6 @@ use songbird::{
 use serenity::{
     prelude::*,
     model::channel::Message,
-    builder::CreateEmbed,
 };
 
 #[allow(dead_code)]
@@ -77,18 +73,15 @@ pub enum MusicStateStatus {
     Uninitialized,
 }
 
-use serenity::{
-    async_trait,
-    client::{ClientBuilder},
-};
+
 
 // Higher level manager for playing music. In theory, should abstract out
 //   a lot of the lower-level magic, so the commands can just operate on
 //   this instead and make life easier.
 pub struct MusicState {
     songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
-    current_track: Option<(TrackHandle, Song)>,
-    status: MusicStateStatus,
+    pub current_track: Option<(TrackHandle, Song)>,
+    pub status: MusicStateStatus,
     queue: VecDeque<Song>,
     pub history: VecDeque<Song>,
     pub autoplay: AutoplayState,
@@ -122,6 +115,9 @@ impl fmt::Debug for MusicState {
 
 // TODO: Make this a config setting probably
 const MAX_QUEUE_LEN: usize = 10;
+
+// TODO: this is just glue to make this work for now, will be removed with the rest of the discord-isms in here
+use crate::discord::player::discord_mstate::TrackEndNotifier;
 
 impl MusicState {
 
@@ -202,7 +198,7 @@ impl MusicState {
     }
 
     /// Play the next song in the queue (autoplay?)
-    async fn next(&mut self) -> Result<MusicOk, MusicError> {
+    pub async fn next(&mut self) -> Result<MusicOk, MusicError> {
         let song = self.get_next_song();
 
         if let Some(song) = song {
@@ -308,40 +304,7 @@ impl MusicState {
         ret
     }
 
-    pub fn show_queuestate(&self) -> String {
-        let mut q = None;
-        let mut ap = None;
 
-        if !self.is_queue_empty() {
-            q = Some(self.show_queue());
-        }
-
-        if self.autoplay.enabled {
-            ap = Some(self.autoplay.show_upcoming(10));
-        }
-
-        let mut ret = String::new();
-
-        if let Some(his) = self.show_history(5) {
-            ret += &format!("{}\n", his);
-        }
-
-        if let Some(curr) = &self.current_song() {
-            ret += &format!("Now Playing:\n:musical_note: {}\n\n", curr);
-        }
-        else {
-            ret += &format!("_Nothing is currently playing._\n\n");
-        }
-
-        let tmp = match (q,ap) {
-            (None,    None    ) => format!("Queue is empty and Autoplay is disabled"),
-            (Some(q), None    ) => format!("{}\nAutoplay is disabled", q),
-            (None,    Some(ap)) => format!("{}", ap),
-            (Some(q), Some(ap)) => format!("{}\n{}", q, ap),
-        };
-
-        ret + &tmp
-    }
 
     pub fn current_song(&self) -> Option<Song> {
         match &self.current_track {
@@ -360,76 +323,6 @@ impl MusicState {
         self.queue.is_empty()
     }
 
-    pub fn get_queuestate_embed(&self) -> CreateEmbed {
-        let mut ret = CreateEmbed { 0: HashMap::new() };
-
-        ret.description(self.show_queuestate());
-
-        return ret;
-    }
-
-    pub fn get_nowplay_embed(&self) -> CreateEmbed {
-        let mut ret = CreateEmbed { 0: HashMap::new() };
-
-        let song = match self.current_song() {
-            Some(s) => s,
-            None => {
-                ret.description("Nothing currently playing");
-                return ret;
-            }
-        };
-
-        let md = song.metadata;
-        let thumb = match md.thumbnail.clone() {
-            Some(t) => t,
-            None => String::from(
-                format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", &md.id)),
-                // This URL might change in the future, but meh, it works.
-                // TODO: Config the thumbnail resolution probably
-        };
-
-        let mins = song.duration / 60;
-        let secs = song.duration % 60;
-
-        ret.thumbnail(thumb)
-            .title(format!("{} [{}:{:02}]", md.title, mins, secs))
-            .url(song.url)
-            .description(format!("Uploaded by: {}",
-                md.uploader.unwrap_or(String::from("Unknown")),
-                )
-            )
-            .footer(|f| { f
-                .icon_url(song.requested_by.user.face())
-                .text(format!("Requested by: {}", song.requested_by.name))
-            });
-
-        ret
-    }
-
-    pub fn show_history(&self, num: usize) -> Option<String> {
-        if self.history.len() == 0 {
-            return None
-        }
-
-        let mut ret = String::from("Last played songs:\n");
-
-        for (i,s) in self.history.iter().take(num).enumerate().rev() {
-            ret += &format!("{0}: {1}\n", i+1, s);
-        }
-
-        Some(ret)
-    }
-
-    pub fn get_history_embed(&self, num: usize) -> CreateEmbed {
-        let mut ret = CreateEmbed { 0: HashMap::new() };
-
-        ret.description(match self.show_history(num) {
-            Some(s) => s,
-            None => String::from("No songs have been played"),
-        });
-
-        ret
-    }
 
     pub async fn leave(&mut self) {
         if let Some(call) = &mut self.songcall.take() {
@@ -459,83 +352,3 @@ impl MusicState {
 }
 
 
-/* Possible mess for queue support */
-
-struct TrackEndNotifier {
-    ctx: Context,
-}
-
-#[async_trait]
-impl VoiceEventHandler for TrackEndNotifier {
-
-    // TODO: somehow make this a signaling thing so we don't have to await here
-    async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
-        debug!("TrackEndNotifier fired");
-        let mstate = get(&self.ctx).await.unwrap();
-        let mut mstate = mstate.lock().await;
-
-        if let Some((_, song)) = &mstate.current_track.take() {
-            mstate.history.push_front(song.clone());
-            mstate.history.truncate(10); // TODO: config max history buffer length
-        }
-        else {
-            debug!("TrackEnd handler somehow called with mstate.current_track = None");
-        }
-
-        match mstate.status {
-            MusicStateStatus::Stopping => {
-                debug!("stopping music play via event handler");
-                return None; // We're done here
-            }
-            _ => {}
-        };
-
-        let ret = mstate.next().await;
-        if let Ok(_) = ret {
-            debug!("TrackEnd handler mstate.next() = {:?}", ret);
-        }
-        else if let Err(e) = ret {
-            error!("{:?}", e);
-        }
-
-        if let Some(sticky) = &mstate.sticky {
-            sticky.channel_id.edit_message(&self.ctx.http, sticky, |m| {
-                m.set_embeds(vec![mstate.get_queuestate_embed(), mstate.get_nowplay_embed()])
-            }).await.unwrap();
-        }
-
-        None
-    }
-}
-
-
-/* Enter mess to make the singleton magic via serenity here */
-pub struct MusicStateKey;
-
-impl TypeMapKey for MusicStateKey {
-    type Value = Arc<Mutex<MusicState>>;
-}
-
-pub trait MusicStateInit {
-    fn register_musicstate(self) -> Self;
-}
-
-fn register(client_builder: ClientBuilder) -> ClientBuilder {
-    let tmp = Arc::new(Mutex::new(MusicState::new()));
-    client_builder
-        .type_map_insert::<MusicStateKey>(tmp.clone())
-}
-
-impl MusicStateInit for ClientBuilder<'_> {
-    fn register_musicstate(self) -> Self {
-        register(self)
-    }
-}
-
-pub async fn get(ctx: &Context) -> Option<Arc<Mutex<MusicState>>> {
-    let data = ctx.data.read().await;
-
-    let mstate = data.get::<MusicStateKey>().cloned();
-
-    mstate
-}

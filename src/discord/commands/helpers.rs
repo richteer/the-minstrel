@@ -1,6 +1,7 @@
 use log::*;
 
 use serenity::{
+    builder::CreateEmbed,
     model::{
         channel::Message,
     },
@@ -12,20 +13,34 @@ use serenity::{
     Result as SerenityResult,
 };
 
-use super::music;
+use std::{
+    collections::HashMap,
+    sync::Arc,
+};
 
+use super::music::MusicState;
+
+use crate::discord::MusicStateKey;
+
+pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState>>> {
+    let data = ctx.data.read().await;
+
+    let mstate = data.get::<MusicStateKey>().cloned();
+
+    mstate
+}
 
 // TODO: These can definitely be cleaner, but might as well macro out now to make
 //  life slightly easier if I do end up needing to replace them
 #[macro_export]
 macro_rules! get_mstate {
     ($mstate:ident, $ctx:ident) => {
-        let $mstate = music::get(&$ctx).await.unwrap();
+        let $mstate = crate::discord::mstate_get(&$ctx).await.unwrap();
         let $mstate = $mstate.lock().await;
     };
 
     ($mut:ident, $mstate:ident, $ctx:ident) => {
-        let $mstate = music::get(&$ctx).await.unwrap();
+        let $mstate = crate::discord::mstate_get(&$ctx).await.unwrap();
         let $mut $mstate = $mstate.lock().await;
     };
 }
@@ -62,7 +77,7 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
         }
     };
 
-    let mstate = music::get(&ctx).await.unwrap().clone();
+    let mstate = mstate_get(&ctx).await.unwrap().clone();
     let mut mstate = mstate.lock().await;
 
     if let Some(bot_channel) = bot_channel_id {
@@ -135,4 +150,114 @@ pub async fn in_same_voice(ctx: &Context, msg: &Message) -> Result<(), Reason> {
     else {
         Err(Reason::User(String::from("Bot is in another voice channel")))
     }
+}
+
+/*** Functions that were previously on mstate, but for discord-specific output ***/
+/**   These are subject to moving again, but can live here now for convenience  **/
+
+pub fn show_queuestate(mstate: &MusicState) -> String {
+    let mut q = None;
+    let mut ap = None;
+
+    if !mstate.is_queue_empty() {
+        q = Some(mstate.show_queue());
+    }
+
+    if mstate.autoplay.enabled {
+        ap = Some(mstate.autoplay.show_upcoming(10));
+    }
+
+    let mut ret = String::new();
+
+    if let Some(his) = show_history(mstate, 5) {
+        ret += &format!("{}\n", his);
+    }
+
+    if let Some(curr) = &mstate.current_song() {
+        ret += &format!("Now Playing:\n:musical_note: {}\n\n", curr);
+    }
+    else {
+        ret += &format!("_Nothing is currently playing._\n\n");
+    }
+
+    let tmp = match (q,ap) {
+        (None,    None    ) => format!("Queue is empty and Autoplay is disabled"),
+        (Some(q), None    ) => format!("{}\nAutoplay is disabled", q),
+        (None,    Some(ap)) => format!("{}", ap),
+        (Some(q), Some(ap)) => format!("{}\n{}", q, ap),
+    };
+
+    ret + &tmp
+}
+
+
+pub fn get_queuestate_embed(mstate: &MusicState) -> CreateEmbed {
+    let mut ret = CreateEmbed { 0: HashMap::new() };
+
+    ret.description(show_queuestate(mstate));
+
+    return ret;
+}
+
+pub fn get_nowplay_embed(mstate: &MusicState) -> CreateEmbed {
+    let mut ret = CreateEmbed { 0: HashMap::new() };
+
+    let song = match mstate.current_song() {
+        Some(s) => s,
+        None => {
+            ret.description("Nothing currently playing");
+            return ret;
+        }
+    };
+
+    let md = song.metadata;
+    let thumb = match md.thumbnail.clone() {
+        Some(t) => t,
+        None => String::from(
+            format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", &md.id)),
+            // This URL might change in the future, but meh, it works.
+            // TODO: Config the thumbnail resolution probably
+    };
+
+    let mins = song.duration / 60;
+    let secs = song.duration % 60;
+
+    ret.thumbnail(thumb)
+        .title(format!("{} [{}:{:02}]", md.title, mins, secs))
+        .url(song.url)
+        .description(format!("Uploaded by: {}",
+            md.uploader.unwrap_or(String::from("Unknown")),
+            )
+        )
+        .footer(|f| { f
+            .icon_url(song.requested_by.user.face())
+            .text(format!("Requested by: {}", song.requested_by.name))
+        });
+
+    ret
+}
+
+pub fn show_history(mstate: &MusicState, num: usize) -> Option<String> {
+    if mstate.history.len() == 0 {
+        return None
+    }
+
+    let mut ret = String::from("Last played songs:\n");
+
+    for (i,s) in mstate.history.iter().take(num).enumerate().rev() {
+        ret += &format!("{0}: {1}\n", i+1, s);
+    }
+
+    Some(ret)
+}
+
+pub fn get_history_embed(mstate: &MusicState, num: usize) -> CreateEmbed {
+    let mut ret = CreateEmbed { 0: HashMap::new() };
+
+    ret.description(match show_history(mstate, num) {
+        Some(s) => s,
+        None => String::from("No songs have been played"),
+    });
+
+    ret
 }

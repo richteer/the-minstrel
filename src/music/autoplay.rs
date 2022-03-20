@@ -19,8 +19,7 @@ use serenity::{
     model::voice::VoiceState,
 };
 
-// TODO: perhaps get_mstate_should live higher?
-use crate::music;
+// TODO: remove need for autoplay to use get_mstate
 use crate::get_mstate;
 
 #[allow(dead_code)]

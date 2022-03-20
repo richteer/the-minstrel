@@ -6,6 +6,7 @@ pub mod debug;
 
 use crate::music;
 
-mod helpers;
+pub mod helpers;
 pub use helpers::IN_SAME_VOICE_CHECK as IN_SAME_VOICE_CHECK;
 pub use helpers::check_msg as check_msg;
+pub use helpers::mstate_get as mstate_get;

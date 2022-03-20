@@ -13,7 +13,6 @@ use serenity::{
 use crate::{get_mstate, join_voice};
 use super::helpers::*;
 use super::check_msg;
-use super::music;
 use super::music::{
     Song,
     MusicOk,
@@ -57,7 +56,7 @@ async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
-        m.set_embed(mstate.get_nowplay_embed())
+        m.set_embed(get_nowplay_embed(&mstate))
     }).await);
 
     Ok(())
@@ -155,7 +154,7 @@ async fn history(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     get_mstate!(mstate, ctx);
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m|
-        m.set_embed(mstate.get_history_embed(num))
+        m.set_embed(get_history_embed(&mstate, num))
     ).await);
 
     Ok(())

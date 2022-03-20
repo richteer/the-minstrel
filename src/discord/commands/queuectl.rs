@@ -13,7 +13,6 @@ use serenity::{
 use crate::get_mstate;
 use super::helpers::*;
 use super::check_msg;
-use super::music;
 use super::music::{
     Song,
     Requester,
@@ -24,8 +23,7 @@ use super::music::{
 #[aliases(q, showqueue)]
 #[only_in(guilds)]
 async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
-    let mstate = music::get(&ctx).await.unwrap();
-    let mstate = mstate.lock().await;
+    get_mstate!(mstate, ctx);
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|e| { e
@@ -53,8 +51,8 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
         }
     };
 
-    let mstate = music::get(&ctx).await.unwrap();
-    let mut mstate = mstate.lock().await;
+    get_mstate!(mut, mstate, ctx);
+
 
     let ret = mstate.enqueue(url);
 
@@ -95,7 +93,7 @@ async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
-        m.set_embed(mstate.get_queuestate_embed())
+        m.set_embed(get_queuestate_embed(&mstate))
     }).await);
 
     Ok(())

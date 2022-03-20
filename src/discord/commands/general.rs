@@ -12,7 +12,6 @@ use serenity::{
 use crate::get_mstate;
 use crate::join_voice;
 use super::helpers::*;
-use super::music;
 
 #[command]
 #[only_in(guilds)]

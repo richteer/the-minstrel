@@ -1,11 +1,12 @@
 use std::{
     env,
+    sync::Arc,
     collections::HashSet,
 };
 use songbird::SerenityInit;
 
 use crate::music;
-use crate::music::MusicStateInit;
+use crate::music::*;
 use crate::get_mstate;
 
 use crate::discord::commands::{
@@ -14,12 +15,14 @@ use crate::discord::commands::{
     queuectl::*,
     autoplay::*,
     debug::*,
+    helpers::*,
 };
 
 use log::*;
 
 use serenity::{
     async_trait,
+    client::ClientBuilder,
     model::{
         channel::Message,
         gateway::Ready,
@@ -41,6 +44,12 @@ use serenity::{
         HelpOptions,
         StandardFramework,
     },
+};
+
+use songbird::{
+    Event,
+    EventContext,
+    EventHandler as VoiceEventHandler,
 };
 
 // TODO: this should get used somewhere:
@@ -78,7 +87,6 @@ struct AutoplayCmd;
 // TODO: require owner
 struct DebugCmd;
 
-
 #[hook]
 async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
     match error {
@@ -96,7 +104,7 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
-            m.add_embeds(vec![mstate.get_queuestate_embed(), mstate.get_nowplay_embed()])
+            m.add_embeds(vec![get_queuestate_embed(&mstate), get_nowplay_embed(&mstate)])
         }).await.unwrap();
 
         mstate.sticky = Some(new);
@@ -225,6 +233,87 @@ async fn helpme(
     let _ = help_commands::with_embeds(context, msg, args, help_options, groups, owners).await;
     Ok(())
 }
+
+
+/* Possible mess for queue support */
+
+
+pub struct TrackEndNotifier {
+    pub ctx: Context,
+}
+
+#[async_trait]
+impl VoiceEventHandler for TrackEndNotifier {
+
+    // TODO: somehow make this a signaling thing so we don't have to await here
+    async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
+        debug!("TrackEndNotifier fired");
+        let mstate = mstate_get(&self.ctx).await.unwrap();
+        let mut mstate = mstate.lock().await;
+
+        if let Some((_, song)) = &mstate.current_track.take() {
+            mstate.history.push_front(song.clone());
+            mstate.history.truncate(10); // TODO: config max history buffer length
+        }
+        else {
+            debug!("TrackEnd handler somehow called with mstate.current_track = None");
+        }
+
+        match mstate.status {
+            MusicStateStatus::Stopping => {
+                debug!("stopping music play via event handler");
+                return None; // We're done here
+            }
+            _ => {}
+        };
+
+        let ret = mstate.next().await;
+        if let Ok(_) = ret {
+            debug!("TrackEnd handler mstate.next() = {:?}", ret);
+        }
+        else if let Err(e) = ret {
+            error!("{:?}", e);
+        }
+
+        if let Some(sticky) = &mstate.sticky {
+            sticky.channel_id.edit_message(&self.ctx.http, sticky, |m| {
+                m.set_embeds(vec![get_queuestate_embed(&mstate), get_nowplay_embed(&mstate)])
+            }).await.unwrap();
+        }
+
+        None
+    }
+}
+
+pub mod discord_mstate {
+    pub use super::TrackEndNotifier as TrackEndNotifier;
+}
+
+
+/* Enter mess to make the singleton magic via serenity here */
+pub struct MusicStateKey;
+
+impl TypeMapKey for MusicStateKey {
+    type Value = Arc<Mutex<MusicState>>;
+}
+
+pub trait MusicStateInit {
+    fn register_musicstate(self) -> Self;
+}
+
+fn register(client_builder: ClientBuilder) -> ClientBuilder {
+    let tmp = Arc::new(Mutex::new(MusicState::new()));
+    client_builder
+        .type_map_insert::<MusicStateKey>(tmp.clone())
+}
+
+impl MusicStateInit for ClientBuilder<'_> {
+    fn register_musicstate(self) -> Self {
+        register(self)
+    }
+}
+
+
 
 
 pub async fn create_player() -> serenity::Client {
