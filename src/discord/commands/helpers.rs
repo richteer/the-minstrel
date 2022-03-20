@@ -12,7 +12,7 @@ use serenity::{
     Result as SerenityResult,
 };
 
-use super::super::music;
+use super::music;
 
 
 // TODO: These can definitely be cleaner, but might as well macro out now to make

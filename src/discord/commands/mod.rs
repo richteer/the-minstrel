@@ -4,7 +4,7 @@ pub mod queuectl;
 pub mod autoplay;
 pub mod debug;
 
-use super::music;
+use crate::music;
 
 mod helpers;
 pub use helpers::IN_SAME_VOICE_CHECK as IN_SAME_VOICE_CHECK;
