@@ -2,15 +2,9 @@ use super::autoplay::AutoplayState;
 use super::song::Song;
 
 use std::fmt;
-use std::sync::Arc;
 use std::collections::VecDeque;
+use std::sync::Arc;
 use log::*;
-
-use songbird::{
-    Event,
-    TrackEvent,
-    tracks::TrackHandle,
-};
 
 use serenity::{
     prelude::*,
@@ -69,18 +63,18 @@ pub enum MusicStateStatus {
     Playing,
     Stopping,
     Stopped,
-    Initialized,
-    Uninitialized,
+    Idle,
 }
 
+use crate::music::MusicPlayer;
 
 
 // Higher level manager for playing music. In theory, should abstract out
 //   a lot of the lower-level magic, so the commands can just operate on
 //   this instead and make life easier.
 pub struct MusicState {
-    songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
-    pub current_track: Option<(TrackHandle, Song)>,
+    pub player: Option<Arc<Mutex<Box<dyn MusicPlayer + Send + Sync>>>>,
+    pub current_track: Option<Song>,
     pub status: MusicStateStatus,
     queue: VecDeque<Song>,
     pub history: VecDeque<Song>,
@@ -91,19 +85,15 @@ pub struct MusicState {
 impl fmt::Debug for MusicState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "MusicState {{ \
-            songcall: {:?}, \
-            current_track: {}, \
+            player: {:?}, \
             status: {:?}, \
             queue: <{} songs>, \
             history: <{} songs>, \
             autoplay: ..., \
             sticky: {}, \
         }}",
-            &self.songcall,
-            match &self.current_track {
-                Some((th, _)) => format!("{:?}", th),
-                None => format!("None"),
-            },
+            "player goes here",
+            //&self.player,
             &self.status,
             &self.queue.len(),
             &self.history.len(),
@@ -116,52 +106,15 @@ impl fmt::Debug for MusicState {
 // TODO: Make this a config setting probably
 const MAX_QUEUE_LEN: usize = 10;
 
-// TODO: this is just glue to make this work for now, will be removed with the rest of the discord-isms in here
-use crate::discord::player::discord_mstate::TrackEndNotifier;
-
 impl MusicState {
-
-    // Initialize the MusicState for the given context and voice channel
-    //   Also joins the channel
-    pub async fn init(
-        &mut self,
-        ctx: &Context,
-        guild_id: serenity::model::id::GuildId,
-        channel_id: serenity::model::id::ChannelId
-    ) {
-        // Bot is not in voice, so join caller's.
-        let manager = songbird::get(ctx).await
-        .expect("Songbird Voice client placed in at initialisation.").clone();
-
-        let handler = manager.join(guild_id, channel_id).await.0;
-
-        handler.lock().await.add_global_event(
-            Event::Track(TrackEvent::End),
-            TrackEndNotifier {
-                ctx: ctx.clone()
-            },
-        );
-
-        self.songcall = Some(handler.clone());
-        self.current_track = None;
-        self.status = MusicStateStatus::Initialized;
-
-    }
-
-    pub fn is_ready(&self) -> bool {
-        match self.status {
-            MusicStateStatus::Uninitialized => false,
-            _ => true,
-        }
-    }
 
     pub fn new() -> MusicState {
         MusicState {
-            songcall: None,
+            player: None,
             current_track: None,
             queue: VecDeque::<Song>::new(),
             history: VecDeque::<Song>::new(),
-            status: MusicStateStatus::Uninitialized,
+            status: MusicStateStatus::Idle,
             autoplay: AutoplayState::new(),
             sticky: None,
         }
@@ -170,28 +123,20 @@ impl MusicState {
     /// Start playing a song
     async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
         debug!("play called on song = {}", song);
-        if self.songcall.is_none() {
-            error!("songcall is none somehow?");
+        let mut player = if let Some(p) = &self.player {
+            p.lock().await
+        } else {
+            error!("player is none somehow?");
             return Err(MusicError::UnknownError);
-        }
+        };
 
         if self.current_track.is_some() {
             return Err(MusicError::AlreadyPlaying);
         }
 
-        let mut handler = self.songcall.as_ref().unwrap().lock().await;
+        player.play(&song).await?;
 
-        let source = match songbird::ytdl_ffmpeg_args(&song.url, &[], &["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"]).await {
-            Ok(source) => source,
-            Err(why) => {
-                error!("Err starting source: {:?}", why);
-                return Err(MusicError::UnknownError);
-            },
-        };
-
-        let thandle = handler.play_source(source);
-        self.current_track = Some((thandle, song));
-
+        self.current_track = Some(song);
         self.status = MusicStateStatus::Playing;
 
         Ok(MusicOk::StartedPlaying)
@@ -231,10 +176,16 @@ impl MusicState {
 
     // Stop the current track, but don't signal to the event handler to actually cease playing
     // This is stupid, and I don't like it.
+    // TODO: This is hella discord-specific. Rewrite this function to actually skip.
     pub async fn skip(&mut self) -> Result<MusicOk, MusicError> {
-        if let Some((thandle, _)) = &self.current_track {
-            thandle.stop().ok();
-        }
+        let mut player = if let Some(p) = &self.player {
+            p.lock().await
+        } else {
+            error!("player is none somehow?");
+            return Err(MusicError::UnknownError);
+        };
+
+        player.stop().await?;
 
         Ok(MusicOk::SkippingSong)
     }
@@ -243,15 +194,19 @@ impl MusicState {
     pub async fn stop(&mut self) -> Result<MusicOk, MusicError> {
         self.status = MusicStateStatus::Stopping;
 
-        if let Some((thandle, _)) = &self.current_track {
-            if thandle.stop().is_err() {
-                return Err(MusicError::UnknownError);
-            }
+        let mut player = if let Some(p) = &self.player {
+            p.lock().await
+        } else {
+            error!("player is none somehow?");
+            return Err(MusicError::UnknownError);
+        };
+
+        if let Err(e) = player.stop().await {
+            error!("Player encountered a problem stopping track: {:?}", e);
+            return Err(e);
         }
-        else {
-            self.status = MusicStateStatus::Stopped;
-            return Ok(MusicOk::NotPlaying);
-        }
+
+        self.status = MusicStateStatus::Stopped;
 
         Ok(MusicOk::StoppedPlaying)
     }
@@ -307,10 +262,7 @@ impl MusicState {
 
 
     pub fn current_song(&self) -> Option<Song> {
-        match &self.current_track {
-            Some((_, song)) => Some(song.clone()),
-            None => None,
-        }
+        self.current_track.clone()
     }
 
     pub fn clear_queue(&mut self) -> Result<MusicOk, MusicError> {
@@ -324,30 +276,23 @@ impl MusicState {
     }
 
 
+    // TODO: this is slated for removal from MusicState, leaving for the scope of this refactor
     pub async fn leave(&mut self) {
-        if let Some(call) = &mut self.songcall.take() {
-            let mut call = call.lock().await;
+        let mut player = if let Some(p) = &self.player {
+            p.lock().await
+        } else {
+            error!("player is none somehow?");
+            return;
+        };
 
-            match call.leave().await {
-                Ok(()) => info!("left channel"),
-                Err(e) => error!("failed to disconnect: {}", e),
-            };
+        self.queue.clear();
+        self.autoplay.enabled = false;
+        self.autoplay.disable_all_users();
+        self.sticky = None;
 
-            if let Some((thandle, _)) = &self.current_track {
-                self.status = MusicStateStatus::Stopping;
-                match thandle.stop() {
-                    Ok(()) => debug!("song stopped"),
-                    Err(e) => warn!("song failed to stop: {:?}", e),
-                };
-                // TrackEnd handler will set current_track to None
-            }
-
-            self.queue.clear();
-            self.autoplay.enabled = false;
-            self.autoplay.disable_all_users();
-            self.sticky = None;
-            call.remove_all_global_events();
-        }
+        // TODO: this assumes player stops on disconnect. Artifact of discordisms, since .stop() acts like skip sometimes
+        //  explicitly stop the music first if this function actually remains here
+        player.disconnect().await;
     }
 }
 

@@ -25,7 +25,7 @@ async fn main() {
 
     env_logger::init();
 
-    let mut client = discord::player::create_player().await;
+    let mut client = discord::client::create_player().await;
 
     // Finally, start a single shard, and start listening to events.
     //

@@ -21,6 +21,7 @@ use std::{
 use super::music::MusicState;
 
 use crate::discord::MusicStateKey;
+use crate::discord::player::DiscordPlayer;
 
 pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState>>> {
     let data = ctx.data.read().await;
@@ -54,7 +55,6 @@ pub fn check_msg(result: SerenityResult<Message>) {
 
 
 /// Join voice chat of the command caller
-/// Call this function *BEFORE* get_mstate!, as this will need to access mstate first
 /// TODO: this is still pretty messy, consider cleaning up
 pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
     let guild = msg.guild(&ctx.cache).await.unwrap();
@@ -77,12 +77,10 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
         }
     };
 
-    let mstate = mstate_get(&ctx).await.unwrap().clone();
-    let mut mstate = mstate.lock().await;
-
+    get_mstate!(mut, mstate, ctx);
     if let Some(bot_channel) = bot_channel_id {
         if bot_channel == connect_to {
-            if mstate.is_ready() {
+            if mstate.player.is_some() {
                 return Ok(false); // We're done here, otherwise fall through and init
             }
         }
@@ -91,7 +89,12 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
         }
     }
 
-    mstate.init(&ctx, guild_id, connect_to).await;
+    mstate.player = Some(
+        Arc::new(
+            Mutex::new(
+                Box::new(
+                    DiscordPlayer::connect(&ctx, guild_id, connect_to).await
+    ))));
 
     Ok(true)
 }

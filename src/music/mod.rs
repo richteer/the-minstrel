@@ -2,7 +2,7 @@ pub mod autoplay;
 pub mod musicstate;
 pub mod song;
 pub mod requester;
-
+pub mod player;
 
 
 // Re-exports for the sake of making the imports prettier in main.rs
@@ -13,3 +13,5 @@ pub use musicstate::MusicOk as MusicOk;
 pub use musicstate::MusicError as MusicError;
 pub use song::Song as Song;
 pub use requester::Requester as Requester;
+
+pub use player::MusicPlayer as MusicPlayer;
