@@ -23,7 +23,7 @@ use super::music::MusicState;
 use crate::discord::MusicStateKey;
 use crate::discord::player::DiscordPlayer;
 
-pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState>>> {
+pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState<DiscordPlayer>>>> {
     let data = ctx.data.read().await;
 
     let mstate = data.get::<MusicStateKey>().cloned();
@@ -158,7 +158,7 @@ pub async fn in_same_voice(ctx: &Context, msg: &Message) -> Result<(), Reason> {
 /*** Functions that were previously on mstate, but for discord-specific output ***/
 /**   These are subject to moving again, but can live here now for convenience  **/
 
-pub fn show_queuestate(mstate: &MusicState) -> String {
+pub fn show_queuestate(mstate: &MusicState<DiscordPlayer>) -> String {
     let mut q = None;
     let mut ap = None;
 
@@ -194,7 +194,7 @@ pub fn show_queuestate(mstate: &MusicState) -> String {
 }
 
 
-pub fn get_queuestate_embed(mstate: &MusicState) -> CreateEmbed {
+pub fn get_queuestate_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
     let mut ret = CreateEmbed { 0: HashMap::new() };
 
     ret.description(show_queuestate(mstate));
@@ -202,7 +202,7 @@ pub fn get_queuestate_embed(mstate: &MusicState) -> CreateEmbed {
     return ret;
 }
 
-pub fn get_nowplay_embed(mstate: &MusicState) -> CreateEmbed {
+pub fn get_nowplay_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
     let mut ret = CreateEmbed { 0: HashMap::new() };
 
     let song = match mstate.current_song() {
@@ -240,7 +240,7 @@ pub fn get_nowplay_embed(mstate: &MusicState) -> CreateEmbed {
     ret
 }
 
-pub fn show_history(mstate: &MusicState, num: usize) -> Option<String> {
+pub fn show_history(mstate: &MusicState<DiscordPlayer>, num: usize) -> Option<String> {
     if mstate.history.len() == 0 {
         return None
     }
@@ -254,7 +254,7 @@ pub fn show_history(mstate: &MusicState, num: usize) -> Option<String> {
     Some(ret)
 }
 
-pub fn get_history_embed(mstate: &MusicState, num: usize) -> CreateEmbed {
+pub fn get_history_embed(mstate: &MusicState<DiscordPlayer>, num: usize) -> CreateEmbed {
     let mut ret = CreateEmbed { 0: HashMap::new() };
 
     ret.description(match show_history(mstate, num) {

@@ -3,11 +3,14 @@ use std::{
 };
 
 use serenity::{
-    prelude::Context,
+    prelude::{
+        Context,
+    },
     model::id::{
         GuildId,
         ChannelId,
-    }
+    },
+    model::channel::Message,
 };
 
 use songbird::{
@@ -30,6 +33,7 @@ use crate::discord::commands::helpers::*;
 pub struct DiscordPlayer {
     songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
     songhandler: Option<songbird::tracks::TrackHandle>,
+    pub sticky: Option<Message>,
 }
 
 impl DiscordPlayer {
@@ -49,6 +53,7 @@ impl DiscordPlayer {
         DiscordPlayer {
             songcall: Some(handler),
             songhandler: None,
+            sticky: None,
         }
     }
 }
@@ -150,7 +155,11 @@ impl VoiceEventHandler for TrackEndNotifier {
             error!("{:?}", e);
         }
 
-        if let Some(sticky) = &mstate.sticky {
+        let player = if let Some(p) = &mstate.player {
+            p.lock().await
+        } else { return None; };
+
+        if let Some(sticky) = &player.sticky {
             sticky.channel_id.edit_message(&self.ctx.http, sticky, |m| {
                 m.set_embeds(vec![get_queuestate_embed(&mstate), get_nowplay_embed(&mstate)])
             }).await.unwrap();

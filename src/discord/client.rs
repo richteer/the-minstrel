@@ -8,6 +8,7 @@ use songbird::SerenityInit;
 use crate::music;
 use crate::music::*;
 use crate::get_mstate;
+use crate::discord::player::DiscordPlayer;
 
 use crate::discord::commands::{
     general::*,
@@ -90,16 +91,20 @@ async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
 
 #[hook]
 async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _error: Result<(), CommandError>) {
-    get_mstate!(mut, mstate, ctx);
+    get_mstate!(mstate, ctx);
 
-    if let Some(m) = &mstate.sticky {
+    let mut player = if let Some(p) = &mstate.player {
+        p.lock().await
+    } else { return; };
+
+    if let Some(m) = &player.sticky {
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
             m.add_embeds(vec![get_queuestate_embed(&mstate), get_nowplay_embed(&mstate)])
         }).await.unwrap();
 
-        mstate.sticky = Some(new);
+        player.sticky = Some(new);
     }
 }
 
@@ -231,7 +236,7 @@ async fn helpme(
 pub struct MusicStateKey;
 
 impl TypeMapKey for MusicStateKey {
-    type Value = Arc<Mutex<MusicState>>;
+    type Value = Arc<Mutex<MusicState<DiscordPlayer>>>;
 }
 
 pub trait MusicStateInit {

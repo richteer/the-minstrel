@@ -123,10 +123,14 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 #[only_in(guilds)]
 // TODO: consider permissions here, this might be annoying if regular users can toggle it
 async fn display(ctx: &Context, msg: &Message) -> CommandResult {
-    get_mstate!(mut, mstate, ctx);
+    get_mstate!(mstate, ctx);
 
-    if let Some(_) = mstate.sticky {
-        mstate.sticky = None;
+    let mut player = if let Some(p) = &mstate.player {
+        p.lock().await
+    } else { return Ok(()) };
+
+    if let Some(_) = player.sticky {
+        player.sticky = None;
 
         check_msg(msg.channel_id.say(&ctx.http, "Disabled sticky display.").await);
 
@@ -138,7 +142,7 @@ async fn display(ctx: &Context, msg: &Message) -> CommandResult {
     // Just send a blank message to fill in sticky, let the hook actually send the first output
     let sticky = msg.channel_id.say(&ctx.http, ".").await.unwrap();
 
-    mstate.sticky = Some(sticky);
+    player.sticky = Some(sticky);
 
     Ok(())
 }

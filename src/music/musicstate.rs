@@ -4,12 +4,8 @@ use super::song::Song;
 use std::fmt;
 use std::collections::VecDeque;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use log::*;
-
-use serenity::{
-    prelude::*,
-    model::channel::Message,
-};
 
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -72,17 +68,16 @@ use crate::music::MusicPlayer;
 // Higher level manager for playing music. In theory, should abstract out
 //   a lot of the lower-level magic, so the commands can just operate on
 //   this instead and make life easier.
-pub struct MusicState {
-    pub player: Option<Arc<Mutex<Box<dyn MusicPlayer + Send + Sync>>>>,
+pub struct MusicState<T: MusicPlayer> {
+    pub player: Option<Arc<Mutex<Box<T>>>>,
     pub current_track: Option<Song>,
     pub status: MusicStateStatus,
     queue: VecDeque<Song>,
     pub history: VecDeque<Song>,
     pub autoplay: AutoplayState,
-    pub sticky: Option<Message>,
 }
 
-impl fmt::Debug for MusicState {
+impl<T: MusicPlayer> fmt::Debug for MusicState<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "MusicState {{ \
             player: {:?}, \
@@ -90,7 +85,6 @@ impl fmt::Debug for MusicState {
             queue: <{} songs>, \
             history: <{} songs>, \
             autoplay: ..., \
-            sticky: {}, \
         }}",
             "player goes here",
             //&self.player,
@@ -98,7 +92,6 @@ impl fmt::Debug for MusicState {
             &self.queue.len(),
             &self.history.len(),
             // Autoplay
-            if self.sticky.is_some() { "Enabled" } else { "Disabled" },
         )
     }
 }
@@ -106,9 +99,9 @@ impl fmt::Debug for MusicState {
 // TODO: Make this a config setting probably
 const MAX_QUEUE_LEN: usize = 10;
 
-impl MusicState {
+impl<T: MusicPlayer> MusicState<T> {
 
-    pub fn new() -> MusicState {
+    pub fn new() -> MusicState<T> {
         MusicState {
             player: None,
             current_track: None,
@@ -116,7 +109,6 @@ impl MusicState {
             history: VecDeque::<Song>::new(),
             status: MusicStateStatus::Idle,
             autoplay: AutoplayState::new(),
-            sticky: None,
         }
     }
 
@@ -288,7 +280,6 @@ impl MusicState {
         self.queue.clear();
         self.autoplay.enabled = false;
         self.autoplay.disable_all_users();
-        self.sticky = None;
 
         // TODO: this assumes player stops on disconnect. Artifact of discordisms, since .stop() acts like skip sometimes
         //  explicitly stop the music first if this function actually remains here
