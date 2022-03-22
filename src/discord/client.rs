@@ -5,10 +5,9 @@ use std::{
 };
 use songbird::SerenityInit;
 
-use crate::music;
 use crate::music::*;
 use crate::get_mstate;
-use crate::discord::player::DiscordPlayer;
+use crate::discord::player::*;
 
 use crate::discord::commands::{
     general::*,
@@ -157,7 +156,7 @@ impl EventHandler for Handler {
         }
 
         last_one_in_checker(&ctx, &guildid, &old, &new).await;
-        music::autoplay::autoplay_voice_state_update(ctx, guildid, old, new).await;
+        autoplay_voice_state_update(ctx, guildid, old, new).await;
     }
 }
 

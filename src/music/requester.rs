@@ -1,4 +1,5 @@
 use serenity::model::user::User;
+use serenity::model::id::UserId;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -10,6 +11,7 @@ pub struct Requester {
     pub user: User,
     // User nickname in server or name without discriminator
     pub name: String,
+    pub userid: UserId,
 }
 
 impl Requester {
@@ -23,6 +25,7 @@ impl Requester {
         Requester {
             name: name,
             user: msg.author.clone(),
+            userid: msg.author.id.clone(),
         }
     }
 }

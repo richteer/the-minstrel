@@ -14,13 +14,10 @@ use youtube_dl::YoutubeDlOutput;
 
 use serenity::{
     model::user::User,
-    prelude::*,
-    model::id::GuildId,
-    model::voice::VoiceState,
 };
 
-// TODO: remove need for autoplay to use get_mstate
-use crate::get_mstate;
+// TODO: replace this with the proper User object for autoplay
+use serenity::model::id::UserId as TempUser;
 
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -105,9 +102,9 @@ impl UserPlaylist {
 pub struct AutoplayState {
     // TODO: consider just using UserId here for the index?
     // TODO: consider Arc'ing the userlist so AutoplayState can be cloned when prefetching songs
-    userlists: HashMap<User, UserPlaylist>,
-    usertime: PriorityQueue<User, Reverse<i64>>,
-    usertimecache: HashMap<User, i64>,
+    userlists: HashMap<TempUser, UserPlaylist>,
+    usertime: PriorityQueue<TempUser, Reverse<i64>>,
+    usertimecache: HashMap<TempUser, i64>,
     pub enabled: bool,
     // TODO: make this a global db that all things can access. this is fine for now though.
     storage: Arc<RwLock<PickleDb>>,
@@ -203,9 +200,9 @@ impl AutoplayState {
         tmpdata.shuffle();
 
         // TODO: probably definitely just use UserId here, this is a lot of clones
-        self.userlists.insert(requester.user.clone(), tmpdata);
-        self.usertime.push(requester.user.clone(), Reverse(0));
-        self.usertimecache.insert(requester.user.clone(), 0);
+        self.userlists.insert(requester.userid.clone(), tmpdata);
+        self.usertime.push(requester.userid.clone(), Reverse(0));
+        self.usertimecache.insert(requester.userid.clone(), 0);
 
         Ok(AutoplayOk::RegisteredUser)
     }
@@ -252,11 +249,11 @@ impl AutoplayState {
     /// Enable a user that already has a registered setlist in the autoplay system
     /// Sets the user's playtime to the current minimum value
     pub fn enable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
-        if !self.userlists.contains_key(user) {
+        if !self.userlists.contains_key(&user.id) {
             return Err(AutoplayError::UserNotRegistered);
         }
 
-        let prevtime = if let Some(p) = self.usertimecache.get(user) {
+        let prevtime = if let Some(p) = self.usertimecache.get(&user.id) {
             p
         } else {
             // TODO: maybe just set a default value here?
@@ -264,7 +261,7 @@ impl AutoplayState {
             return Err(AutoplayError::UnknownError);
         };
 
-        if self.usertime.get(user).is_some() {
+        if self.usertime.get(&user.id).is_some() {
             // user already enabled
             return Err(AutoplayError::AlreadyEnrolled);
         }
@@ -283,14 +280,14 @@ impl AutoplayState {
         };
         debug!("user re-enabled with a score of {}", time);
 
-        self.usertime.push(user.clone(), Reverse(time));
-        self.usertimecache.insert(user.clone(), time);
+        self.usertime.push(user.id.clone(), Reverse(time));
+        self.usertimecache.insert(user.id.clone(), time);
 
         Ok(AutoplayOk::EnrolledUser)
     }
 
     pub fn disable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
-        match self.usertime.remove(user) {
+        match self.usertime.remove(&user.id) {
             Some((user, Reverse(time))) => {
                 self.usertimecache.insert(user, time);
                 Ok(AutoplayOk::RemovedUser)
@@ -320,10 +317,10 @@ impl AutoplayState {
     }
 
     pub fn shuffle_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
-        if let Some(list) = self.userlists.get(user) {
+        if let Some(list) = self.userlists.get(&user.id) {
             let mut list = list.clone();
             list.shuffle();
-            self.userlists.insert(user.clone(), list);
+            self.userlists.insert(user.id.clone(), list);
             // TODO: shuffled ok
             Ok(AutoplayOk::EnrolledUser)
         }
@@ -335,14 +332,14 @@ impl AutoplayState {
     }
 
     pub fn add_time_to_user(&mut self, user: &User, delta: i64) {
-        self.usertime.change_priority_by(user, |Reverse(v)| *v += delta);
-        let us = self.usertimecache.entry(user.clone()).or_insert(0);
+        self.usertime.change_priority_by(&user.id, |Reverse(v)| *v += delta);
+        let us = self.usertimecache.entry(user.id.clone()).or_insert(0);
         *us += delta;
     }
 
     pub fn update_userplaylist(&mut self, requester: Requester) -> Result<AutoplayOk, AutoplayError> {
 
-        let url = if let Some(ul) = &self.userlists.get(&requester.user) {
+        let url = if let Some(ul) = &self.userlists.get(&requester.userid) {
             ul.url.clone()
         }
         else {
@@ -357,7 +354,7 @@ impl AutoplayState {
     }
 
     pub fn advance_userplaylist(&mut self, user: &User, num: u64) -> Result<AutoplayOk, AutoplayError> {
-        if let Some(ul) = self.userlists.get_mut(user) {
+        if let Some(ul) = self.userlists.get_mut(&user.id) {
             for _ in 0..num {
                 ul.next();
             }
@@ -371,108 +368,3 @@ impl AutoplayState {
 }
 
 
-pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>, old: Option<VoiceState>, new: VoiceState) {
-    let bot = ctx.cache.current_user_id().await;
-    let guild = ctx.cache.guild(guildid.unwrap()).await.unwrap(); // TODO: don't unwrap here, play nice
-    let bot_voice = guild.voice_states.get(&bot);
-
-    if bot_voice.is_none() {
-        debug!("bot is not in voice, ignoring voice state change");
-        return;
-    }
-
-    get_mstate!(mut, mstate, ctx);
-    if !mstate.autoplay.enabled {
-        debug!("autoplay is not enabled, ignoring voice state change");
-        return;
-    }
-
-    let bot_voice = bot_voice.unwrap();
-    let bot_chan = bot_voice.channel_id.unwrap();
-
-    // Bot has joined a channel
-    if new.member.as_ref().unwrap().user.id == bot {
-        if let Some(chan) = new.channel_id {
-            // Clear out current autoplay users
-            mstate.autoplay.disable_all_users();
-
-            // ...and enable only users in this new channel
-            for (uid, vs) in guild.voice_states.iter() {
-                if *uid == bot || vs.channel_id.unwrap() != chan {
-                    continue;
-                }
-
-                let user = if let &Some(mem) = &vs.member.as_ref() {
-                    debug!("vs.member not None, using from there");
-                    mem.user.clone()
-                } else {
-                    // Use the cache lookup based on key, because voicestate.member may be None.
-                    if let Some(user) = ctx.cache.user(uid).await {
-                        debug!("obtained user from cache");
-                        user
-                    }
-                    // If cache fails for some reason, rely on making a direct http request
-                    else if let Ok(user) = ctx.http.get_user(*uid.as_u64()).await {
-                        debug!("obtained user from http call");
-                        user
-                    }
-                    // This may also fail and we'll be sad here
-                    else {
-                        panic!("failed to obtain user {:?} from both cache and http", uid);
-                    }
-
-                };
-
-                match mstate.autoplay.enable_user(&user) {
-                    Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
-                    Err(e) => debug!("did not enroll user {}: {:?}", user.tag(), e),
-                };
-            }
-        }
-
-        return;
-    }
-
-    // Connect-to-voice check, enroll if in correct channel
-    if let Some(chan) = new.channel_id {
-        if chan == bot_chan {
-            let user = new.member.unwrap().user;
-            match mstate.autoplay.enable_user(&user) {
-                Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
-                Err(e) => debug!("did not enroll {}: {:?}", user.tag(), e)
-            }
-            return;
-        }
-        else {
-            debug!("received voice connect for another channel, trying disconnect checks");
-        }
-    }
-
-    // Disconnect from voice checks, unenroll if old voice state matches bot's channel
-
-    // new has already been checked, so this is a join for another channel likely?
-    if old.is_none() {
-        debug!("join received for another channel, ignoring!");
-        return;
-    }
-
-    let old_vs = old.unwrap();
-    if old_vs.channel_id.is_none() {
-        warn!("not sure, apparently no old state channel, but also no new state channel?");
-        return;
-    }
-    let chan = old_vs.channel_id.unwrap();
-
-    if chan == bot_chan {
-        let user = new.member.unwrap().user;
-        match mstate.autoplay.disable_user(&user) {
-            Ok(o) => debug!("unenrolling user {}: {:?}", user.tag(), o),
-            Err(e) => debug!("did not unenroll {}: {:?}", user.tag(), e)
-        }
-    }
-    else {
-        debug!("received voice disconnect for another channel, ignorning");
-    }
-
-    return;
-}
