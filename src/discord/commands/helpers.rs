@@ -168,7 +168,7 @@ pub fn show_queuestate(mstate: &MusicState<DiscordPlayer>) -> String {
     }
 
     if mstate.autoplay.enabled {
-        ap = Some(mstate.autoplay.show_upcoming(10));
+        ap = Some(autoplay_show_upcoming(mstate, 10));
     }
 
     let mut ret = String::new();
@@ -268,6 +268,28 @@ pub fn get_history_embed(mstate: &MusicState<DiscordPlayer>, num: usize) -> Crea
         Some(s) => s,
         None => String::from("No songs have been played"),
     });
+
+    ret
+}
+
+pub fn autoplay_show_upcoming(mstate: &MusicState<DiscordPlayer>, num: u64) -> String {
+    let num = if num > 10 {
+        10
+    } else {
+        num
+    };
+
+    let songs = mstate.autoplay.prefetch(num);
+    if songs.is_none() {
+        return String::from("No users enrolled in Autoplay\n");
+    }
+    let songs = songs.unwrap();
+
+    let mut ret = String::from("Upcoming Autoplay songs:\n");
+
+    for (i,v) in songs.iter().enumerate() {
+        ret += &format!("{}: {}\n", i+1, &v).to_owned();
+    }
 
     ret
 }

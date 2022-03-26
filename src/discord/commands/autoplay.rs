@@ -108,7 +108,7 @@ async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|e| { e
-            .description(mstate.autoplay.show_upcoming(num))
+            .description(autoplay_show_upcoming(&mstate, num))
         })
     }).await);
 

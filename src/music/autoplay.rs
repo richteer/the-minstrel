@@ -206,7 +206,7 @@ impl AutoplayState {
         Ok(AutoplayOk::RegisteredUser)
     }
 
-    fn prefetch(&self, num: u64) -> Option<Vec<Song>> {
+    pub fn prefetch(&self, num: u64) -> Option<Vec<Song>> {
         let mut ap = self.clone();
         let mut ret = Vec::new();
 
@@ -222,28 +222,7 @@ impl AutoplayState {
         Some(ret)
     }
 
-    pub fn show_upcoming(&self, num: u64) -> String {
-        // TODO: Config this. Perhaps notice that the upcoming list was truncated
-        let num = if num > 10 {
-            10
-        } else {
-            num
-        };
 
-        let songs = self.prefetch(num);
-        if songs.is_none() {
-            return String::from("No users enrolled in Autoplay\n");
-        }
-        let songs = songs.unwrap();
-
-        let mut ret = String::from("Upcoming Autoplay songs:\n");
-
-        for (i,v) in songs.iter().enumerate() {
-            ret += &format!("{}: {}\n", i+1, &v).to_owned();
-        }
-
-        ret
-    }
 
     /// Enable a user that already has a registered setlist in the autoplay system
     /// Sets the user's playtime to the current minimum value
