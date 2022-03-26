@@ -19,6 +19,7 @@ use std::{
 };
 
 use super::music::MusicState;
+use crate::music::requester::*;
 
 use crate::discord::MusicStateKey;
 use crate::discord::player::DiscordPlayer;
@@ -213,6 +214,12 @@ pub fn get_nowplay_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
         }
     };
 
+    let user = match song.requested_by.user {
+        UserModels::Discord(d) => d,
+        #[allow(unreachable_patterns)]
+        _ => todo!("Unsupported usermodel detected, implement this later!"),
+    };
+
     let md = song.metadata;
     let thumb = match md.thumbnail.clone() {
         Some(t) => t,
@@ -233,8 +240,8 @@ pub fn get_nowplay_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
             )
         )
         .footer(|f| { f
-            .icon_url(song.requested_by.user.face())
-            .text(format!("Requested by: {}", song.requested_by.name))
+            .icon_url(user.face())
+            .text(format!("Requested by: {}", user.name))
         });
 
     ret

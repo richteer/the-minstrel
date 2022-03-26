@@ -26,7 +26,7 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // TODO: confirm if this is actually needed
     let url = args.single::<String>()?;
 
-    let requester = Requester::from_msg(&ctx, &msg).await;
+    let requester = Requester::from(msg);
 
     let url = match Song::new(url, requester) {
         Ok(u) => u,

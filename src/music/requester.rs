@@ -1,31 +1,40 @@
-use serenity::model::user::User;
-use serenity::model::id::UserId;
-use serenity::model::channel::Message;
-use serenity::prelude::*;
 use serde::{Deserialize, Serialize};
 
-/// Struct to hold requested-by information for MusicState and friends
-/// Fill with anything that is not in the User struct that might be useful
+// TODO: Either move this somewhere else, or reconsider how this can be done more
+//  dynamically. Templates and traitbounds could work, or just use dyn Trait
+//  as the entries to enum? Or just make that be the struct field, and let the
+//  caller figure that out?
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Requester {
-    pub user: User,
-    // User nickname in server or name without discriminator
-    pub name: String,
-    pub userid: UserId,
+#[non_exhaustive]
+pub enum UserModels {
+    Discord(serenity::model::user::User),
 }
 
-impl Requester {
-    pub async fn from_msg(ctx: &Context, msg: &Message) -> Requester {
-        // TODO: Perhaps macro this and let this async nonsense be done in the calling command?
-        let name = msg.author
-            .nick_in(&ctx.http, msg.guild_id.unwrap())
-            .await
-            .unwrap_or(msg.author.name.clone());
-
-        Requester {
-            name: name,
-            user: msg.author.clone(),
-            userid: msg.author.id.clone(),
+impl UserModels {
+    pub fn get_name(&self) -> &String {
+        match self {
+            UserModels::Discord(u) => &u.name,
+            #[allow(unreachable_patterns)]
+            _ => todo!("Unknown user model, implement me!"),
         }
     }
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, Hash, Eq, PartialEq)]
+pub struct MinstrelUserId(pub String);
+
+pub trait ToRequester<T> {
+    fn to_requester(self) -> Requester;
+}
+
+/// Struct to hold requested-by information for MusicState and friends
+/// Fill with anything that is not in the User struct that might be useful
+//#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Requester {
+    pub user: UserModels,
+    // User nickname in server or name without discriminator
+    //pub name: String,
+    pub id: MinstrelUserId,
+}
+

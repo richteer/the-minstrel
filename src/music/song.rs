@@ -75,7 +75,7 @@ impl fmt::Display for Song {
         write!(f, "**{0}** [{1}:{2:02}] _(requested by {3})_",
             self.metadata.title,
             mins, secs,
-            &self.requested_by.name,
+            &self.requested_by.user.get_name(),
         )
     }
 }

@@ -41,7 +41,7 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
 
-    let requester = Requester::from_msg(&ctx, &msg).await;
+    let requester = Requester::from(msg);
 
     let url = match Song::new(url, requester) {
         Ok(u) => u,

@@ -153,7 +153,7 @@ impl<T: MusicPlayer> MusicState<T> {
             // TODO: Config this
             // TODO: probably reconsider where this needs to go
             if self.autoplay.enabled {
-                self.autoplay.add_time_to_user(&song.requested_by.user, song.duration);
+                self.autoplay.add_time_to_user(&song.requested_by.id, song.duration);
             }
 
             return Some(song);

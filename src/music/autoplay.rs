@@ -1,5 +1,8 @@
-use super::song::Song;
-use super::Requester;
+use crate::music::{
+    song::Song,
+    requester::MinstrelUserId,
+    requester::Requester,
+};
 
 use std::fmt;
 use std::sync::{RwLock, Arc};
@@ -12,12 +15,6 @@ use log::*;
 use pickledb::{PickleDb, PickleDbDumpPolicy};
 use youtube_dl::YoutubeDlOutput;
 
-use serenity::{
-    model::user::User,
-};
-
-// TODO: replace this with the proper User object for autoplay
-use serenity::model::id::UserId as TempUser;
 
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -102,9 +99,9 @@ impl UserPlaylist {
 pub struct AutoplayState {
     // TODO: consider just using UserId here for the index?
     // TODO: consider Arc'ing the userlist so AutoplayState can be cloned when prefetching songs
-    userlists: HashMap<TempUser, UserPlaylist>,
-    usertime: PriorityQueue<TempUser, Reverse<i64>>,
-    usertimecache: HashMap<TempUser, i64>,
+    userlists: HashMap<MinstrelUserId, UserPlaylist>,
+    usertime: PriorityQueue<MinstrelUserId, Reverse<i64>>,
+    usertimecache: HashMap<MinstrelUserId, i64>,
     pub enabled: bool,
     // TODO: make this a global db that all things can access. this is fine for now though.
     storage: Arc<RwLock<PickleDb>>,
@@ -134,8 +131,8 @@ impl AutoplayState {
         };
 
         for (req, url) in users {
-            // Panicking here is fine for now, if there's bad date in the json, let that be caught
-            info!("loading setlist for user {} from storage", &req.user.name);
+            // Panicking here is fine for now, if there's bad data in the json, let that be caught
+            info!("loading setlist for user {} from storage", &req.user.get_name());
             ret.register(req, &url).unwrap();
         }
 
@@ -167,12 +164,14 @@ impl AutoplayState {
     pub fn register(&mut self, requester: Requester, url: &String) -> Result<AutoplayOk, AutoplayError> {
         {
             if let Ok(mut lock) = self.storage.write() {
-                let write = (requester.clone(), url.clone());
-                match lock.set(&requester.user.id.to_string(), &write) {
+                match lock.set(&requester.id.0, &(&requester, url)) {
                     Ok(_) => (),
                     Err(e) => error!("Error writing to autoplay storage: {:?}", e),
                     // Continue on failure, storage isn't important
                 }
+            }
+            else {
+                error!("Failed to obtain lock on autoplay storage");
             }
         }
 
@@ -200,9 +199,9 @@ impl AutoplayState {
         tmpdata.shuffle();
 
         // TODO: probably definitely just use UserId here, this is a lot of clones
-        self.userlists.insert(requester.userid.clone(), tmpdata);
-        self.usertime.push(requester.userid.clone(), Reverse(0));
-        self.usertimecache.insert(requester.userid.clone(), 0);
+        self.userlists.insert(requester.id.clone(), tmpdata);
+        self.usertime.push(requester.id.clone(), Reverse(0));
+        self.usertimecache.insert(requester.id.clone(), 0);
 
         Ok(AutoplayOk::RegisteredUser)
     }
@@ -248,20 +247,20 @@ impl AutoplayState {
 
     /// Enable a user that already has a registered setlist in the autoplay system
     /// Sets the user's playtime to the current minimum value
-    pub fn enable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
-        if !self.userlists.contains_key(&user.id) {
+    pub fn enable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
+        if !self.userlists.contains_key(userid) {
             return Err(AutoplayError::UserNotRegistered);
         }
 
-        let prevtime = if let Some(p) = self.usertimecache.get(&user.id) {
+        let prevtime = if let Some(p) = self.usertimecache.get(userid) {
             p
         } else {
             // TODO: maybe just set a default value here?
-            error!("Somehow user was in userlist but not in usertimecache: {:?}", user);
+            error!("Somehow user was in userlist but not in usertimecache: {:?}", userid);
             return Err(AutoplayError::UnknownError);
         };
 
-        if self.usertime.get(&user.id).is_some() {
+        if self.usertime.get(userid).is_some() {
             // user already enabled
             return Err(AutoplayError::AlreadyEnrolled);
         }
@@ -280,14 +279,14 @@ impl AutoplayState {
         };
         debug!("user re-enabled with a score of {}", time);
 
-        self.usertime.push(user.id.clone(), Reverse(time));
-        self.usertimecache.insert(user.id.clone(), time);
+        self.usertime.push(userid.clone(), Reverse(time));
+        self.usertimecache.insert(userid.clone(), time);
 
         Ok(AutoplayOk::EnrolledUser)
     }
 
-    pub fn disable_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
-        match self.usertime.remove(&user.id) {
+    pub fn disable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
+        match self.usertime.remove(userid) {
             Some((user, Reverse(time))) => {
                 self.usertimecache.insert(user, time);
                 Ok(AutoplayOk::RemovedUser)
@@ -316,11 +315,11 @@ impl AutoplayState {
         format!("{:?}", self.usertime)
     }
 
-    pub fn shuffle_user(&mut self, user: &User) -> Result<AutoplayOk, AutoplayError> {
-        if let Some(list) = self.userlists.get(&user.id) {
+    pub fn shuffle_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
+        if let Some(list) = self.userlists.get(userid) {
             let mut list = list.clone();
             list.shuffle();
-            self.userlists.insert(user.id.clone(), list);
+            self.userlists.insert(userid.clone(), list);
             // TODO: shuffled ok
             Ok(AutoplayOk::EnrolledUser)
         }
@@ -331,30 +330,30 @@ impl AutoplayState {
 
     }
 
-    pub fn add_time_to_user(&mut self, user: &User, delta: i64) {
-        self.usertime.change_priority_by(&user.id, |Reverse(v)| *v += delta);
-        let us = self.usertimecache.entry(user.id.clone()).or_insert(0);
+    pub fn add_time_to_user(&mut self, userid: &MinstrelUserId, delta: i64) {
+        self.usertime.change_priority_by(userid, |Reverse(v)| *v += delta);
+        let us = self.usertimecache.entry(userid.clone()).or_insert(0);
         *us += delta;
     }
 
-    pub fn update_userplaylist(&mut self, requester: Requester) -> Result<AutoplayOk, AutoplayError> {
+    pub fn update_userplaylist(&mut self, requester: &Requester) -> Result<AutoplayOk, AutoplayError> {
 
-        let url = if let Some(ul) = &self.userlists.get(&requester.userid) {
+        let url = if let Some(ul) = &self.userlists.get(&requester.id) {
             ul.url.clone()
         }
         else {
             return Err(AutoplayError::UserNotRegistered);
         };
 
-        match self.register(requester, &url) {
+        match self.register(requester.clone(), &url) {
             Ok(AutoplayOk::RegisteredUser) => Ok(AutoplayOk::UpdatedPlaylist),
             Ok(o) => panic!("unknown ok response from register trying to update: {:?}", o),
             Err(e) => Err(e)
         }
     }
 
-    pub fn advance_userplaylist(&mut self, user: &User, num: u64) -> Result<AutoplayOk, AutoplayError> {
-        if let Some(ul) = self.userlists.get_mut(&user.id) {
+    pub fn advance_userplaylist(&mut self, userid: &MinstrelUserId, num: u64) -> Result<AutoplayOk, AutoplayError> {
+        if let Some(ul) = self.userlists.get_mut(userid) {
             for _ in 0..num {
                 ul.next();
             }

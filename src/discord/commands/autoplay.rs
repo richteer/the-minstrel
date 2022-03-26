@@ -64,14 +64,14 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
 #[num_args(1)]
 async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
-    let requester = Requester::from_msg(&ctx, &msg).await;
+    let requester = Requester::from(msg);
 
     {
         get_mstate!(mut, mstate, ctx);
 
         match url.as_str() {
             "refetch"|"refresh"|"update" => {
-                match mstate.autoplay.update_userplaylist(requester) {
+                match mstate.autoplay.update_userplaylist(&requester) {
                     Ok(m)  => check_msg(msg.channel_id.say(&ctx.http, m).await),
                     Err(e) => check_msg(msg.channel_id.say(&ctx.http, format!("{:?}", e)).await),
                 };
@@ -122,7 +122,7 @@ async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    let ret = match mstate.autoplay.enable_user(&msg.author) {
+    let ret = match mstate.autoplay.enable_user(&msg.author.id.into()) {
         Ok(m) => m.to_string(),
         Err(e) => format!("Error enabling user: {:?}", e),
     };
@@ -138,7 +138,7 @@ async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
 async fn removeuser(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    let ret = match mstate.autoplay.disable_user(&msg.author) {
+    let ret = match mstate.autoplay.disable_user(&msg.author.id.into()) {
         Ok(m) => m.to_string(),
         Err(e) => format!("Error disabling user: {:?}", e),
     };
@@ -171,7 +171,7 @@ async fn rebalance(ctx: &Context, msg: &Message) -> CommandResult {
 async fn shuffle(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    mstate.autoplay.shuffle_user(&msg.author).unwrap();
+    mstate.autoplay.shuffle_user(&msg.author.id.into()).unwrap();
 
     check_msg(msg.channel_id.say(&ctx.http, "Shuffled your playlist.").await);
 
@@ -247,7 +247,7 @@ async fn advance(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     get_mstate!(mut, mstate, ctx);
 
-    let out = match mstate.autoplay.advance_userplaylist(&msg.author, num) {
+    let out = match mstate.autoplay.advance_userplaylist(&msg.author.id.into(), num) {
         Ok(_)  => format!("Advanced your playlist ahead {} song(s)", num),
         Err(e) => format!("Could not advance playlist: {:?}", e),
     };
