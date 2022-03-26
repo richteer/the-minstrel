@@ -24,6 +24,8 @@ use crate::music::requester::*;
 use crate::discord::MusicStateKey;
 use crate::discord::player::DiscordPlayer;
 
+use crate::read_config;
+
 pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState<DiscordPlayer>>>> {
     let data = ctx.data.read().await;
 
@@ -168,7 +170,7 @@ pub fn show_queuestate(mstate: &MusicState<DiscordPlayer>) -> String {
     }
 
     if mstate.autoplay.enabled {
-        ap = Some(autoplay_show_upcoming(mstate, 10));
+        ap = Some(autoplay_show_upcoming(mstate, read_config!(discord.queuestate_ap_count)));
     }
 
     let mut ret = String::new();
@@ -273,8 +275,8 @@ pub fn get_history_embed(mstate: &MusicState<DiscordPlayer>, num: usize) -> Crea
 }
 
 pub fn autoplay_show_upcoming(mstate: &MusicState<DiscordPlayer>, num: u64) -> String {
-    let num = if num > 10 {
-        10
+    let num = if num > read_config!(discord.autoplay_upcoming_max) {
+        read_config!(discord.autoplay_upcoming_max)
     } else {
         num
     };

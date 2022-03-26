@@ -7,6 +7,9 @@ use log::*;
 
 mod discord;
 mod music;
+mod conf;
+
+use crate::conf::CONFIG;
 
 #[tokio::main]
 async fn main() {
@@ -24,6 +27,8 @@ async fn main() {
     dotenv::dotenv().ok();
 
     env_logger::init();
+
+    debug!("config = {:?}", *CONFIG);
 
     let mut client = discord::client::create_player().await;
 

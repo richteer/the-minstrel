@@ -1,3 +1,4 @@
+use crate::read_config;
 use crate::music::{
     song::Song,
     requester::MinstrelUserId,
@@ -207,6 +208,12 @@ impl AutoplayState {
     }
 
     pub fn prefetch(&self, num: u64) -> Option<Vec<Song>> {
+        let num = if num > read_config!(music.autoplay_prefetch_max) {
+            read_config!(music.autoplay_prefetch_max)
+        } else {
+            num
+        };
+
         let mut ap = self.clone();
         let mut ret = Vec::new();
 

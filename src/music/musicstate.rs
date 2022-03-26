@@ -7,6 +7,8 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use log::*;
 
+use crate::read_config;
+
 #[allow(dead_code)]
 #[non_exhaustive]
 #[derive(Debug)]
@@ -95,9 +97,6 @@ impl<T: MusicPlayer> fmt::Debug for MusicState<T> {
         )
     }
 }
-
-// TODO: Make this a config setting probably
-const MAX_QUEUE_LEN: usize = 10;
 
 impl<T: MusicPlayer> MusicState<T> {
 
@@ -220,7 +219,7 @@ impl<T: MusicPlayer> MusicState<T> {
 
     /// Only enqueue a track to be played, do not start playing
     pub fn enqueue(&mut self, song: Song) -> Result<MusicOk, MusicError> {
-        if self.queue.len() > MAX_QUEUE_LEN {
+        if self.queue.len() > read_config!(music.queue_length) {
             return Err(MusicError::QueueFull)
         }
 
