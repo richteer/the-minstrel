@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[allow(unused)]
 pub struct MusicConfig {
     pub queue_length: usize,

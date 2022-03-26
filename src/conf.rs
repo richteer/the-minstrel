@@ -6,7 +6,7 @@ use std::sync::RwLock;
 use crate::music::conf::MusicConfig;
 use crate::discord::conf::DiscordConfig;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[allow(unused)]
 pub struct Configuration {
     pub music: MusicConfig,
@@ -23,7 +23,7 @@ impl Configuration {
         let conf = Config::builder()
             .add_source(Config::try_from(&Configuration::default()).unwrap())
             .add_source(File::with_name("config.toml"))
-            .add_source(File::with_name("devel.toml"))
+            .add_source(File::with_name("devel.toml").required(false))
             .build()?;
 
         conf.try_deserialize()

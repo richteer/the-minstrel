@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[allow(unused)]
 pub struct DiscordConfig {
     pub autoplay_upcoming_max: u64,
