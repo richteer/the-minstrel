@@ -14,6 +14,7 @@ use crate::discord::commands::{
     musicctl::*,
     queuectl::*,
     autoplay::*,
+    config::*,
     debug::*,
     helpers::*,
 };
@@ -73,9 +74,16 @@ struct QueueControlCmd;
 struct AutoplayCmd;
 
 #[group]
+#[description = "Commands for reading or manipulating config"]
+#[prefix("config")]
+#[commands(set, get)]
+// TODO: require owner
+struct ConfigCmd;
+
+#[group]
 #[description = "Commands for debugging purposes"]
 #[prefix("debug")]
-#[commands(usertime, dropapuser, modutime, musicstate)]
+#[commands(usertime, dropapuser, modutime, musicstate, dumpconfig)]
 // TODO: require owner
 struct DebugCmd;
 
@@ -266,6 +274,7 @@ pub async fn create_player() -> serenity::Client {
         .group(&MUSICCONTROLCMD_GROUP)
         .group(&QUEUECONTROLCMD_GROUP)
         .group(&AUTOPLAYCMD_GROUP)
+        .group(&CONFIGCMD_GROUP)
         .group(&DEBUGCMD_GROUP)
         .help(&HELPME);
 

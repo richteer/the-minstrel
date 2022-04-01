@@ -10,6 +10,7 @@ use serenity::{
     },
 };
 use crate::get_mstate;
+use crate::conf::CONFIG;
 
 
 #[command]
@@ -78,6 +79,19 @@ async fn musicstate(ctx: &Context, msg: &Message) -> CommandResult {
             e.description(format!("```{:?}```", mstate))
         })
     }).await.unwrap();
+
+    Ok(())
+}
+
+#[command]
+#[only_in(guilds)]
+async fn dumpconfig(ctx: &Context, msg: &Message) -> CommandResult {
+    let conf = { CONFIG.read().unwrap().clone() };
+
+    // TODO: move this to debug.rs
+    // TODO: make a fancier config display function, perhaps one that is better copy-pasteable
+
+    msg.channel_id.say(&ctx.http, format!("```{:?}```", conf)).await?;
 
     Ok(())
 }
