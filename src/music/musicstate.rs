@@ -6,6 +6,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use log::*;
+use serde::Serialize;
 
 use crate::read_config;
 
@@ -56,7 +57,7 @@ pub enum MusicError {
 
 
 #[non_exhaustive]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub enum MusicStateStatus {
     Playing,
     Stopping,
@@ -74,7 +75,7 @@ pub struct MusicState<T: MusicPlayer> {
     pub player: Option<Arc<Mutex<Box<T>>>>,
     pub current_track: Option<Song>,
     pub status: MusicStateStatus,
-    queue: VecDeque<Song>,
+    pub queue: VecDeque<Song>,
     pub history: VecDeque<Song>,
     pub autoplay: AutoplayState,
 }

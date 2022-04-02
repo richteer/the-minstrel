@@ -1,11 +1,12 @@
 use super::MusicError;
 use super::Requester;
+use serde::Serialize;
 
 use std::fmt;
 
 use youtube_dl::{YoutubeDl, YoutubeDlOutput, SingleVideo};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct Song {
     pub url: String,
     // TODO: should metadata actually be an Option, or should this be mandatory for a song?
