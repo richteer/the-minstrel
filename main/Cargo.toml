@@ -12,8 +12,16 @@ env_logger = "0.9"
 log = "0.4"
 
 minstrel-config = { path = "../minstrel-config" }
+
+# Used to provide a web server for dashboards, APIs, etc
+warp = { version = "0.3", optional = true }
+
+# Provides a player backend, web API
 discord = { path = "../discord", optional = true }
 
+
 [features]
-default = ["discord-player"]
+default = ["discord-player", "discord-webdash", "web-server"]
 discord-player = ["discord"]
+discord-webdash = ["discord-player", "web-server"]
+web-server = ["warp"]

@@ -26,12 +26,37 @@ async fn main() {
 
     debug!("config = {:?}", *CONFIG);
 
+    #[cfg(feature = "discord-webdash")]
+    let ddash;
+
     #[cfg(feature = "discord-player")]
     {
         let mut client = discord::client::create_player().await;
 
-        if let Err(why) = client.start().await {
-            error!("Client error: {:?}", why);
+        #[cfg(all(feature = "discord-webdash"))]
+        {
+            ddash = discord::web::get_web_filter(&client).await;
         }
+
+        info!("spawning discord player");
+        tokio::spawn(async move {
+            if let Err(why) = client.start().await {
+                error!("Client error: {:?}", why);
+            }
+        });
     }
+
+    // TODO: figure out a method of composing multiple filters if there ever are multiple filters
+    #[cfg(feature = "discord-webdash")]
+    let site = ddash;
+
+    #[cfg(feature = "web-server")]
+    {
+        info!("spawning web server");
+        warp::serve(site)
+        .run(([127,0,0,1], 3030))
+        .await;
+    }
+
+    info!("Exiting...");
 }

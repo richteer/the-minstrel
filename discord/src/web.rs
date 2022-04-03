@@ -30,18 +30,11 @@ async fn show_state(
     Ok(warp::reply::json(&ret))
 }
 
-pub async fn start_webserver(client: &Client) {
+pub async fn get_web_filter(client: &Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let mstate = client.data.read().await.get::<MusicStateKey>().cloned().unwrap();
+    let mstate = warp::any().map(move || { mstate.clone() });
 
-    tokio::spawn(async move {
-        let mstate = warp::any().map(move || { mstate.clone() });
-
-        let dash = warp::get()
-            .and(mstate)
-            .and_then(show_state);
-
-        warp::serve(dash)
-            .run(([127,0,0,1], 3030))
-            .await;
-    });
+    warp::get()
+        .and(mstate)
+        .and_then(show_state)
 }

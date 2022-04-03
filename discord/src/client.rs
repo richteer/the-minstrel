@@ -292,9 +292,6 @@ pub async fn create_player() -> serenity::Client {
             .register_musicstate()
             .await.expect("Err creating client");
 
-    // TODO: have main start a single webserver that fetches filters from libraries
-    crate::web::start_webserver(&client).await;
-
     // Finally, start a single shard, and start listening to events.
     //
     // Shards will automatically attempt to reconnect, and will perform
