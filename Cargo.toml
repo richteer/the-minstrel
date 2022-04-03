@@ -1,47 +1,8 @@
-[package]
-name = "the-minstrel"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
-youtube_dl = { version = "0.7.0", features = ["yt-dlp"], default-features = false }
-dotenv = "0.15"
-rand = "0.8.4"
-pickledb = "0.4.1" # Eventually replace with a real db maybe for scale
-serde = "1.0"
-env_logger = "0.9"
-log = "0.4"
-priority-queue = "1.2.1"
-async-trait = "0.1"
-lazy_static = "1.4"
-config = "0.12"
-warp = "0.3"
-
-# TODO: This should only be depended on by webdash/discord, etc
-webdata = { path = "webdata" }
-
-[dependencies.serenity]
-default-features = false
-# TODO: determine which features actually needed, and remove the rest
-features = [
-    "builder",
-    "cache",
-    "client",
-    "framework",
-    "gateway",
-    "http",
-    "model",
-    "standard_framework",
-    "utils",
-    "rustls_backend",
-    "voice",
+[workspace]
+members = [
+	"webdata",
+# Intentionally not included, since it needs a custom build process
+#	"webdash",
+	"main",
 ]
-version = "0.10"
 
-[dependencies.songbird]
-git = "https://github.com/richteer/songbird"
-branch = "richteer/ytdl-ffmpeg-args"
-features = ["yt-dlp"]
