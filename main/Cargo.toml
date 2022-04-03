@@ -12,4 +12,8 @@ env_logger = "0.9"
 log = "0.4"
 
 minstrel-config = { path = "../minstrel-config" }
-discord = { path = "../discord" }
+discord = { path = "../discord", optional = true }
+
+[features]
+default = ["discord-player"]
+discord-player = ["discord"]

@@ -5,7 +5,6 @@ use std::{
 use dotenv;
 use log::*;
 
-
 use minstrel_config::CONFIG;
 
 #[tokio::main]
@@ -27,13 +26,12 @@ async fn main() {
 
     debug!("config = {:?}", *CONFIG);
 
-    let mut client = discord::client::create_player().await;
+    #[cfg(feature = "discord-player")]
+    {
+        let mut client = discord::client::create_player().await;
 
-    // Finally, start a single shard, and start listening to events.
-    //
-    // Shards will automatically attempt to reconnect, and will perform
-    // exponential backoff until it reconnects.
-    if let Err(why) = client.start().await {
-        error!("Client error: {:?}", why);
+        if let Err(why) = client.start().await {
+            error!("Client error: {:?}", why);
+        }
     }
 }
