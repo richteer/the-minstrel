@@ -20,6 +20,9 @@ lazy_static = "1.4"
 config = "0.12"
 warp = "0.3"
 
+# TODO: This should only be depended on by webdash/discord, etc
+webdata = { path = "webdata" }
+
 [dependencies.serenity]
 default-features = false
 # TODO: determine which features actually needed, and remove the rest
