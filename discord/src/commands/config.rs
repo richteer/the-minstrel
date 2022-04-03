@@ -11,7 +11,7 @@ use serenity::{
 };
 
 use config::{Config, Source};
-use crate::conf::{CONFIG, Configuration};
+use minstrel_config::{CONFIG, Configuration};
 
 #[command]
 #[only_in(guilds)]

@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 use log::*;
 use serde::Serialize;
 
-use crate::read_config;
+use minstrel_config::read_config;
 
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -65,7 +65,7 @@ pub enum MusicStateStatus {
     Idle,
 }
 
-use crate::music::MusicPlayer;
+use super::MusicPlayer;
 
 
 // Higher level manager for playing music. In theory, should abstract out

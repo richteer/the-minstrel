@@ -5,11 +5,8 @@ use std::{
 use dotenv;
 use log::*;
 
-mod discord;
-mod music;
-mod conf;
 
-use crate::conf::CONFIG;
+use minstrel_config::CONFIG;
 
 #[tokio::main]
 async fn main() {

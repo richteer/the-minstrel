@@ -1,6 +1,9 @@
 [workspace]
 members = [
+	"minstrel-config",
+	"music",
 	"webdata",
+	"discord",
 # Intentionally not included, since it needs a custom build process
 #	"webdash",
 	"main",

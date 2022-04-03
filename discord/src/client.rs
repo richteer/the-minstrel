@@ -5,11 +5,11 @@ use std::{
 };
 use songbird::SerenityInit;
 
-use crate::music::*;
+use music::*;
+use crate::player::*;
 use crate::get_mstate;
-use crate::discord::player::*;
 
-use crate::discord::commands::{
+use crate::commands::{
     general::*,
     musicctl::*,
     queuectl::*,
@@ -290,7 +290,8 @@ pub async fn create_player() -> serenity::Client {
             .register_musicstate()
             .await.expect("Err creating client");
 
-    crate::discord::web::start_webserver(&client).await;
+    // TODO: have main start a single webserver that fetches filters from libraries
+    crate::web::start_webserver(&client).await;
 
     // Finally, start a single shard, and start listening to events.
     //

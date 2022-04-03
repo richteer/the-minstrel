@@ -13,9 +13,9 @@ use serenity::{
 use crate::get_mstate;
 use super::helpers::*;
 use super::check_msg;
-use super::music::{
+use crate::requester::*;
+use music::{
     Song,
-    Requester,
 };
 
 
@@ -41,7 +41,7 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
 
-    let requester = Requester::from(msg);
+    let requester = requester_from_user(&msg.author);
 
     let url = match Song::new(url, requester) {
         Ok(u) => u,

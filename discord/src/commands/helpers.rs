@@ -18,13 +18,13 @@ use std::{
     sync::Arc,
 };
 
-use super::music::MusicState;
-use crate::music::requester::*;
+use music::MusicState;
+use music::requester::*;
 
-use crate::discord::MusicStateKey;
-use crate::discord::player::DiscordPlayer;
+use crate::MusicStateKey;
+use crate::player::DiscordPlayer;
 
-use crate::read_config;
+use minstrel_config::*;
 
 pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState<DiscordPlayer>>>> {
     let data = ctx.data.read().await;
@@ -39,12 +39,12 @@ pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState<DiscordPla
 #[macro_export]
 macro_rules! get_mstate {
     ($mstate:ident, $ctx:ident) => {
-        let $mstate = crate::discord::mstate_get(&$ctx).await.unwrap();
+        let $mstate = crate::mstate_get(&$ctx).await.unwrap();
         let $mstate = $mstate.lock().await;
     };
 
     ($mut:ident, $mstate:ident, $ctx:ident) => {
-        let $mstate = crate::discord::mstate_get(&$ctx).await.unwrap();
+        let $mstate = crate::mstate_get(&$ctx).await.unwrap();
         let $mut $mstate = $mstate.lock().await;
     };
 }

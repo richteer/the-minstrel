@@ -1,5 +1,5 @@
 [package]
-name = "the-minstrel"
+name = "discord"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,11 +8,9 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 youtube_dl = { version = "0.7.0", features = ["yt-dlp"], default-features = false }
-dotenv = "0.15"
 rand = "0.8.4"
 pickledb = "0.4.1" # Eventually replace with a real db maybe for scale
 serde = "1.0"
-env_logger = "0.9"
 log = "0.4"
 priority-queue = "1.2.1"
 async-trait = "0.1"
@@ -21,8 +19,7 @@ config = "0.12"
 warp = "0.3"
 
 minstrel-config = { path = "../minstrel-config" }
-discord = { path = "../discord" }
-# TODO: This should only be depended on by webdash/discord, etc
+music = { path = "../music" }
 webdata = { path = "../webdata" }
 
 [dependencies.serenity]

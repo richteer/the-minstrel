@@ -1,4 +1,4 @@
-use crate::music::*;
+use crate::*;
 
 use async_trait::async_trait;
 

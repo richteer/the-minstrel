@@ -43,3 +43,53 @@ pub enum MusicStateStatus {
     Stopped,
     Idle,
 }
+
+// Foreign impls to make conversion easier for web APIs
+
+impl Into<crate::Requester> for music::Requester {
+    fn into(self) -> crate::Requester {
+        let id = self.id.0.clone();
+
+        match self.user {
+            music::requester::UserModels::Discord(user) => {
+                crate::Requester {
+                    username: user.tag(),
+
+                    // TODO: this should probably use nick_in, perhaps create yet another wrapper to cache this?
+                    displayname: user.name.clone(),
+                    icon: user.face(),
+                    id: id,
+                }
+            },
+            #[allow(unreachable_patterns)]
+            _ => panic!("Only implemented for discord users, template this later"),
+        }
+    }
+}
+
+impl Into<crate::Song> for music::Song {
+    fn into(self) -> crate::Song {
+        let url = self.metadata.url.unwrap(); // Panic here if this isn't set. It should be.
+        crate::Song {
+            title: self.metadata.title,
+            artist: self.metadata.uploader.unwrap_or(String::from("Unknown")),
+            url: url.clone(),
+            thumbnail: self.metadata.thumbnail.unwrap_or(format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", self.metadata.id)),
+            duration: self.duration,
+            requested_by: self.requested_by.into(),
+        }
+    }
+}
+
+// TODO: delete this eventually when types are reconciled
+impl Into<crate::MusicStateStatus> for music::MusicStateStatus {
+    fn into(self) -> crate::MusicStateStatus {
+        match self {
+            music::MusicStateStatus::Idle => crate::MusicStateStatus::Idle,
+            music::MusicStateStatus::Playing => crate::MusicStateStatus::Playing,
+            music::MusicStateStatus::Stopping => crate::MusicStateStatus::Stopping,
+            music::MusicStateStatus::Stopped => crate::MusicStateStatus::Stopped,
+            _ => todo!("unknown music state status obtained from music crate"),
+        }
+    }
+}

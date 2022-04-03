@@ -5,8 +5,6 @@ pub mod autoplay;
 pub mod config;
 pub mod debug;
 
-use crate::music;
-
 pub mod helpers;
 pub use helpers::IN_SAME_VOICE_CHECK as IN_SAME_VOICE_CHECK;
 pub use helpers::check_msg as check_msg;

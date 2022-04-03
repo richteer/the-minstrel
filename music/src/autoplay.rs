@@ -1,5 +1,5 @@
-use crate::read_config;
-use crate::music::{
+use minstrel_config::read_config;
+use super::{
     song::Song,
     requester::MinstrelUserId,
     requester::Requester,

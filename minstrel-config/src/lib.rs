@@ -3,8 +3,12 @@ use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::sync::RwLock;
 
-use crate::music::conf::MusicConfig;
-use crate::discord::conf::DiscordConfig;
+mod music;
+use music::MusicConfig;
+
+// TODO: feature this?
+mod discord;
+use discord::DiscordConfig;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[allow(unused)]
@@ -33,6 +37,6 @@ impl Configuration {
 #[macro_export]
 macro_rules! read_config {
     ($($field:ident).+) => {
-        crate::conf::CONFIG.read().unwrap().$($field).+
+        minstrel_config::CONFIG.read().unwrap().$($field).+
     };
 }

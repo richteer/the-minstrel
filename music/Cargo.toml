@@ -1,0 +1,31 @@
+[package]
+name = "music"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+youtube_dl = { version = "0.7.0", features = ["yt-dlp"], default-features = false }
+rand = "0.8.4"
+pickledb = "0.4.1" # Eventually replace with a real db maybe for scale
+serde = "1.0"
+log = "0.4"
+priority-queue = "1.2.1"
+async-trait = "0.1"
+
+minstrel-config = { path = "../minstrel-config" }
+
+# TODO: Slated for removal?
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+lazy_static = "1.4"
+
+
+# TODO: perhaps not depend on this at all here
+[dependencies.serenity]
+default-features = false
+features = [
+    "model",
+    "rustls_backend",
+]
+version = "0.10"

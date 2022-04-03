@@ -10,7 +10,8 @@ use serenity::{
     },
 };
 use crate::get_mstate;
-use crate::conf::CONFIG;
+use crate::requester::*;
+use minstrel_config::CONFIG;
 
 
 #[command]
@@ -38,7 +39,7 @@ async fn dropapuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
                 .await.unwrap();
     let member = guild.member_named(&user).unwrap();
 
-    mstate.autoplay.disable_user(&member.user.id.into()).unwrap();
+    mstate.autoplay.disable_user(&muid_from_userid(&member.user.id)).unwrap();
 
     let ut = mstate.autoplay.debug_get_usertime();
 
@@ -62,7 +63,7 @@ async fn modutime(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     let member = guild.member_named(&user).unwrap();
 
-    mstate.autoplay.add_time_to_user(&member.user.id.into(), delta);
+    mstate.autoplay.add_time_to_user(&muid_from_userid(&member.user.id), delta);
 
     msg.channel_id.say(&ctx.http, format!("In theory modified usertime")).await?;
 

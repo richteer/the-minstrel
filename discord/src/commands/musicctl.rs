@@ -13,11 +13,11 @@ use serenity::{
 use crate::{get_mstate, join_voice};
 use super::helpers::*;
 use super::check_msg;
-use super::music::{
+use crate::requester::*;
+use music::{
     Song,
     MusicOk,
 };
-use super::music::Requester;
 
 
 #[command]
@@ -26,7 +26,7 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // TODO: confirm if this is actually needed
     let url = args.single::<String>()?;
 
-    let requester = Requester::from(msg);
+    let requester = requester_from_user(&msg.author);
 
     let url = match Song::new(url, requester) {
         Ok(u) => u,

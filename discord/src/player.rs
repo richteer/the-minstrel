@@ -24,12 +24,13 @@ use songbird::{
 use async_trait::async_trait;
 
 use log::*;
-use crate::music::player::MusicPlayer;
-use crate::music::Song;
-use crate::music::*;
+use music::player::MusicPlayer;
+use music::Song;
+use music::*;
 
 use crate::get_mstate;
-use crate::discord::commands::helpers::*;
+use crate::commands::helpers::*;
+use crate::requester::*;
 
 /// Struct to maintain discord's music player state
 pub struct DiscordPlayer {
@@ -225,7 +226,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
 
                 };
 
-                match mstate.autoplay.enable_user(&user.id.into()) {
+                match mstate.autoplay.enable_user(&muid_from_userid(&user.id)) {
                     Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
                     Err(e) => debug!("did not enroll user {}: {:?}", user.tag(), e),
                 };
@@ -239,7 +240,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
     if let Some(chan) = new.channel_id {
         if chan == bot_chan {
             let user = new.member.unwrap().user;
-            match mstate.autoplay.enable_user(&user.id.into()) {
+            match mstate.autoplay.enable_user(&muid_from_userid(&user.id)) {
                 Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
                 Err(e) => debug!("did not enroll {}: {:?}", user.tag(), e)
             }
@@ -267,7 +268,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
 
     if chan == bot_chan {
         let user = new.member.unwrap().user;
-        match mstate.autoplay.disable_user(&user.id.into()) {
+        match mstate.autoplay.disable_user(&muid_from_userid(&user.id)) {
             Ok(o) => debug!("unenrolling user {}: {:?}", user.tag(), o),
             Err(e) => debug!("did not unenroll {}: {:?}", user.tag(), e)
         }
