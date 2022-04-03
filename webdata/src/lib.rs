@@ -5,6 +5,8 @@ use serde::{
 
 use std::collections::VecDeque;
 
+// Literal copy of what is in music::Requester
+//  Subject to deletion if/when all the structs in music:: become "web compatible"
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
 pub struct Requester {
     pub username: String,
@@ -46,23 +48,15 @@ pub enum MusicStateStatus {
 
 // Foreign impls to make conversion easier for web APIs
 
+// Keeping this one around so that the API is consistent internally,
+//  don't want to mess around with using a mix of remote structs and webdata structs
 impl Into<crate::Requester> for music::Requester {
     fn into(self) -> crate::Requester {
-        let id = self.id.0.clone();
-
-        match self.user {
-            music::requester::UserModels::Discord(user) => {
-                crate::Requester {
-                    username: user.tag(),
-
-                    // TODO: this should probably use nick_in, perhaps create yet another wrapper to cache this?
-                    displayname: user.name.clone(),
-                    icon: user.face(),
-                    id: id,
-                }
-            },
-            #[allow(unreachable_patterns)]
-            _ => panic!("Only implemented for discord users, template this later"),
+        crate::Requester {
+            username: self.username,
+            displayname: self.displayname,
+            icon: self.icon,
+            id: self.id.0,
         }
     }
 }

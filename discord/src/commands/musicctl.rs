@@ -26,7 +26,7 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // TODO: confirm if this is actually needed
     let url = args.single::<String>()?;
 
-    let requester = requester_from_user(&msg.author);
+    let requester = requester_from_user(ctx, &msg.guild_id, &msg.author).await;
 
     let url = match Song::new(url, requester) {
         Ok(u) => u,
@@ -55,8 +55,10 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
 
+    let embed = get_nowplay_embed(&ctx, &mstate).await;
+
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
-        m.set_embed(get_nowplay_embed(&mstate))
+        m.set_embed(embed)
     }).await);
 
     Ok(())

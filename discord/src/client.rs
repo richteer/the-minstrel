@@ -107,8 +107,10 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
     if let Some(m) = &player.sticky {
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();
 
+        let embed = get_nowplay_embed(&ctx, &mstate).await;
+
         let new = m.channel_id.send_message(&ctx.http, |m| {
-            m.add_embeds(vec![get_queuestate_embed(&mstate), get_nowplay_embed(&mstate)])
+            m.add_embeds(vec![get_queuestate_embed(&mstate), embed])
         }).await.unwrap();
 
         player.sticky = Some(new);

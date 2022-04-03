@@ -162,9 +162,11 @@ impl VoiceEventHandler for TrackEndNotifier {
             p.lock().await
         } else { return None; };
 
+        let embed = get_nowplay_embed(&self.ctx, &mstate).await;
+
         if let Some(sticky) = &player.sticky {
             sticky.channel_id.edit_message(&self.ctx.http, sticky, |m| {
-                m.set_embeds(vec![get_queuestate_embed(&mstate), get_nowplay_embed(&mstate)])
+                m.set_embeds(vec![get_queuestate_embed(&mstate), embed])
             }).await.unwrap();
         }
 

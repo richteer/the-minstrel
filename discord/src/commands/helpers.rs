@@ -19,8 +19,8 @@ use std::{
 };
 
 use music::MusicState;
-use music::requester::*;
 
+use crate::requester::*;
 use crate::MusicStateKey;
 use crate::player::DiscordPlayer;
 
@@ -205,7 +205,7 @@ pub fn get_queuestate_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
     return ret;
 }
 
-pub fn get_nowplay_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
+pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
     let mut ret = CreateEmbed { 0: HashMap::new() };
 
     let song = match mstate.current_song() {
@@ -216,11 +216,7 @@ pub fn get_nowplay_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
         }
     };
 
-    let user = match song.requested_by.user {
-        UserModels::Discord(d) => d,
-        #[allow(unreachable_patterns)]
-        _ => todo!("Unsupported usermodel detected, implement this later!"),
-    };
+    let user = get_user_from_muid(ctx, &song.requested_by.id).await.unwrap();
 
     let md = song.metadata;
     let thumb = match md.thumbnail.clone() {

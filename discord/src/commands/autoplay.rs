@@ -63,7 +63,7 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
 #[num_args(1)]
 async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
-    let requester = requester_from_user(&msg.author);
+    let requester = requester_from_user(ctx, &msg.guild_id, &msg.author).await;
 
     {
         get_mstate!(mut, mstate, ctx);

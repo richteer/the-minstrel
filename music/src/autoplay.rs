@@ -133,7 +133,7 @@ impl AutoplayState {
 
         for (req, url) in users {
             // Panicking here is fine for now, if there's bad data in the json, let that be caught
-            info!("loading setlist for user {} from storage", &req.user.get_name());
+            info!("loading setlist for user {} from storage", &req.displayname);
             ret.register(req, &url).unwrap();
         }
 
