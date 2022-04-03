@@ -4,8 +4,9 @@ members = [
 	"music",
 	"webdata",
 	"discord",
-# Intentionally not included, since it needs a custom build process
-#	"webdash",
 	"main",
 ]
-
+# TODO: Figure out how to automatically use trunk to build
+exclude = [
+	"webdash"
+]

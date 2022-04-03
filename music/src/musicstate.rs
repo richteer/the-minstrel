@@ -65,6 +65,21 @@ pub enum MusicStateStatus {
     Idle,
 }
 
+
+// TODO: delete this eventually when types are reconciled
+impl Into<webdata::MusicStateStatus> for MusicStateStatus {
+    fn into(self) -> webdata::MusicStateStatus {
+        match self {
+            MusicStateStatus::Idle => webdata::MusicStateStatus::Idle,
+            MusicStateStatus::Playing => webdata::MusicStateStatus::Playing,
+            MusicStateStatus::Stopping => webdata::MusicStateStatus::Stopping,
+            MusicStateStatus::Stopped => webdata::MusicStateStatus::Stopped,
+            #[allow(unreachable_patterns)]
+            _ => todo!("unknown music state status obtained from music crate"),
+        }
+    }
+}
+
 use super::MusicPlayer;
 
 

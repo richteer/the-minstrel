@@ -7,5 +7,3 @@ edition = "2021"
 
 [dependencies]
 serde = "1.0"
-
-music = { path = "../music" }
