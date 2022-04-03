@@ -1,5 +1,9 @@
-/target
+dist
+target
 .env
 autoplay.json*
 config.toml
 *workspace
+
+# TODO: eventually consider checking some of these in
+Cargo.lock
