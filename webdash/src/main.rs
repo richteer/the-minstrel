@@ -64,12 +64,22 @@ impl Component for Dash {
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
         if let Some(data) = self.data.clone() {
-            let np = data.current_track.unwrap();
             html! {
                 <div class="container">
-                    <div class="nowplaying">
-                        <SongRow song={np.clone()} />
-                    </div>
+                    {
+                        if let Some(np) = data.current_track {
+                            html! {
+                            <div class="nowplaying">
+                                <SongRow song={np.clone()} />
+                            </div>
+                            }
+                        } else {
+                            html! {
+                            <span><i>{"Nothing currently playing"}</i></span>
+                            }
+                        }
+                    }
+                    <div><span>{"Coming up:"}</span></div>
                     <div>
                         { for data.upcoming.iter().map(|e| {
                                 html! {
