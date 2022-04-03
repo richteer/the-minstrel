@@ -85,11 +85,10 @@ impl fmt::Display for Song {
 
 impl Into<webdata::Song> for Song {
     fn into(self) -> webdata::Song {
-        let url = self.metadata.url.unwrap(); // Panic here if this isn't set. It should be.
         webdata::Song {
             title: self.metadata.title,
             artist: self.metadata.uploader.unwrap_or(String::from("Unknown")),
-            url: url.clone(),
+            url: self.url,
             thumbnail: self.metadata.thumbnail.unwrap_or(format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", self.metadata.id)),
             duration: self.duration,
             requested_by: self.requested_by.into(),
