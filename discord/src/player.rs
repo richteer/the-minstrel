@@ -23,6 +23,10 @@ use songbird::{
 
 use async_trait::async_trait;
 
+use futures_util::{
+    SinkExt
+};
+
 use log::*;
 use music::player::MusicPlayer;
 use music::Song;
@@ -37,6 +41,7 @@ pub struct DiscordPlayer {
     songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
     songhandler: Option<songbird::tracks::TrackHandle>,
     pub sticky: Option<Message>,
+    pub listeners: Option<Vec<futures_util::stream::SplitSink<warp::ws::WebSocket, warp::ws::Message>>>
 }
 
 impl DiscordPlayer {
@@ -57,6 +62,7 @@ impl DiscordPlayer {
             songcall: Some(handler),
             songhandler: None,
             sticky: None,
+            listeners: None,
         }
     }
 }
@@ -170,7 +176,44 @@ impl VoiceEventHandler for TrackEndNotifier {
             }).await.unwrap();
         }
 
+        drop(player);
+
+        // TODO: this should really be in a top-level lock hackery
+        broadcast_mstate_update(&mstate).await;
+
         None
+    }
+}
+
+
+pub async fn broadcast_mstate_update(mstate: &MusicState<DiscordPlayer>) {
+    let mut player = if let Some(p) = &mstate.player {
+        p.lock().await
+    } else {
+        error!("somehow managed to get to broadcast mstate update without a player set");
+        return;
+    };
+
+    if player.listeners.is_some() {
+        let out = webdata::MinstrelWebData {
+            current_track: match mstate.current_track.clone() {
+                Some(s) => Some(s.into()),
+                None => None,
+            },
+            status: mstate.status.clone().into(),
+            queue: mstate.queue.iter().map(|e| e.clone().into()).collect(),
+            upcoming: mstate.autoplay.prefetch(10).unwrap().iter().map(|e| e.clone().into()).collect(),
+            history: mstate.history.iter().map(|e| e.clone().into()).collect(),
+        };
+
+        let mut ls = player.listeners.take().unwrap();
+        for l in &mut ls {
+            info!("player listeners = {:?}", l);
+            l.send(warp::ws::Message::text(serde_json::to_string(&out).unwrap())).await.unwrap();
+        }
+        player.listeners = Some(ls);
+    } else {
+        warn!("no listeners connected...");
     }
 }
 
