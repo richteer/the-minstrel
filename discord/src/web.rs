@@ -6,6 +6,8 @@ use crate::client::MusicStateKey;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use log::*;
+
 use music::MusicState;
 use crate::player::DiscordPlayer;
 
@@ -52,19 +54,26 @@ pub async fn get_web_filter(client: &Client) -> impl Filter<Extract = impl warp:
             ws.on_upgrade(async move |websocket| {
                 let mstate = mstate.lock().await;
                 let player = mstate.player.as_ref().unwrap();
-                let mut player = player.lock().await;
-                let mut player = &mut *player;
+                let player = player.lock().await;
 
-                let (mut tx, _) = websocket.split();
-                tx.send(warp::ws::Message::text("hi :)")).await.unwrap();
+                let (mut ws_tx, _) = websocket.split();
+                ws_tx.send(warp::ws::Message::text("hi :)")).await.unwrap();
 
-                if player.listeners.is_some() {
-                    let mut ls = player.listeners.take().unwrap();
-                    ls.push(tx);
-                    player.listeners = Some(ls);
-                } else {
-                    player.listeners = Some(vec!(tx));
-                }
+                let mut bc_rx = player.bcast.subscribe();
+
+                tokio::task::spawn(async move {
+                    // TODO: figure out a nicer way to assign these task or thread IDs, would be nice for debug
+                    debug!("spawning ws thread, foo");
+                    while let Ok(msg) = bc_rx.recv().await {
+                        trace!("broadcast received, sending to websocket");
+                        if let Err(resp) = ws_tx.send(warp::ws::Message::text(msg)).await {
+                            debug!("websocket appears to have disconnected, dropping? {}", resp);
+                            break;
+                        }
+                    }
+                    debug!("exiting websocket loop!");
+                });
+
             })
         })
     )

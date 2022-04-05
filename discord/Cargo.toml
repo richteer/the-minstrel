@@ -14,7 +14,7 @@ log = "0.4"
 async-trait = "0.1"
 config = "0.12"
 warp = "0.3"
-futures-util = "*"
+futures-util = "0.3"
 
 minstrel-config = { path = "../minstrel-config" }
 music = { path = "../music" }

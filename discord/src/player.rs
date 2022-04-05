@@ -23,8 +23,9 @@ use songbird::{
 
 use async_trait::async_trait;
 
-use futures_util::{
-    SinkExt
+use tokio::sync::broadcast::{
+    Sender,
+    channel as broadcast_channel,
 };
 
 use log::*;
@@ -41,7 +42,7 @@ pub struct DiscordPlayer {
     songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
     songhandler: Option<songbird::tracks::TrackHandle>,
     pub sticky: Option<Message>,
-    pub listeners: Option<Vec<futures_util::stream::SplitSink<warp::ws::WebSocket, warp::ws::Message>>>
+    pub bcast: Sender<String>, // TODO: for now send a JSON-encoded webdata mstate, consider partial updates in the future
 }
 
 impl DiscordPlayer {
@@ -62,7 +63,9 @@ impl DiscordPlayer {
             songcall: Some(handler),
             songhandler: None,
             sticky: None,
-            listeners: None,
+            // TODO: figure out a more sensible capacity, and also probably if there's a safe(r) way to detect stale connections
+            // tossing the receiver portion, we'll give one to each spawned thread
+            bcast: broadcast_channel(2).0, // TODO: maybe only bother with this if webdash is enabled?
         }
     }
 }
@@ -186,35 +189,28 @@ impl VoiceEventHandler for TrackEndNotifier {
 }
 
 
+// TODO: call this in a lot more places probably, or even better automatically when its mutated (somehow)
+// TODO: implement partial updates? perhaps through an enum or something similar so the whole dang thing doesn't have to be sent over
 pub async fn broadcast_mstate_update(mstate: &MusicState<DiscordPlayer>) {
-    let mut player = if let Some(p) = &mstate.player {
+    let player = if let Some(p) = &mstate.player {
         p.lock().await
     } else {
         error!("somehow managed to get to broadcast mstate update without a player set");
         return;
     };
 
-    if player.listeners.is_some() {
-        let out = webdata::MinstrelWebData {
-            current_track: match mstate.current_track.clone() {
-                Some(s) => Some(s.into()),
-                None => None,
-            },
-            status: mstate.status.clone().into(),
-            queue: mstate.queue.iter().map(|e| e.clone().into()).collect(),
-            upcoming: mstate.autoplay.prefetch(10).unwrap().iter().map(|e| e.clone().into()).collect(),
-            history: mstate.history.iter().map(|e| e.clone().into()).collect(),
-        };
+    let out = webdata::MinstrelWebData {
+        current_track: match mstate.current_track.clone() {
+            Some(s) => Some(s.into()),
+            None => None,
+        },
+        status: mstate.status.clone().into(),
+        queue: mstate.queue.iter().map(|e| e.clone().into()).collect(),
+        upcoming: mstate.autoplay.prefetch(10).unwrap().iter().map(|e| e.clone().into()).collect(),
+        history: mstate.history.iter().map(|e| e.clone().into()).collect(),
+    };
 
-        let mut ls = player.listeners.take().unwrap();
-        for l in &mut ls {
-            info!("player listeners = {:?}", l);
-            l.send(warp::ws::Message::text(serde_json::to_string(&out).unwrap())).await.unwrap();
-        }
-        player.listeners = Some(ls);
-    } else {
-        warn!("no listeners connected...");
-    }
+    player.bcast.send(serde_json::to_string(&out).unwrap()).unwrap();
 }
 
 
