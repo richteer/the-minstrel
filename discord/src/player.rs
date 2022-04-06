@@ -210,7 +210,9 @@ pub async fn broadcast_mstate_update(mstate: &MusicState<DiscordPlayer>) {
         history: mstate.history.iter().map(|e| e.clone().into()).collect(),
     };
 
-    player.bcast.send(serde_json::to_string(&out).unwrap()).unwrap();
+    if let Err(e) = player.bcast.send(serde_json::to_string(&out).unwrap()) {
+        error!("error broadcasting update: {:?}", e);
+    }
 }
 
 
