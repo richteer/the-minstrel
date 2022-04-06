@@ -12,7 +12,7 @@ impl Default for MusicConfig {
     fn default() -> Self {
         Self {
             queue_length: 10,
-            autoplay_prefetch_max: 10,
+            autoplay_prefetch_max: 50,
         }
     }
 }
