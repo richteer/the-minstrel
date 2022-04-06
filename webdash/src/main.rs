@@ -36,7 +36,8 @@ struct Dash {
 }
 
 async fn update_data() -> Msg {
-    let resp = Request::get("http://127.0.0.1:3030/api").send().await.unwrap();
+    // TODO: consider using location/origin here too, might be needed for proper hosting
+    let resp = Request::get("/api").send().await.unwrap();
     let json = resp.json::<MinstrelWebData>().await.unwrap();
     Msg::Data(json)
 }
@@ -50,7 +51,9 @@ impl Component for Dash {
         ctx.link().send_future(update_data());
 
         // TODO: have some method of reconnecting to the websocket if connection lost
-        let ws = WebSocket::open("ws://localhost:3030/ws").unwrap();
+        let wsurl = format!("ws://{}/ws", web_sys::window().unwrap().location().host().unwrap());
+        log::info!("wsurl = {}", &wsurl);
+        let ws = WebSocket::open(&String::from(wsurl)).unwrap();
         let (_, mut ws_rx) = ws.split();
 
         // This needs to be called before the bridge call for some unknown reason.
