@@ -48,7 +48,19 @@ pub struct DiscordPlayer {
 }
 
 impl DiscordPlayer {
-    pub async fn connect(ctx: &Context, guild_id: GuildId, channel_id: ChannelId) -> DiscordPlayer {
+    pub fn new() -> DiscordPlayer {
+        DiscordPlayer {
+            songcall: None,
+            songhandler: None,
+            sticky: None,
+            // TODO: figure out a more sensible capacity, and also probably if there's a safe(r) way to detect stale connections
+            // tossing the receiver portion, we'll give one to each spawned thread
+            bcast: broadcast_channel(2).0, // TODO: maybe only bother with this if webdash is enabled?
+        }
+    }
+
+    // TODO: probably add error checking here?
+    pub async fn connect(&mut self, ctx: &Context, guild_id: GuildId, channel_id: ChannelId) {
         let manager = songbird::get(ctx).await
             .expect("Songbird Voice client placed in at initialisation.").clone();
 
@@ -61,14 +73,7 @@ impl DiscordPlayer {
             },
         );
 
-        DiscordPlayer {
-            songcall: Some(handler),
-            songhandler: None,
-            sticky: None,
-            // TODO: figure out a more sensible capacity, and also probably if there's a safe(r) way to detect stale connections
-            // tossing the receiver portion, we'll give one to each spawned thread
-            bcast: broadcast_channel(2).0, // TODO: maybe only bother with this if webdash is enabled?
-        }
+        self.songcall = Some(handler);
     }
 }
 

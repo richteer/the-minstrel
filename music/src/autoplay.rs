@@ -200,6 +200,7 @@ impl AutoplayState {
         tmpdata.shuffle();
 
         // TODO: probably definitely just use UserId here, this is a lot of clones
+        // TODO: don't enroll user automatically? this causes weird things when the bot isn't playing
         self.userlists.insert(requester.id.clone(), tmpdata);
         self.usertime.push(requester.id.clone(), Reverse(0));
         self.usertimecache.insert(requester.id.clone(), 0);

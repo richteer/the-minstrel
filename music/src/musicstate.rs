@@ -87,6 +87,7 @@ use super::MusicPlayer;
 //   a lot of the lower-level magic, so the commands can just operate on
 //   this instead and make life easier.
 pub struct MusicState<T: MusicPlayer> {
+    // TODO: remove Option<A> from this type here. Player should always be initialized.
     pub player: Option<Arc<Mutex<Box<T>>>>,
     pub current_track: Option<Song>,
     pub status: MusicStateStatus,
@@ -116,9 +117,9 @@ impl<T: MusicPlayer> fmt::Debug for MusicState<T> {
 
 impl<T: MusicPlayer> MusicState<T> {
 
-    pub fn new() -> MusicState<T> {
+    pub fn new(player: T) -> MusicState<T> {
         MusicState {
-            player: None,
+            player: Some(Arc::new(Mutex::new(Box::new(player)))),
             current_track: None,
             queue: VecDeque::<Song>::new(),
             history: VecDeque::<Song>::new(),

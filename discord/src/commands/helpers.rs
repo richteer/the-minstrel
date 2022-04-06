@@ -80,7 +80,7 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
         }
     };
 
-    get_mstate!(mut, mstate, ctx);
+    get_mstate!(mstate, ctx);
     if let Some(bot_channel) = bot_channel_id {
         if bot_channel == connect_to {
             if mstate.player.is_some() {
@@ -92,12 +92,11 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
         }
     }
 
-    mstate.player = Some(
-        Arc::new(
-            Mutex::new(
-                Box::new(
-                    DiscordPlayer::connect(&ctx, guild_id, connect_to).await
-    ))));
+    if let Some(player) = &mstate.player {
+        player.lock().await.connect(&ctx, guild_id, connect_to).await;
+    } else {
+        error!("player is somehow null, this shouldn't be allowed anymore");
+    }
 
     Ok(true)
 }

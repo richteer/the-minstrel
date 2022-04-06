@@ -254,7 +254,7 @@ pub trait MusicStateInit {
 
 impl MusicStateInit for ClientBuilder<'_> {
     fn register_musicstate(self) -> Self {
-        self.type_map_insert::<MusicStateKey>(Arc::new(Mutex::new(MusicState::new())))
+        self.type_map_insert::<MusicStateKey>(Arc::new(Mutex::new(MusicState::new(DiscordPlayer::new()))))
     }
 }
 

@@ -50,7 +50,7 @@ async fn show_state(
     let ret = {
         let mstate = mstate.lock().await;
 
-        get_mstate_webdata(&mstate);
+        get_mstate_webdata(&mstate)
     };
 
     Ok(warp::reply::json(&ret))
