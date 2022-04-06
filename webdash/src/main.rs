@@ -2,25 +2,41 @@ use yew::{
     prelude::*,
     html
 };
-use gloo_net::http::Request;
-use gloo_timers::callback::Interval;
-use webdata::{
-    MinstrelWebData
+
+use yew_agent::{
+    Dispatched,
+    Bridge,
+    Bridged,
 };
+
+use gloo_net::http::Request;
+use gloo_net::websocket::{
+    futures::WebSocket,
+    Message,
+};
+use futures_util::StreamExt;
+use wasm_bindgen_futures::spawn_local;
+
+use webdata::MinstrelWebData;
 
 mod components;
 use components::*;
 
-enum Msg {
+mod wsbus;
+use wsbus::WsBus;
+
+
+pub enum Msg {
     Data(MinstrelWebData),
 }
 
 struct Dash {
     data: Option<MinstrelWebData>,
+    _recv: Box<dyn Bridge<WsBus>>,
 }
 
 async fn update_data() -> Msg {
-    let resp = Request::get("http://127.0.0.1:3030").send().await.unwrap();
+    let resp = Request::get("http://127.0.0.1:3030/api").send().await.unwrap();
     let json = resp.json::<MinstrelWebData>().await.unwrap();
     Msg::Data(json)
 }
@@ -33,14 +49,34 @@ impl Component for Dash {
     fn create(ctx: &Context<Self>) -> Self {
         ctx.link().send_future(update_data());
 
-        // TODO: don't rely on polling, use SSE or websockets
-        let link = ctx.link().clone();
-        Interval::new(1000 * 10, move || {
-            link.send_future(update_data())
-        }).forget();
+        // TODO: have some method of reconnecting to the websocket if connection lost
+        let ws = WebSocket::open("ws://localhost:3030/ws").unwrap();
+        let (_, mut ws_rx) = ws.split();
+
+        // This needs to be called before the bridge call for some unknown reason.
+        let mut wsbus = WsBus::dispatcher();
+
+        // "Connect" to our websocket bus, keep this in scope else it falls out and disappears from the universe
+        // TODO: update this when/if the websocket sends anything other than full mstates
+        let recv = WsBus::bridge(ctx.link().callback(|data| Msg::Data(data)));
+
+        // Listen on the websocket for data, pump it through the WsBus to send it back to us as MinstrelWebData
+        spawn_local(async move {
+            while let Some(msg) = ws_rx.next().await {
+                match msg {
+                    Ok(Message::Text(data)) => {
+                        wsbus.send(data);
+                    },
+                    Ok(Message::Bytes(_)) =>
+                        log::error!("received unexpected binary data from the websocket"),
+                    Err(e) => log::error!("error reading from websocket: {:?}", e),
+                };
+            }
+        });
 
         Self {
             data: None,
+            _recv: recv,
         }
     }
 
@@ -58,7 +94,7 @@ impl Component for Dash {
                 self.data = Some(json);
 
                 true
-            }
+            },
         }
     }
 
@@ -81,7 +117,8 @@ impl Component for Dash {
                     }
                     <div><span>{"Coming up:"}</span></div>
                     <div>
-                        { for data.upcoming.iter().map(|e| {
+                        {
+                            for data.upcoming.iter().map(|e| {
                                 html! {
                                 <div class="upcomingitem">
                                     <SongRow song={e.clone()} />
