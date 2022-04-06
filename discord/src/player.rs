@@ -37,7 +37,7 @@ use crate::get_mstate;
 use crate::commands::helpers::*;
 use crate::requester::*;
 
-use minstrel_config::read_config;
+use crate::web::get_mstate_webdata;
 
 /// Struct to maintain discord's music player state
 pub struct DiscordPlayer {
@@ -201,16 +201,7 @@ pub async fn broadcast_mstate_update(mstate: &MusicState<DiscordPlayer>) {
         return;
     };
 
-    let out = webdata::MinstrelWebData {
-        current_track: match mstate.current_track.clone() {
-            Some(s) => Some(s.into()),
-            None => None,
-        },
-        status: mstate.status.clone().into(),
-        queue: mstate.queue.iter().map(|e| e.clone().into()).collect(),
-        upcoming: mstate.autoplay.prefetch(read_config!(discord.webdash_prefetch)).unwrap().iter().map(|e| e.clone().into()).collect(),
-        history: mstate.history.iter().map(|e| e.clone().into()).collect(),
-    };
+    let out = get_mstate_webdata(&mstate);
 
     if let Err(e) = player.bcast.send(serde_json::to_string(&out).unwrap()) {
         error!("error broadcasting update: {:?}", e);

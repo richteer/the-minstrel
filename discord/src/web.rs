@@ -16,11 +16,33 @@ use futures_util::{
     SinkExt
 };
 
+use minstrel_config::read_config;
+
 use rust_embed::RustEmbed;
 
 #[derive(RustEmbed)]
 #[folder = "../webdash/dist/"]
 struct EmbeddedWebdash;
+
+pub fn get_mstate_webdata(mstate: &MusicState<DiscordPlayer>) -> webdata::MinstrelWebData {
+    let upcoming = mstate.autoplay.prefetch(read_config!(discord.webdash_prefetch))
+        // TODO: Better handle when autoplay is not enabled, or no users are enrolled
+        .unwrap_or_else(|| Vec::new()).iter()
+            .map(|e| e.clone().into())
+            .collect();
+
+    webdata::MinstrelWebData {
+        current_track: match mstate.current_track.clone() {
+            Some(s) => Some(s.into()),
+            None => None,
+        },
+        status: mstate.status.clone().into(),
+        queue: mstate.queue.iter().map(|e| e.clone().into()).collect(),
+        upcoming: upcoming,
+        history: mstate.history.iter().map(|e| e.clone().into()).collect(),
+    }
+}
+
 
 async fn show_state(
     mstate: Arc<Mutex<MusicState<DiscordPlayer>>>
@@ -28,16 +50,7 @@ async fn show_state(
     let ret = {
         let mstate = mstate.lock().await;
 
-        webdata::MinstrelWebData {
-            current_track: match mstate.current_track.clone() {
-                Some(s) => Some(s.into()),
-                None => None,
-            },
-            status: mstate.status.clone().into(),
-            queue: mstate.queue.iter().map(|e| e.clone().into()).collect(),
-            upcoming: mstate.autoplay.prefetch(10).unwrap().iter().map(|e| e.clone().into()).collect(),
-            history: mstate.history.iter().map(|e| e.clone().into()).collect(),
-        }
+        get_mstate_webdata(&mstate);
     };
 
     Ok(warp::reply::json(&ret))
