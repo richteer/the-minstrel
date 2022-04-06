@@ -51,8 +51,25 @@ impl Component for Dash {
         ctx.link().send_future(update_data());
 
         // TODO: have some method of reconnecting to the websocket if connection lost
-        let wsurl = format!("ws://{}/ws", web_sys::window().unwrap().location().host().unwrap());
-        log::info!("wsurl = {}", &wsurl);
+        let window = web_sys::window().unwrap();
+        let protocol = window.location().protocol();
+        let protocol = match protocol {
+            Ok(p) => match p.as_str() {
+                "https:" => Some("wss:"),
+                "http:" => Some("ws:"),
+                _ => {
+                    log::error!("unknown protocol reported by window.location() = {}", p);
+                    None
+                },
+            },
+            _ => {
+                log::error!("could not get protocol from window.location() = {:?}", protocol);
+                None
+            },
+        }.unwrap();
+
+        let wsurl = format!("{}//{}/ws", protocol, window.location().host().unwrap());
+        log::debug!("connecting to websocket at {}", &wsurl);
         let ws = WebSocket::open(&String::from(wsurl)).unwrap();
         let (_, mut ws_rx) = ws.split();
 
