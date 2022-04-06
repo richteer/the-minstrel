@@ -57,7 +57,6 @@ pub async fn get_web_filter(client: &Client) -> impl Filter<Extract = impl warp:
                 let player = player.lock().await;
 
                 let (mut ws_tx, _) = websocket.split();
-                ws_tx.send(warp::ws::Message::text("hi :)")).await.unwrap();
 
                 let mut bc_rx = player.bcast.subscribe();
 
