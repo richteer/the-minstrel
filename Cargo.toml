@@ -5,8 +5,14 @@ members = [
 	"webdata",
 	"discord",
 	"main",
+	"webdash", # TODO: Figure out how to automatically use trunk to build
 ]
-# TODO: Figure out how to automatically use trunk to build
-exclude = [
-	"webdash"
+
+default-members = [
+	"minstrel-config",
+	"music",
+	"webdata",
+	"discord",
+	"main",
+	# Not webdash, so we don't build a useless webdash native bin
 ]
