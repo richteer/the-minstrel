@@ -1,12 +1,14 @@
 use yew::{
     prelude::*,
     function_component,
-    html
+    html,
+    Children,
 };
 use webdata::{
     Song,
 };
 
+use gloo_timers::callback::Interval;
 
 fn duration_text(dur: i64) -> String {
     let min = dur / 60;
@@ -18,6 +20,7 @@ fn duration_text(dur: i64) -> String {
 #[derive(Properties, PartialEq)]
 pub struct SongTextProps {
     pub song: Song,
+    pub children: Option<Children>,
 }
 
 #[function_component(SongText)]
@@ -28,7 +31,18 @@ pub fn song_text(props: &SongTextProps) -> Html {
             <div>
                 <div><span class="songtitle">{song.title.clone()}</span></div>
                 <div><span class="songartist">{song.artist.clone()}</span></div>
-                <div><span class="songduration">{duration_text(song.duration)}</span></div>
+                {
+                    // TODO: there's probably a cleaner way to do this
+                    if let Some(children) = &props.children {
+                        html! {
+                            <>
+                             { children.clone() }
+                            </>
+                        }
+                    } else {
+                        html! {}
+                    }
+                }
             </div>
         </div>
     }
@@ -47,11 +61,110 @@ pub fn song_row(props: &SongRowProps) -> Html {
             <div class="songicon">
                 <img src={song.thumbnail.clone()} alt="temp" />
             </div>
-            <SongText song={song.clone()} />
+            <SongText song={song.clone()}>
+                <div><span class="songduration">{duration_text(song.duration)}</span></div>
+            </SongText>
             <div class="user">
                 <img src={ song.requested_by.icon.clone() } alt="temp" />
                 <span class="username">{ song.requested_by.displayname.clone() }</span>
             </div>
         </>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct SongNowPlayingProps {
+    pub song: Song,
+}
+
+#[function_component(SongNowPlaying)]
+pub fn song_now_playing(props: &SongNowPlayingProps) -> Html {
+    let song = &props.song;
+    html! {
+        <div class="nowplaying">
+            <div class="songicon">
+                <img src={song.thumbnail.clone()} alt="temp" />
+            </div>
+            <SongText song={song.clone()}>
+                <NowPlayingProgress song={song.clone()}/>
+            </SongText>
+            <div class="user">
+                <img src={ song.requested_by.icon.clone() } alt="temp" />
+                <span class="username">{ song.requested_by.displayname.clone() }</span>
+            </div>
+        </div>
+    }
+}
+
+
+pub enum NpMsg {
+    IncrementNowplaying,
+}
+
+pub struct NowPlayingProgress {
+    pub time: i64,
+    pub interval: Option<Interval>,
+}
+
+#[derive(Properties, PartialEq)]
+pub struct NowPlayingProgressProps {
+    pub song: Song,
+}
+
+impl Component for NowPlayingProgress {
+    type Message = NpMsg;
+    type Properties = NowPlayingProgressProps;
+
+    fn create(ctx: &Context<Self>) -> Self {
+        let link = ctx.link().clone();
+        let interval = Interval::new(1000, move || {
+            link.send_message(Self::Message::IncrementNowplaying);
+        });
+
+        Self {
+            time: 0,
+            interval: Some(interval),
+        }
+    }
+
+    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+        match msg {
+            Self::Message::IncrementNowplaying => {
+                self.time += 1;
+
+                true
+            },
+        }
+    }
+
+    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+        let link = ctx.link().clone();
+
+        if let Some(interval) = self.interval.take() {
+            interval.cancel();
+        }
+
+        self.time = 0;
+        self.interval = Some(Interval::new(1000, move || {
+            link.send_message(Self::Message::IncrementNowplaying);
+        }));
+
+        true
+    }
+
+    fn destroy(&mut self, _ctx: &Context<Self>) {
+        if let Some(interval) = self.interval.take() {
+            interval.cancel();
+        }
+    }
+
+    fn view(&self, ctx: &Context<Self>) -> Html {
+        let song = &ctx.props().song;
+        html! {
+            <div>
+                <span>{ format!("{} / {}", duration_text(self.time), duration_text(song.duration)) }</span>
+                <progress value={self.time.to_string()} max={song.duration.to_string()}/>
+            </div>
+        }
     }
 }

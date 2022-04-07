@@ -125,9 +125,7 @@ impl Component for Dash {
                     {
                         if let Some(np) = data.current_track {
                             html! {
-                            <div class="nowplaying">
-                                <SongRow song={np.clone()} />
-                            </div>
+                            <SongNowPlaying song={np}/>
                             }
                         } else {
                             html! {
