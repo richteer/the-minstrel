@@ -127,9 +127,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 async fn display(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
 
-    let mut player = if let Some(p) = &mstate.player {
-        p.lock().await
-    } else { return Ok(()) };
+    let mut player = mstate.player.lock().await;
 
     if let Some(_) = player.sticky {
         player.sticky = None;

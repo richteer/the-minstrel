@@ -100,9 +100,7 @@ async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
 async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _error: Result<(), CommandError>) {
     get_mstate!(mstate, ctx);
 
-    let mut player = if let Some(p) = &mstate.player {
-        p.lock().await
-    } else { return; };
+    let mut player = mstate.player.lock().await;
 
     if let Some(m) = &player.sticky {
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();

@@ -72,8 +72,7 @@ pub async fn get_web_filter(client: &Client) -> impl Filter<Extract = impl warp:
             // And then our closure will be called when it completes...
             ws.on_upgrade(async move |websocket| {
                 let mstate = mstate.lock().await;
-                let player = mstate.player.as_ref().unwrap();
-                let player = player.lock().await;
+                let player = mstate.player.lock().await;
 
                 let (mut ws_tx, _) = websocket.split();
 

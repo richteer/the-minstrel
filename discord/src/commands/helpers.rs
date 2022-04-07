@@ -83,7 +83,7 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
     get_mstate!(mstate, ctx);
     if let Some(bot_channel) = bot_channel_id {
         if bot_channel == connect_to {
-            if mstate.player.is_some() {
+            if mstate.player.lock().await.songcall.is_some() {
                 return Ok(false); // We're done here, otherwise fall through and init
             }
         }
@@ -92,11 +92,8 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
         }
     }
 
-    if let Some(player) = &mstate.player {
-        player.lock().await.connect(&ctx, guild_id, connect_to).await;
-    } else {
-        error!("player is somehow null, this shouldn't be allowed anymore");
-    }
+    mstate.player.lock().await.connect(&ctx, guild_id, connect_to).await;
+
 
     Ok(true)
 }

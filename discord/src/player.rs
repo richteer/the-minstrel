@@ -41,7 +41,7 @@ use crate::web::get_mstate_webdata;
 
 /// Struct to maintain discord's music player state
 pub struct DiscordPlayer {
-    songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
+    pub songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
     songhandler: Option<songbird::tracks::TrackHandle>,
     pub sticky: Option<Message>,
     pub bcast: Sender<String>, // TODO: for now send a JSON-encoded webdata mstate, consider partial updates in the future
@@ -174,9 +174,7 @@ impl VoiceEventHandler for TrackEndNotifier {
             error!("{:?}", e);
         }
 
-        let player = if let Some(p) = &mstate.player {
-            p.lock().await
-        } else { return None; };
+        let player = mstate.player.lock().await;
 
         let embed = get_nowplay_embed(&self.ctx, &mstate).await;
 
@@ -199,15 +197,9 @@ impl VoiceEventHandler for TrackEndNotifier {
 // TODO: call this in a lot more places probably, or even better automatically when its mutated (somehow)
 // TODO: implement partial updates? perhaps through an enum or something similar so the whole dang thing doesn't have to be sent over
 pub async fn broadcast_mstate_update(mstate: &MusicState<DiscordPlayer>) {
-    let player = if let Some(p) = &mstate.player {
-        p.lock().await
-    } else {
-        error!("somehow managed to get to broadcast mstate update without a player set");
-        return;
-    };
-
     let out = get_mstate_webdata(&mstate);
 
+    let player = mstate.player.lock().await;
     if let Err(e) = player.bcast.send(serde_json::to_string(&out).unwrap()) {
         error!("error broadcasting update: {:?}", e);
     }

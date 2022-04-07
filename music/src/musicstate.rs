@@ -87,8 +87,7 @@ use super::MusicPlayer;
 //   a lot of the lower-level magic, so the commands can just operate on
 //   this instead and make life easier.
 pub struct MusicState<T: MusicPlayer> {
-    // TODO: remove Option<A> from this type here. Player should always be initialized.
-    pub player: Option<Arc<Mutex<Box<T>>>>,
+    pub player: Arc<Mutex<Box<T>>>,
     pub current_track: Option<Song>,
     pub status: MusicStateStatus,
     pub queue: VecDeque<Song>,
@@ -119,7 +118,7 @@ impl<T: MusicPlayer> MusicState<T> {
 
     pub fn new(player: T) -> MusicState<T> {
         MusicState {
-            player: Some(Arc::new(Mutex::new(Box::new(player)))),
+            player: Arc::new(Mutex::new(Box::new(player))),
             current_track: None,
             queue: VecDeque::<Song>::new(),
             history: VecDeque::<Song>::new(),
@@ -131,12 +130,7 @@ impl<T: MusicPlayer> MusicState<T> {
     /// Start playing a song
     async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
         debug!("play called on song = {}", song);
-        let mut player = if let Some(p) = &self.player {
-            p.lock().await
-        } else {
-            error!("player is none somehow?");
-            return Err(MusicError::UnknownError);
-        };
+        let mut player = self.player.lock().await;
 
         if self.current_track.is_some() {
             return Err(MusicError::AlreadyPlaying);
@@ -186,12 +180,7 @@ impl<T: MusicPlayer> MusicState<T> {
     // This is stupid, and I don't like it.
     // TODO: This is hella discord-specific. Rewrite this function to actually skip.
     pub async fn skip(&mut self) -> Result<MusicOk, MusicError> {
-        let mut player = if let Some(p) = &self.player {
-            p.lock().await
-        } else {
-            error!("player is none somehow?");
-            return Err(MusicError::UnknownError);
-        };
+        let mut player = self.player.lock().await;
 
         player.stop().await?;
 
@@ -202,12 +191,7 @@ impl<T: MusicPlayer> MusicState<T> {
     pub async fn stop(&mut self) -> Result<MusicOk, MusicError> {
         self.status = MusicStateStatus::Stopping;
 
-        let mut player = if let Some(p) = &self.player {
-            p.lock().await
-        } else {
-            error!("player is none somehow?");
-            return Err(MusicError::UnknownError);
-        };
+        let mut player = self.player.lock().await;
 
         if let Err(e) = player.stop().await {
             error!("Player encountered a problem stopping track: {:?}", e);
@@ -286,12 +270,7 @@ impl<T: MusicPlayer> MusicState<T> {
 
     // TODO: this is slated for removal from MusicState, leaving for the scope of this refactor
     pub async fn leave(&mut self) {
-        let mut player = if let Some(p) = &self.player {
-            p.lock().await
-        } else {
-            error!("player is none somehow?");
-            return;
-        };
+        let mut player = self.player.lock().await;
 
         self.queue.clear();
         self.autoplay.enabled = false;
