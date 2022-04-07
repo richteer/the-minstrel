@@ -5,7 +5,10 @@ use std::{
 use dotenv;
 use log::*;
 
-use minstrel_config::CONFIG;
+use minstrel_config::{
+    CONFIG,
+    read_config,
+};
 
 #[tokio::main]
 async fn main() {
@@ -52,10 +55,13 @@ async fn main() {
 
     #[cfg(feature = "web-server")]
     {
+        let addr = format!("{}:{}", read_config!(web.bind_address), read_config!(web.port))
+            .parse::<std::net::SocketAddr>().unwrap();
+
         info!("spawning web server");
         warp::serve(site)
-        .run(([127,0,0,1], 3030))
-        .await;
+            .run(addr)
+            .await;
     }
 
     info!("Exiting...");

@@ -10,11 +10,15 @@ use music::MusicConfig;
 mod discord;
 use discord::DiscordConfig;
 
+mod web;
+use web::WebConfig;
+
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[allow(unused)]
 pub struct Configuration {
     pub music: MusicConfig,
     pub discord: DiscordConfig,
+    pub web: WebConfig,
 }
 
 lazy_static! {
