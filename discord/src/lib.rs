@@ -1,4 +1,3 @@
-#![feature(async_closure)]
 pub mod client;
 pub mod player;
 pub mod commands;

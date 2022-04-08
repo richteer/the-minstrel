@@ -56,6 +56,31 @@ async fn show_state(
     Ok(warp::reply::json(&ret))
 }
 
+async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicState<DiscordPlayer>>>) -> impl warp::reply::Reply {
+    ws.on_upgrade(|websocket| async move {
+        let mstate = mstate.lock().await;
+        let player = mstate.player.lock().await;
+
+        let (mut ws_tx, _) = websocket.split();
+
+        let mut bc_rx = player.bcast.subscribe();
+
+        tokio::task::spawn(async move {
+            // TODO: figure out a nicer way to assign these task or thread IDs, would be nice for debug
+            debug!("spawning ws thread");
+            while let Ok(msg) = bc_rx.recv().await {
+                trace!("broadcast received, sending to websocket");
+                if let Err(resp) = ws_tx.send(warp::ws::Message::text(msg)).await {
+                    debug!("websocket appears to have disconnected, dropping? {}", resp);
+                    break;
+                }
+            }
+            debug!("exiting websocket loop!");
+        });
+    })
+}
+
+
 pub async fn get_web_filter(client: &Client) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let mstate = client.data.read().await.get::<MusicStateKey>().cloned().unwrap();
     let mstate = warp::any().map(move || { mstate.clone() });
@@ -68,31 +93,7 @@ pub async fn get_web_filter(client: &Client) -> impl Filter<Extract = impl warp:
     let ws = warp::path("ws")
         .and(warp::ws())
         .and(mstate)
-        .then(async move |ws: warp::ws::Ws, mstate: Arc<Mutex<MusicState<DiscordPlayer>>>| {
-            // And then our closure will be called when it completes...
-            ws.on_upgrade(async move |websocket| {
-                let mstate = mstate.lock().await;
-                let player = mstate.player.lock().await;
-
-                let (mut ws_tx, _) = websocket.split();
-
-                let mut bc_rx = player.bcast.subscribe();
-
-                tokio::task::spawn(async move {
-                    // TODO: figure out a nicer way to assign these task or thread IDs, would be nice for debug
-                    debug!("spawning ws thread");
-                    while let Ok(msg) = bc_rx.recv().await {
-                        trace!("broadcast received, sending to websocket");
-                        if let Err(resp) = ws_tx.send(warp::ws::Message::text(msg)).await {
-                            debug!("websocket appears to have disconnected, dropping? {}", resp);
-                            break;
-                        }
-                    }
-                    debug!("exiting websocket loop!");
-                });
-
-            })
-        });
+        .then(ws_connect);
 
     let files = warp::get()
         .and(warp::path::param())
