@@ -203,10 +203,12 @@ impl AutoplayState {
         tmpdata.shuffle();
 
         // TODO: probably definitely just use UserId here, this is a lot of clones
-        // TODO: don't enroll user automatically? this causes weird things when the bot isn't playing
         self.userlists.insert(requester.id.clone(), tmpdata);
-        self.usertime.push(requester.id.clone(), Reverse(0));
         self.usertimecache.insert(requester.id.clone(), 0);
+
+        if self.enabled {
+            self.enable_user(&requester.id)?;
+        }
 
         Ok(AutoplayOk::RegisteredUser)
     }
@@ -245,9 +247,9 @@ impl AutoplayState {
         let prevtime = if let Some(p) = self.usertimecache.get(userid) {
             p
         } else {
-            // TODO: maybe just set a default value here?
-            error!("Somehow user was in userlist but not in usertimecache: {:?}", userid);
-            return Err(AutoplayError::UnknownError);
+            debug!("Somehow user {} was in userlist but not in usertimecache", userid);
+            debug!("defaulting to 0 for their user score, will likely be bumped if lowest");
+            &0
         };
 
         if self.usertime.get(userid).is_some() {
