@@ -65,7 +65,7 @@ async fn modutime(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     mstate.autoplay.add_time_to_user(&muid_from_userid(&member.user.id), delta);
 
-    msg.channel_id.say(&ctx.http, format!("In theory modified usertime")).await?;
+    msg.channel_id.say(&ctx.http, "In theory modified usertime").await?;
 
     Ok(())
 }

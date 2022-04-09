@@ -55,7 +55,7 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
 
-    let embed = get_nowplay_embed(&ctx, &mstate).await;
+    let embed = get_nowplay_embed(ctx, &mstate).await;
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
         m.set_embed(embed)
@@ -129,7 +129,7 @@ async fn display(ctx: &Context, msg: &Message) -> CommandResult {
 
     let mut player = mstate.player.lock().await;
 
-    if let Some(_) = player.sticky {
+    if player.sticky.is_some() {
         player.sticky = None;
 
         check_msg(msg.channel_id.say(&ctx.http, "Disabled sticky display.").await);
@@ -175,8 +175,8 @@ async fn previous(ctx: &Context, msg: &Message) -> CommandResult {
 
     if let Some(song) = mstate.history.pop_front() {
         check_msg(msg.channel_id.say(&ctx.http, match mstate.enqueue_and_play(song).await {
-            Ok(MusicOk::EnqueuedSong) => format!("Enqueued last played song."),
-            Ok(o) => format!("{}", o),
+            Ok(MusicOk::EnqueuedSong) => "Enqueued last played song.".to_string(),
+            Ok(o) => o.to_string(),
             Err(e) => format!("{:?}", e),
         }).await);
     }

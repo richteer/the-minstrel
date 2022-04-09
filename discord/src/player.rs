@@ -47,9 +47,9 @@ pub struct DiscordPlayer {
     pub bcast: Sender<String>, // TODO: for now send a JSON-encoded webdata mstate, consider partial updates in the future
 }
 
-impl DiscordPlayer {
-    pub fn new() -> DiscordPlayer {
-        DiscordPlayer {
+impl Default for DiscordPlayer {
+    fn default() -> Self {
+        Self {
             songcall: None,
             songhandler: None,
             sticky: None,
@@ -57,6 +57,12 @@ impl DiscordPlayer {
             // tossing the receiver portion, we'll give one to each spawned thread
             bcast: broadcast_channel(2).0, // TODO: maybe only bother with this if webdash is enabled?
         }
+    }
+}
+
+impl DiscordPlayer {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     // TODO: probably add error checking here?
@@ -167,7 +173,7 @@ impl VoiceEventHandler for TrackEndNotifier {
         };
 
         let ret = mstate.next().await;
-        if let Ok(_) = ret {
+        if ret.is_ok() {
             debug!("TrackEnd handler mstate.next() = {:?}", ret);
         }
         else if let Err(e) = ret {
@@ -197,7 +203,7 @@ impl VoiceEventHandler for TrackEndNotifier {
 // TODO: call this in a lot more places probably, or even better automatically when its mutated (somehow)
 // TODO: implement partial updates? perhaps through an enum or something similar so the whole dang thing doesn't have to be sent over
 pub async fn broadcast_mstate_update(mstate: &MusicState<DiscordPlayer>) {
-    let out = get_mstate_webdata(&mstate);
+    let out = get_mstate_webdata(mstate);
 
     let player = mstate.player.lock().await;
     if let Err(e) = player.bcast.send(serde_json::to_string(&out).unwrap()) {
@@ -309,6 +315,4 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
     else {
         debug!("received voice disconnect for another channel, ignorning");
     }
-
-    return;
 }

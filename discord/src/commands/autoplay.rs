@@ -26,7 +26,7 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
     mstate.autoplay.enabled = !mstate.autoplay.enabled;
 
     // No need to do anything here if autoplay is disabled, it will probably stop itself
-    if mstate.autoplay.enabled == false {
+    if !mstate.autoplay.enabled {
         check_msg(msg.channel_id.say(&ctx.http, "Disabling autoplay.").await);
         return Ok(())
     }

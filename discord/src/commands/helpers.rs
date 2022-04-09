@@ -92,7 +92,7 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
         }
     }
 
-    mstate.player.lock().await.connect(&ctx, guild_id, connect_to).await;
+    mstate.player.lock().await.connect(ctx, guild_id, connect_to).await;
 
 
     Ok(true)
@@ -157,6 +157,8 @@ pub async fn in_same_voice(ctx: &Context, msg: &Message) -> Result<(), Reason> {
 /*** Functions that were previously on mstate, but for discord-specific output ***/
 /**   These are subject to moving again, but can live here now for convenience  **/
 
+// Permit useless formats here mostly for code consistently and alignment.
+#[allow(clippy::useless_format)]
 pub fn show_queuestate(mstate: &MusicState<DiscordPlayer>) -> String {
     let mut q = None;
     let mut ap = None;
@@ -194,15 +196,15 @@ pub fn show_queuestate(mstate: &MusicState<DiscordPlayer>) -> String {
 
 
 pub fn get_queuestate_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
-    let mut ret = CreateEmbed { 0: HashMap::new() };
+    let mut ret = CreateEmbed(HashMap::new());
 
     ret.description(show_queuestate(mstate));
 
-    return ret;
+    ret
 }
 
 pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
-    let mut ret = CreateEmbed { 0: HashMap::new() };
+    let mut ret = CreateEmbed(HashMap::new());
 
     let song = match mstate.current_song() {
         Some(s) => s,
@@ -217,8 +219,7 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState<DiscordPlayer>
     let md = song.metadata;
     let thumb = match md.thumbnail.clone() {
         Some(t) => t,
-        None => String::from(
-            format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", &md.id)),
+        None => format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", &md.id),
             // This URL might change in the future, but meh, it works.
             // TODO: Config the thumbnail resolution probably
     };
@@ -230,7 +231,7 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState<DiscordPlayer>
         .title(format!("{} [{}:{:02}]", md.title, mins, secs))
         .url(song.url)
         .description(format!("Uploaded by: {}",
-            md.uploader.unwrap_or(String::from("Unknown")),
+            md.uploader.unwrap_or_else(||"Unknown".to_string()),
             )
         )
         .footer(|f| { f
@@ -242,7 +243,7 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState<DiscordPlayer>
 }
 
 pub fn show_history(mstate: &MusicState<DiscordPlayer>, num: usize) -> Option<String> {
-    if mstate.history.len() == 0 {
+    if mstate.history.is_empty() {
         return None
     }
 
@@ -256,7 +257,7 @@ pub fn show_history(mstate: &MusicState<DiscordPlayer>, num: usize) -> Option<St
 }
 
 pub fn get_history_embed(mstate: &MusicState<DiscordPlayer>, num: usize) -> CreateEmbed {
-    let mut ret = CreateEmbed { 0: HashMap::new() };
+    let mut ret = CreateEmbed(HashMap::new());
 
     ret.description(match show_history(mstate, num) {
         Some(s) => s,
