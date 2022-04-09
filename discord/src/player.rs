@@ -204,10 +204,12 @@ impl VoiceEventHandler for TrackEndNotifier {
 // TODO: implement partial updates? perhaps through an enum or something similar so the whole dang thing doesn't have to be sent over
 pub async fn broadcast_mstate_update(mstate: &MusicState<DiscordPlayer>) {
     let out = get_mstate_webdata(mstate);
-
     let player = mstate.player.lock().await;
-    if let Err(e) = player.bcast.send(serde_json::to_string(&out).unwrap()) {
-        error!("error broadcasting update: {:?}", e);
+
+    if player.bcast.receiver_count() > 0 {
+        if let Err(e) = player.bcast.send(serde_json::to_string(&out).unwrap()) {
+            error!("error broadcasting update: {:?}", e);
+        }
     }
 }
 
