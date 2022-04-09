@@ -2,7 +2,6 @@ use std::{
     env,
     path::Path,
 };
-use dotenv;
 use log::*;
 
 use minstrel_config::{
@@ -13,9 +12,8 @@ use minstrel_config::{
 #[tokio::main]
 async fn main() {
     if let Ok(path) = env::var("PATH") {
-        if path.split(":").into_iter()
-            .find(|p| Path::new(p).join("yt-dlp").exists())
-            .is_none() {
+        if !path.split(':').into_iter()
+                .any(|p| Path::new(p).join("yt-dlp").exists()) {
             panic!("yt-dlp could not be found in $PATH");
         }
     }
