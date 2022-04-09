@@ -7,6 +7,7 @@ use songbird::SerenityInit;
 
 use music::*;
 use crate::player::*;
+use crate::helpers::*;
 use crate::get_mstate;
 
 use crate::commands::{
@@ -16,7 +17,6 @@ use crate::commands::{
     autoplay::*,
     config::*,
     debug::*,
-    helpers::*,
 };
 
 use log::*;

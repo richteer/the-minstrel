@@ -39,12 +39,12 @@ pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState<DiscordPla
 #[macro_export]
 macro_rules! get_mstate {
     ($mstate:ident, $ctx:ident) => {
-        let $mstate = crate::mstate_get(&$ctx).await.unwrap();
+        let $mstate = crate::helpers::mstate_get(&$ctx).await.unwrap();
         let $mstate = $mstate.lock().await;
     };
 
     ($mut:ident, $mstate:ident, $ctx:ident) => {
-        let $mstate = crate::mstate_get(&$ctx).await.unwrap();
+        let $mstate = crate::helpers::mstate_get(&$ctx).await.unwrap();
         let $mut $mstate = $mstate.lock().await;
     };
 }

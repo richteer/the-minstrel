@@ -11,8 +11,7 @@ use serenity::{
 };
 
 use crate::{get_mstate, join_voice};
-use super::helpers::*;
-use super::check_msg;
+use crate::helpers::*;
 use crate::requester::*;
 use music::{
     Song,

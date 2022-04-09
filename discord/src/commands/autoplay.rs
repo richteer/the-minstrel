@@ -12,10 +12,10 @@ use serenity::{
 
 use crate::{get_mstate, join_voice};
 use crate::requester::*;
-use super::check_msg;
+use crate::helpers::check_msg;
 use music::MusicError;
 
-use crate::commands::helpers::*;
+use crate::helpers::*;
 
 #[command]
 #[aliases(t)]

@@ -3,7 +3,7 @@ pub mod player;
 pub mod commands;
 pub mod requester;
 pub mod web;
+pub mod helpers;
 
 pub use client::MusicStateKey as MusicStateKey;
-pub use commands::helpers::mstate_get as mstate_get;
 pub use requester::*;
