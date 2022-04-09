@@ -205,9 +205,8 @@ impl<T: MusicPlayer> MusicState<T> {
 
     /// Helper to play music if state has been stopped or enqueued without playing
     pub async fn start(&mut self) -> Result<MusicOk, MusicError> {
-        match self.status {
-            MusicStateStatus::Playing => return Err(MusicError::AlreadyPlaying),
-            _ => (),
+        if let MusicStateStatus::Playing = self.status {
+            return Err(MusicError::AlreadyPlaying);
         };
 
         if let Some(song) = self.get_next_song() {

@@ -65,8 +65,8 @@ impl UserPlaylist {
     pub fn new(list: Vec<Song>, url: String) -> UserPlaylist {
         UserPlaylist {
             index: 0,
-            list: list,
-            url: url,
+            list,
+            url,
         }
     }
 
@@ -108,6 +108,8 @@ pub struct AutoplayState {
     storage: Arc<RwLock<PickleDb>>,
 }
 
+// TODO: reconsider the new() constructor here, Default doesn't feel like the right place to load the autoplay.json cache
+#[allow(clippy::new_without_default)]
 impl AutoplayState {
     pub fn new() -> AutoplayState {
         // TODO: lock all this storage behind a feature
@@ -141,6 +143,7 @@ impl AutoplayState {
     }
 
     /// Get the next song to play and increment the play state
+    #[allow(clippy::should_implement_trait)] // TODO: actually make autoplay iterable
     pub fn next(&mut self) -> Option<Song> {
         let ut = match self.usertime.pop() {
             Some(ut) => ut,
@@ -162,7 +165,7 @@ impl AutoplayState {
         Some(song)
     }
 
-    pub fn register(&mut self, requester: Requester, url: &String) -> Result<AutoplayOk, AutoplayError> {
+    pub fn register(&mut self, requester: Requester, url: &str) -> Result<AutoplayOk, AutoplayError> {
         {
             if let Ok(mut lock) = self.storage.write() {
                 match lock.set(&requester.id.0, &(&requester, url)) {
@@ -196,7 +199,7 @@ impl AutoplayState {
                         .map(|e| Song::from_video(e.clone(), &requester))
                         .collect();
 
-        let mut tmpdata = UserPlaylist::new(tmpdata, url.clone());
+        let mut tmpdata = UserPlaylist::new(tmpdata, url.to_string());
         tmpdata.shuffle();
 
         // TODO: probably definitely just use UserId here, this is a lot of clones

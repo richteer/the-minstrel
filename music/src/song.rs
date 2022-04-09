@@ -33,10 +33,9 @@ impl Song {
 
         let data = YoutubeDl::new(&url)
             .run()
-            .map_err(|e|
-                match e {
-                    // TODO: Probably actually handle the cases here
-                    _ => MusicError::FailedToRetrieve,
+            .map_err(|e| {
+                    log::error!("youtube_dl error: {:?}", e);
+                    MusicError::FailedToRetrieve
                 }
             )?;
 
@@ -44,10 +43,10 @@ impl Song {
             YoutubeDlOutput::SingleVideo(v) => {
                 let duration = get_duration!(v);
                 Ok(Song {
-                    url: url,
+                    url,
                     metadata: v,
                     requested_by: requester.clone(),
-                    duration: duration
+                    duration
                 })
             },
             YoutubeDlOutput::Playlist(_) => Err(MusicError::UnknownError),
@@ -62,7 +61,7 @@ impl Song {
             url: format!("https://www.youtube.com/watch?v={}", video.url.as_ref().unwrap()),
             metadata: Box::new(video),
             requested_by: requester.clone(),
-            duration: duration,
+            duration,
         }
     }
 }
