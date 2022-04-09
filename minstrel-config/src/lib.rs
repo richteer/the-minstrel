@@ -30,7 +30,7 @@ impl Configuration {
 
         let conf = Config::builder()
             .add_source(Config::try_from(&Configuration::default()).unwrap())
-            .add_source(File::with_name("config.toml"))
+            .add_source(File::with_name("config.toml").required(false))
             .add_source(File::with_name("devel.toml").required(false))
             .build()?;
 
