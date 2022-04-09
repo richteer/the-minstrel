@@ -67,9 +67,9 @@ pub enum MusicStateStatus {
 
 
 // TODO: delete this eventually when types are reconciled
-impl Into<webdata::MusicStateStatus> for MusicStateStatus {
-    fn into(self) -> webdata::MusicStateStatus {
-        match self {
+impl From<MusicStateStatus> for webdata::MusicStateStatus {
+    fn from(mss: MusicStateStatus) -> Self {
+        match mss {
             MusicStateStatus::Idle => webdata::MusicStateStatus::Idle,
             MusicStateStatus::Playing => webdata::MusicStateStatus::Playing,
             MusicStateStatus::Stopping => webdata::MusicStateStatus::Stopping,
