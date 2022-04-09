@@ -125,10 +125,13 @@ impl Component for NowPlayingProgress {
         }
     }
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
+    fn update(&mut self, ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Self::Message::IncrementNowplaying => {
                 self.time += 1;
+                if self.time >= ctx.props().song.duration {
+                    self.interval.take().unwrap().cancel();
+                }
 
                 true
             },
