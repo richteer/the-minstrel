@@ -3,18 +3,8 @@ use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::sync::RwLock;
 
-mod music;
-use music::MusicConfig;
-
-// TODO: feature this?
-mod discord;
-use discord::DiscordConfig;
-
-mod web;
-use web::WebConfig;
-
-mod songlog;
-use songlog::SongLogConfig;
+mod configs;
+use configs::*;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[allow(unused)]
