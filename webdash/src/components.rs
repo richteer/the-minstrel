@@ -57,7 +57,9 @@ pub fn song_row(props: &SongRowProps) -> Html {
     html! {
         <>
             <div class="songicon">
-                <img src={song.thumbnail.clone()} alt="temp" />
+                <a href={song.url.clone()} target="_blank" rel="noopener noreferrer">
+                    <img src={song.thumbnail.clone()} alt="temp" />
+                </a>
             </div>
             <SongText song={song.clone()}>
                 <div><span class="songduration">{duration_text(song.duration)}</span></div>
@@ -81,7 +83,14 @@ pub fn song_now_playing(props: &SongNowPlayingProps) -> Html {
     html! {
         <div class="nowplaying">
             <div class="songicon">
-                <img src={song.thumbnail.clone()} alt="temp" />
+                <a href={song.url.clone()} target="_blank" rel="noopener noreferrer">
+                    <img src={song.thumbnail.clone()} alt="temp" />
+                    <div class="songicon-overlay">
+                        <div class="songicon-overlay-content">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItZXh0ZXJuYWwtbGluayI+PHBhdGggZD0iTTE4IDEzdjZhMiAyIDAgMCAxLTIgMkg1YTIgMiAwIDAgMS0yLTJWOGEyIDIgMCAwIDEgMi0yaDYiPjwvcGF0aD48cG9seWxpbmUgcG9pbnRzPSIxNSAzIDIxIDMgMjEgOSI+PC9wb2x5bGluZT48bGluZSB4MT0iMTAiIHkxPSIxNCIgeDI9IjIxIiB5Mj0iMyI+PC9saW5lPjwvc3ZnPg=="/>
+                        </div>
+                    </div>
+                </a>
             </div>
             <SongText song={song.clone()}>
                 <NowPlayingProgress song={song.clone()}/>

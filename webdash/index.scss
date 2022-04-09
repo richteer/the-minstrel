@@ -39,6 +39,38 @@ $icon-ar: math.div(4,3);
     float: right;
 }
 
+.songicon:hover .songicon-overlay {
+    opacity: 50%;
+}
+
+.songicon-overlay {
+    position: relative;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    width: 100%;
+    opacity: 0;
+    transition: .2s ease;
+    background-color: black;
+}
+
+.songicon-overlay-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+
+    $size: 50px;
+    height: $size;
+    width: $size;
+    filter: invert(1);
+}
+
+
 .user {
     display: flex;
     flex-direction: row;
