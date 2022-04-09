@@ -1,6 +1,10 @@
 use std::{
     sync::Arc,
+    io::Write,
+    fs::OpenOptions,
 };
+
+use chrono::offset::Local;
 
 use serenity::{
     prelude::{
@@ -28,6 +32,8 @@ use tokio::sync::broadcast::{
     channel as broadcast_channel,
 };
 
+use minstrel_config::read_config;
+
 use log::*;
 use music::player::MusicPlayer;
 use music::Song;
@@ -38,6 +44,44 @@ use crate::helpers::*;
 use crate::requester::*;
 
 use crate::web::get_mstate_webdata;
+
+
+// Helper to write out song played to a CSV in theory
+fn log_song(song: &Song) {
+    let path = &read_config!(songlog.path);
+
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open(path);
+
+    let mut file = match file {
+            Ok(f) => f,
+            Err(e) => {
+                error!("could not open/create songlog file: {:?}", e);
+                return;
+            }
+    };
+
+    let song = webdata::Song::from(song.clone());
+
+    // TODO: consider using a real serializer or CSV library
+    let ret = file.write(
+        format!("{time}{s}{title}{s}{artist}{s}{url}{s}{requester}\n",
+            s = read_config!(songlog.seperator),
+            time = Local::now().to_rfc3339(),
+            title = song.title,
+            artist = song.artist,
+            url = song.url,
+            requester = song.requested_by.username,
+        ).as_bytes());
+
+    if let Err(e) = ret {
+        error!("error writing to songlog file: {:?}", e);
+    }
+}
+
 
 /// Struct to maintain discord's music player state
 pub struct DiscordPlayer {
@@ -105,6 +149,10 @@ impl MusicPlayer for DiscordPlayer {
         };
 
         self.songhandler = Some(handler.play_source(source));
+
+        if read_config!(songlog.enabled) {
+            log_song(song);
+        }
 
         Ok(())
     }

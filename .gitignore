@@ -4,6 +4,7 @@ target
 autoplay.json*
 config.toml
 *workspace
+songlog*
 
 # TODO: eventually consider checking some of these in
 Cargo.lock
