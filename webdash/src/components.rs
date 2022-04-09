@@ -28,22 +28,20 @@ pub fn song_text(props: &SongTextProps) -> Html {
     let song = &props.song;
     html! {
         <div class="songdata">
-            <div>
-                <div><span class="songtitle">{song.title.clone()}</span></div>
-                <div><span class="songartist">{song.artist.clone()}</span></div>
-                {
-                    // TODO: there's probably a cleaner way to do this
-                    if let Some(children) = &props.children {
-                        html! {
-                            <>
-                             { children.clone() }
-                            </>
-                        }
-                    } else {
-                        html! {}
+            <span class="songtitle songoverflow">{song.title.clone()}</span>
+            <span class="songartist songoverflow">{song.artist.clone()}</span>
+            {
+                // TODO: there's probably a cleaner way to do this
+                if let Some(children) = &props.children {
+                    html! {
+                        <>
+                            { children.clone() }
+                        </>
                     }
+                } else {
+                    html! {}
                 }
-            </div>
+            }
         </div>
     }
 }
@@ -65,8 +63,8 @@ pub fn song_row(props: &SongRowProps) -> Html {
                 <div><span class="songduration">{duration_text(song.duration)}</span></div>
             </SongText>
             <div class="user">
-                <img src={ song.requested_by.icon.clone() } alt="temp" />
                 <span class="username">{ song.requested_by.displayname.clone() }</span>
+                <img src={ song.requested_by.icon.clone() } alt="temp" />
             </div>
         </>
     }
@@ -89,8 +87,8 @@ pub fn song_now_playing(props: &SongNowPlayingProps) -> Html {
                 <NowPlayingProgress song={song.clone()}/>
             </SongText>
             <div class="user">
-                <img src={ song.requested_by.icon.clone() } alt="temp" />
                 <span class="username">{ song.requested_by.displayname.clone() }</span>
+                <img src={ song.requested_by.icon.clone() } alt="temp" />
             </div>
         </div>
     }
@@ -161,10 +159,10 @@ impl Component for NowPlayingProgress {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let song = &ctx.props().song;
         html! {
-            <div>
+            <>
                 <span>{ format!("{} / {}", duration_text(self.time), duration_text(song.duration)) }</span>
                 <progress value={self.time.to_string()} max={song.duration.to_string()}/>
-            </div>
+            </>
         }
     }
 }

@@ -1,28 +1,38 @@
+@use "sass:math";
+
+$np-height: 125px;
+$up-height: 75px;
+$icon-ar: math.div(4,3);
 
 .nowplaying {
     display: flex;
     justify-content: center;
-    height: 125px;
-    max-height: 125px;
+    height: $np-height;
+    max-height: $np-height;
 }
 
 .upcomingitem {
     display: flex;
     justify-content: center;
-    height: 75px;
-    max-height: 75px;
+    height: $up-height;
+    max-height: $up-height;
     font-size: small;
+}
+
+.nowplaying .songicon {
+    height: 100%;
+    flex-shrink: 1;
+    width: auto;
 }
 
 .songicon {
     justify-content: right;
     height: 100%;
-    background-color: red;
+    width: $up-height * $icon-ar;
 }
 
 .songicon img {
     max-height: 100%;
-    //max-width: 57%;
     height: 100%;
     width: 100%;
     object-fit: cover;
@@ -36,6 +46,7 @@
     align-items: center;
     height: 100%;
     max-height: 100%;
+    float: left;
 }
 
 .user img {
@@ -45,15 +56,26 @@
 }
 
 .username {
-    margin-left: 10px;
+    margin-right: 10px;
 }
 
 .songdata {
     display: flex;
-    flex-grow: 1;
+    flex-direction: column;
+    flex-grow: 2;
+    flex-shrink: 2;
+    justify-content: space-evenly;
     margin-left: 10px;
+    margin-right: 20px;
+    min-width: 0;
+    height: 100%;
 }
 
+.songoverflow {
+    white-space: nowrap;
+    overflow-x: hidden;
+    text-overflow: ellipsis;
+}
 
 .songtitle {
     font-weight: bold;
@@ -62,4 +84,12 @@
 
 .songartist {
     font-style: italic;
+}
+
+.nowplaying progress {
+    $m: 5px;
+    margin: {
+        top: $m !important;
+        bottom: $m !important;
+    }
 }
