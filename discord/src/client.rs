@@ -83,7 +83,7 @@ struct ConfigCmd;
 #[group]
 #[description = "Commands for debugging purposes"]
 #[prefix("debug")]
-#[commands(usertime, dropapuser, modutime, musicstate, dumpconfig)]
+#[commands(usertime, dropapuser, addapuser, apenableall, modutime, musicstate, dumpconfig)]
 // TODO: require owner
 struct DebugCmd;
 

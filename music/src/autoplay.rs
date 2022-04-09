@@ -307,6 +307,15 @@ impl AutoplayState {
         format!("{:?}", self.usertime)
     }
 
+    pub fn debug_enable_all_users(&mut self) {
+        self.disable_all_users();
+        let users: Vec<MinstrelUserId> = self.userlists.iter().map(|(u,_)| u.clone()).collect();
+
+        for u in users {
+            self.enable_user(&u).unwrap();
+        }
+    }
+
     pub fn shuffle_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
         if let Some(list) = self.userlists.get(userid) {
             let mut list = list.clone();

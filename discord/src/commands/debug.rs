@@ -51,6 +51,40 @@ async fn dropapuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResu
 
 #[command]
 #[only_in(guilds)]
+#[num_args(1)]
+async fn addapuser(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    let user = args.single::<String>().unwrap();
+    let guild = ctx.cache
+                .guild(msg.guild_id.unwrap())
+                .await.unwrap();
+    let member = guild.member_named(&user).unwrap();
+
+    mstate.autoplay.enable_user(&muid_from_userid(&member.user.id)).unwrap();
+
+    let ut = mstate.autoplay.debug_get_usertime();
+
+    msg.channel_id.say(&ctx.http, format!("In theory added user:\n```{}```", ut)).await?;
+
+    Ok(())
+}
+
+#[command]
+#[only_in(guilds)]
+async fn apenableall(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    mstate.autoplay.debug_enable_all_users();
+
+    msg.channel_id.say(&ctx.http, format!("In theory enabled all users in autoplay.json")).await?;
+
+    Ok(())
+}
+
+
+#[command]
+#[only_in(guilds)]
 #[num_args(2)]
 async fn modutime(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
