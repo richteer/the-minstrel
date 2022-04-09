@@ -46,42 +46,22 @@ pub fn song_text(props: &SongTextProps) -> Html {
     }
 }
 
+
 #[derive(Properties, PartialEq)]
 pub struct SongRowProps {
     pub song: Song,
+    pub nowplaying: Option<bool>,
 }
 
 #[function_component(SongRow)]
 pub fn song_row(props: &SongRowProps) -> Html {
     let song = &props.song;
-    html! {
-        <>
-            <div class="songicon">
-                <a href={song.url.clone()} target="_blank" rel="noopener noreferrer">
-                    <img src={song.thumbnail.clone()} alt="temp" />
-                </a>
-            </div>
-            <SongText song={song.clone()}>
-                <div><span class="songduration">{duration_text(song.duration)}</span></div>
-            </SongText>
-            <div class="user">
-                <span class="username">{ song.requested_by.displayname.clone() }</span>
-                <img src={ song.requested_by.icon.clone() } alt="temp" />
-            </div>
-        </>
-    }
-}
+    let np = if let Some(np) = props.nowplaying {
+        np
+    } else { false };
 
-#[derive(Properties, PartialEq)]
-pub struct SongNowPlayingProps {
-    pub song: Song,
-}
-
-#[function_component(SongNowPlaying)]
-pub fn song_now_playing(props: &SongNowPlayingProps) -> Html {
-    let song = &props.song;
     html! {
-        <div class="nowplaying">
+        <div class={ if np { "nowplaying" } else {"upcomingitem"} }>
             <div class="songicon">
                 <a href={song.url.clone()} target="_blank" rel="noopener noreferrer">
                     <img src={song.thumbnail.clone()} alt="temp" />
@@ -93,7 +73,17 @@ pub fn song_now_playing(props: &SongNowPlayingProps) -> Html {
                 </a>
             </div>
             <SongText song={song.clone()}>
-                <NowPlayingProgress song={song.clone()}/>
+                {
+                    if np {
+                        html! {
+                            <NowPlayingProgress song={song.clone()}/>
+                        }
+                    } else {
+                        html! {
+                            <div><span class="songduration">{duration_text(song.duration)}</span></div>
+                        }
+                    }
+                }
             </SongText>
             <div class="user">
                 <span class="username">{ song.requested_by.displayname.clone() }</span>

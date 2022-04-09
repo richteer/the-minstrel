@@ -125,7 +125,7 @@ impl Component for Dash {
                     {
                         if let Some(np) = data.current_track {
                             html! {
-                            <SongNowPlaying song={np}/>
+                            <SongRow song={np} nowplaying={true}/>
                             }
                         } else {
                             html! {
@@ -138,9 +138,7 @@ impl Component for Dash {
                         {
                             for data.upcoming.iter().map(|e| {
                                 html! {
-                                <div class="upcomingitem">
-                                    <SongRow song={e.clone()} />
-                                </div>
+                                <SongRow song={e.clone()} />
                                 }
                             })
                         }
