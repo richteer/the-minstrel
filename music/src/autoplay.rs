@@ -168,7 +168,7 @@ impl AutoplayState {
     pub fn register(&mut self, requester: Requester, url: &str) -> Result<AutoplayOk, AutoplayError> {
         {
             if let Ok(mut lock) = self.storage.write() {
-                match lock.set(&requester.id.0, &(&requester, url)) {
+                match lock.set(&requester.id, &(&requester, url)) {
                     Ok(_) => (),
                     Err(e) => error!("Error writing to autoplay storage: {:?}", e),
                     // Continue on failure, storage isn't important

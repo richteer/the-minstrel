@@ -27,17 +27,17 @@ pub async fn requester_from_user(ctx: &Context, gid: &Option<GuildId>, user: &Us
 }
 
 pub fn muid_from_userid(userid: &UserId) -> MinstrelUserId {
-    MinstrelUserId(userid.to_string())
+    userid.to_string()
 }
 
 pub async fn get_user_from_muid(ctx: &Context, muid: &MinstrelUserId) -> Option<User> {
-    let uid = muid.0.parse::<u64>().unwrap();
+    let uid = muid.parse::<u64>().unwrap();
     let uid = UserId(uid);
 
     match uid.to_user(&ctx.http).await {
         Ok(o) => Some(o),
         Err(e) => {
-            warn!("lookup for muid = {} returned error: {:?}", muid.0, e);
+            warn!("lookup for muid = {} returned error: {:?}", muid, e);
             None
         },
     }

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize, Hash, Eq, PartialEq)]
-pub struct MinstrelUserId(pub String);
+//#[derive(Clone, Debug, Serialize, Deserialize, Hash, Eq, PartialEq)]
+pub type MinstrelUserId = String;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Requester {
@@ -13,13 +13,14 @@ pub struct Requester {
 
 // Keeping this one around so that the API is consistent internally,
 //  don't want to mess around with using a mix of remote structs and webdata structs
-impl Into<webdata::Requester> for Requester {
-    fn into(self) -> webdata::Requester {
-        webdata::Requester {
-            username: self.username,
-            displayname: self.displayname,
-            icon: self.icon,
-            id: self.id.0,
+
+impl From<Requester> for webdata::Requester {
+    fn from(req: Requester) -> Self {
+        Self {
+            username: req.username,
+            displayname: req.displayname,
+            icon: req.icon,
+            id: req.id,
         }
     }
 }
