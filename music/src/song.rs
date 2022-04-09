@@ -26,7 +26,7 @@ macro_rules! get_duration {
 
 impl Song {
     /// Create a new song struct from a url and fetch the metadata via ytdl
-    pub fn new(url: String, requester: Requester) -> Result<Song, MusicError> {
+    pub fn new(url: String, requester: &Requester) -> Result<Song, MusicError> {
         if !url.starts_with("http") {
             return Err(MusicError::InvalidUrl);
         }

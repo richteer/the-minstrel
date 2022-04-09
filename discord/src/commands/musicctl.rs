@@ -28,7 +28,7 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let requester = requester_from_user(ctx, &msg.guild_id, &msg.author).await;
 
-    let url = match Song::new(url, requester) {
+    let url = match Song::new(url, &requester) {
         Ok(u) => u,
         Err(_) => {
             check_msg(msg.channel_id.say(&ctx.http, "Must provide a URL to a video or audio").await);
