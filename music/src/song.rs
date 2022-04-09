@@ -81,16 +81,15 @@ impl fmt::Display for Song {
 }
 
 
-
-impl Into<webdata::Song> for Song {
-    fn into(self) -> webdata::Song {
-        webdata::Song {
-            title: self.metadata.title,
-            artist: self.metadata.uploader.unwrap_or(String::from("Unknown")),
-            url: self.url,
-            thumbnail: self.metadata.thumbnail.unwrap_or(format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", self.metadata.id)),
-            duration: self.duration,
-            requested_by: self.requested_by.into(),
+impl From<Song> for webdata::Song {
+    fn from(song: Song) -> Self {
+        Self {
+            title: song.metadata.title,
+            artist: song.metadata.uploader.unwrap_or_else(|| String::from("Unknown")),
+            url: song.url,
+            thumbnail: song.metadata.thumbnail.unwrap_or(format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", song.metadata.id)),
+            duration: song.duration,
+            requested_by: song.requested_by.into(),
         }
     }
 }
