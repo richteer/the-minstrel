@@ -271,6 +271,7 @@ impl<T: MusicPlayer> MusicState<T> {
     pub async fn leave(&mut self) {
         let mut player = self.player.lock().await;
 
+        self.current_track = None;
         self.queue.clear();
         self.autoplay.enabled = false;
         self.autoplay.disable_all_users();
