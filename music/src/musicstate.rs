@@ -199,6 +199,7 @@ impl<T: MusicPlayer> MusicState<T> {
         }
 
         self.status = MusicStateStatus::Stopped;
+        self.current_track = None;
 
         Ok(MusicOk::StoppedPlaying)
     }
@@ -269,13 +270,16 @@ impl<T: MusicPlayer> MusicState<T> {
 
     // TODO: this is slated for removal from MusicState, leaving for the scope of this refactor
     pub async fn leave(&mut self) {
-        let mut player = self.player.lock().await;
 
-        self.current_track = None;
         self.queue.clear();
         self.autoplay.enabled = false;
         self.autoplay.disable_all_users();
 
+        if let Err(e) = self.stop().await {
+            error!("{:?}", e);
+        };
+
+        let mut player = self.player.lock().await;
         // TODO: this assumes player stops on disconnect. Artifact of discordisms, since .stop() acts like skip sometimes
         //  explicitly stop the music first if this function actually remains here
         player.disconnect().await;
