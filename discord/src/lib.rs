@@ -1,6 +1,6 @@
 pub mod client;
 pub mod player;
-pub mod commands;
+pub mod frontend;
 pub mod requester;
 pub mod web;
 pub mod helpers;

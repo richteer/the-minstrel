@@ -1,7 +1,6 @@
 use std::{
     env,
     sync::Arc,
-    collections::HashSet,
 };
 use songbird::SerenityInit;
 
@@ -10,14 +9,6 @@ use crate::player::*;
 use crate::helpers::*;
 use crate::get_mstate;
 
-use crate::commands::{
-    general::*,
-    musicctl::*,
-    queuectl::*,
-    autoplay::*,
-    config::*,
-    debug::*,
-};
 
 use log::*;
 
@@ -27,23 +18,15 @@ use serenity::{
     model::{
         channel::Message,
         gateway::Ready,
-        id::UserId,
         id::GuildId,
         voice::VoiceState,
     },
     prelude::*,
-//    client::bridge::gateway::{GatewayIntents, ShardId, ShardManager},
     framework::standard::{
-        help_commands,
-        macros::{group, help, hook},
-        Args,
-        CommandGroup,
+        macros::{hook},
+
         CommandError,
-//        CommandOptions,
-        CommandResult,
         DispatchError,
-        HelpOptions,
-        StandardFramework,
     },
 };
 
@@ -52,40 +35,6 @@ use serenity::{
 
 struct Handler;
 
-
-#[group]
-#[commands(ping, join, leave)]
-struct General;
-
-#[group]
-#[description = "Commands for controlling the music player"]
-#[commands(play, nowplaying, next, stop, start, display, history, previous)]
-struct MusicControlCmd;
-
-#[group]
-#[description = "Commands to manage the music queue"]
-#[commands(queue, enqueue, clearqueue, queuestatus)]
-struct QueueControlCmd;
-
-#[group]
-#[description = "Commands to manage autoplay state"]
-#[prefixes("autoplay", "ap")]
-#[commands(toggle, setlist, upcoming, enrolluser, removeuser, rebalance, shuffle, dump, advance)]
-struct AutoplayCmd;
-
-#[group]
-#[description = "Commands for reading or manipulating config"]
-#[prefix("config")]
-#[commands(set, get)]
-// TODO: require owner
-struct ConfigCmd;
-
-#[group]
-#[description = "Commands for debugging purposes"]
-#[prefix("debug")]
-#[commands(usertime, dropapuser, addapuser, apenableall, modutime, musicstate, dumpconfig)]
-// TODO: require owner
-struct DebugCmd;
 
 #[hook]
 async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
@@ -123,7 +72,7 @@ impl EventHandler for Handler {
         if msg.author.id == ctx.cache.current_user().await.id {
             return
         }
-        // TODO: use an actual logging system
+
         trace!("{}", msg.content);
     }
 
@@ -223,22 +172,6 @@ async fn last_one_in_checker(ctx: &Context, guildid: &Option<GuildId>, old: &Opt
 }
 
 
-#[help]
-#[command_not_found_text = "Could not find: {}"]
-#[max_levenshtein_distance(3)]
-async fn helpme(
-    context: &Context,
-    msg: &Message,
-    args: Args,
-    help_options: &'static HelpOptions,
-    groups: &[&'static CommandGroup],
-    owners: HashSet<UserId>,
-) -> CommandResult {
-    let _ = help_commands::with_embeds(context, msg, args, help_options, groups, owners).await;
-    Ok(())
-}
-
-
 /* Enter mess to make the singleton magic via serenity here */
 pub struct MusicStateKey;
 
@@ -260,24 +193,7 @@ impl MusicStateInit for ClientBuilder<'_> {
 pub async fn create_player() -> serenity::Client {
     let token = env::var("DISCORD_TOKEN").expect("Must provide env var DISCORD_TOKEN");
 
-    let framework = StandardFramework::new()
-        .configure(|c| c
-            .with_whitespace(true)
-            //.on_mention(Some(bot_id)) // TODO: not sure
-            .prefix("!")
-            .delimiters(vec![", ", ",", " "])
-            //.owners(owners) // TODO: set owners so adminy commands work
-            )
-        .after(stickymessage_hook)
-        .on_dispatch_error(dispatch_error)
-        .group(&GENERAL_GROUP)
-        .group(&MUSICCONTROLCMD_GROUP)
-        .group(&QUEUECONTROLCMD_GROUP)
-        .group(&AUTOPLAYCMD_GROUP)
-        .group(&CONFIGCMD_GROUP)
-        .group(&DEBUGCMD_GROUP)
-        .help(&HELPME);
-
+    let framework = crate::frontend::framework::init_framework();
 
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement
