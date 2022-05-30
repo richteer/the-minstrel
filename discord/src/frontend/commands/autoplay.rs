@@ -5,7 +5,10 @@ use serenity::{
     prelude::*,
     framework::standard::{
         Args,
-        macros::command,
+        macros::{
+            command,
+            group,
+        },
         CommandResult,
     },
 };
@@ -16,6 +19,13 @@ use crate::helpers::check_msg;
 use music::MusicError;
 
 use crate::helpers::*;
+
+#[group]
+#[description = "Commands to manage autoplay state"]
+#[prefixes("autoplay", "ap")]
+#[commands(toggle, setlist, upcoming, enrolluser, removeuser, rebalance, shuffle, dump, advance)]
+struct AutoplayCmd;
+
 
 #[command]
 #[aliases(t)]

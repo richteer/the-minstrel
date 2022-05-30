@@ -5,7 +5,10 @@ use serenity::{
     prelude::*,
     framework::standard::{
         Args,
-        macros::command,
+        macros::{
+            command,
+            group,
+        },
         CommandResult,
     },
 };
@@ -22,6 +25,11 @@ use music::{
     MusicOk,
     MusicError,
 };
+
+#[group]
+#[description = "Commands for controlling the music player"]
+#[commands(play, nowplaying, next, stop, start, display, history, previous)]
+struct MusicControlCmd;
 
 
 #[command]

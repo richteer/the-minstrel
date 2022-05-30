@@ -5,7 +5,10 @@ use serenity::{
     prelude::*,
     framework::standard::{
         Args,
-        macros::command,
+        macros::{
+            command,
+            group,
+        },
         CommandResult,
     },
 };
@@ -16,6 +19,11 @@ use crate::requester::*;
 use music::{
     Song,
 };
+
+#[group]
+#[description = "Commands to manage the music queue"]
+#[commands(queue, enqueue, clearqueue, queuestatus)]
+struct QueueControlCmd;
 
 
 #[command]

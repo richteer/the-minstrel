@@ -6,7 +6,7 @@ use serenity::{
     prelude::*,
     framework::standard::{
         help_commands,
-        macros::{group, help, hook},
+        macros::{help, hook},
         Args,
         CommandGroup,
         CommandError,
@@ -36,43 +36,6 @@ use crate::{
     get_dstate,
 };
 
-
-
-#[group]
-#[commands(ping, join, leave)]
-struct General;
-
-#[group]
-#[description = "Commands for controlling the music player"]
-#[commands(play, nowplaying, next, stop, start, display, history, previous)]
-struct MusicControlCmd;
-
-#[group]
-#[description = "Commands to manage the music queue"]
-#[commands(queue, enqueue, clearqueue, queuestatus)]
-struct QueueControlCmd;
-
-#[group]
-#[description = "Commands to manage autoplay state"]
-#[prefixes("autoplay", "ap")]
-#[commands(toggle, setlist, upcoming, enrolluser, removeuser, rebalance, shuffle, dump, advance)]
-struct AutoplayCmd;
-
-#[group]
-#[description = "Commands for reading or manipulating config"]
-#[prefix("config")]
-#[commands(set, get)]
-// TODO: require owner
-struct ConfigCmd;
-
-/*
-#[group]
-#[description = "Commands for debugging purposes"]
-#[prefix("debug")]
-#[commands(usertime, dropapuser, addapuser, apenableall, modutime, musicstate, dumpconfig)]
-// TODO: require owner
-struct DebugCmd;
-*/
 
 #[hook]
 async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {

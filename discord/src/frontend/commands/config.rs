@@ -5,13 +5,24 @@ use serenity::{
     prelude::*,
     framework::standard::{
         Args,
-        macros::command,
+        macros::{
+            command,
+            group,
+        },
         CommandResult,
     },
 };
 
 use config::{Config, Source};
 use minstrel_config::{CONFIG, Configuration};
+
+#[group]
+#[description = "Commands for reading or manipulating config"]
+#[prefix("config")]
+#[commands(set, get)]
+// TODO: require owner
+struct ConfigCmd;
+
 
 #[command]
 #[only_in(guilds)]

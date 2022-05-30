@@ -4,7 +4,10 @@ use serenity::{
     },
     prelude::*,
     framework::standard::{
-        macros::command,
+        macros::{
+            group,
+            command,
+        },
         CommandResult,
     },
 };
@@ -12,6 +15,11 @@ use serenity::{
 use crate::get_dstate;
 use crate::join_voice;
 use crate::helpers::*;
+
+#[group]
+#[commands(ping, join, leave)]
+struct General;
+
 
 #[command]
 #[only_in(guilds)]

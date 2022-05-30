@@ -5,13 +5,24 @@ use serenity::{
     prelude::*,
     framework::standard::{
         Args,
-        macros::command,
+        macros::{
+            command,
+            group,
+        },
         CommandResult,
     },
 };
 use crate::get_mstate;
 use crate::requester::*;
 use minstrel_config::CONFIG;
+
+
+#[group]
+#[description = "Commands for debugging purposes"]
+#[prefix("debug")]
+#[commands(usertime, dropapuser, addapuser, apenableall, modutime, musicstate, dumpconfig)]
+// TODO: require owner
+struct DebugCmd;
 
 
 #[command]
