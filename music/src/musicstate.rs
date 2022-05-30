@@ -272,6 +272,8 @@ impl MusicState {
         self.status = MusicStateStatus::Stopped;
         self.current_track = None;
 
+        self.broadcast_update();
+
         Ok(MusicOk::StoppedPlaying)
     }
 
@@ -296,6 +298,8 @@ impl MusicState {
         }
 
         self.queue.push_back(song);
+
+        self.broadcast_update();
 
         Ok(MusicOk::EnqueuedSong)
     }
@@ -344,6 +348,8 @@ impl MusicState {
 
     pub fn clear_queue(&mut self) -> Result<MusicOk, MusicError> {
         self.queue.clear();
+
+        self.broadcast_update();
 
         Ok(MusicOk::EmptyQueue)
     }
