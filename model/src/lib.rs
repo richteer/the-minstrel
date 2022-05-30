@@ -37,7 +37,6 @@ pub struct MinstrelWebData {
 
 
 
-// TODO: Remove this eventually. Copy-pasted from MusicState
 #[non_exhaustive]
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
 pub enum MusicStateStatus {

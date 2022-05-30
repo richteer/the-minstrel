@@ -22,7 +22,6 @@ use tokio::sync::{
 };
 
 use log::*;
-use serde::Serialize;
 
 use crate::player::{
     MusicPlayerCommand,
@@ -35,6 +34,7 @@ use crate::musiccontroller::{
 };
 
 use minstrel_config::read_config;
+use model::MusicStateStatus;
 
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -85,30 +85,6 @@ pub enum MusicError {
     AutoplayError(AutoplayError),
 }
 
-
-#[non_exhaustive]
-#[derive(Clone, Debug, Serialize)]
-pub enum MusicStateStatus {
-    Playing,
-    Stopping,
-    Stopped,
-    Idle,
-}
-
-
-// TODO: delete this eventually when types are reconciled
-impl From<MusicStateStatus> for model::MusicStateStatus {
-    fn from(mss: MusicStateStatus) -> Self {
-        match mss {
-            MusicStateStatus::Idle => model::MusicStateStatus::Idle,
-            MusicStateStatus::Playing => model::MusicStateStatus::Playing,
-            MusicStateStatus::Stopping => model::MusicStateStatus::Stopping,
-            MusicStateStatus::Stopped => model::MusicStateStatus::Stopped,
-            #[allow(unreachable_patterns)]
-            _ => panic!("unknown music state status obtained from music crate"),
-        }
-    }
-}
 
 #[derive(Clone, Debug)]
 pub enum MusicControlCmd {
