@@ -62,13 +62,16 @@ impl<T: MusicPlayer> MusicPlayerTask<T> {
             };
             trace!("got command: {:?}", cmd);
 
-            let ret = match cmd {
-                MusicPlayerCommand::Play(s) => self.player.lock().await.play(&s).await,
-                MusicPlayerCommand::Stop => self.player.lock().await.stop().await,
-                MusicPlayerCommand::Disconnect => {
-                    self.player.lock().await.disconnect().await;
-                    Ok(())
-                },
+            let ret = {
+                let mut player = self.player.lock().await;
+                match cmd {
+                    MusicPlayerCommand::Play(s) => player.play(&s).await,
+                    MusicPlayerCommand::Stop => player.stop().await,
+                    MusicPlayerCommand::Disconnect => {
+                        player.disconnect().await;
+                        Ok(())
+                    },
+                }
             };
 
             if let Err(e) = rettx.send(ret) {
