@@ -36,34 +36,42 @@ async fn main() {
     let mstate = Arc::new(Mutex::new(MusicState::new(tx)));
 
     // TODO: I really don't like this flow, it needs to be handled by some higher level controller probably.
-    let dplayer = Arc::new(Mutex::new(discord::player::DiscordPlayer::new()));
-    let mut dplayertask = music::player::MusicPlayerTask::new(dplayer.clone(), rx);
 
-    let mut client = discord::client::create_player(mstate.clone(), dplayer.clone()).await;
+    #[cfg(feature = "discord")]
+    {
+        // TODO: make this under a discord-player feature, depends on splitting DiscordPlayer into a DiscordState probably
+        let dplayer = Arc::new(Mutex::new(discord::player::DiscordPlayer::new()));
+        let mut dplayertask = music::player::MusicPlayerTask::new(dplayer.clone(), rx);
 
-    debug!("spawning discord player task");
-    tokio::spawn(async move {
-        dplayertask.run().await;
-    });
+        debug!("spawning discord player task");
+        tokio::spawn(async move {
+            dplayertask.run().await;
+        });
 
-    info!("spawning discord client");
-    tokio::spawn(async move {
-        if let Err(why) = client.start().await {
-            error!("Client error: {:?}", why);
-        }
-    });
+        let mut client = discord::client::create_player(mstate.clone(), dplayer.clone()).await;
 
 
-    let site = webapi::web::get_web_filter(mstate.clone());
-    let addr = format!("{}:{}", read_config!(web.bind_address), read_config!(web.port))
-        .parse::<std::net::SocketAddr>().unwrap();
+        info!("spawning discord client");
+        tokio::spawn(async move {
+            if let Err(why) = client.start().await {
+                error!("Client error: {:?}", why);
+            }
+        });
+    }
 
-    info!("spawning web server");
-    tokio::spawn(async move {
-        warp::serve(site)
-        .run(addr)
-        .await;
-    });
+    #[cfg(feature = "web-frontend")]
+    {
+        let site = webapi::web::get_web_filter(mstate.clone());
+        let addr = format!("{}:{}", read_config!(web.bind_address), read_config!(web.port))
+            .parse::<std::net::SocketAddr>().unwrap();
+
+        info!("spawning web server");
+        tokio::spawn(async move {
+            warp::serve(site)
+            .run(addr)
+            .await;
+        });
+    }
 
     // TODO: Have an application controller that properly shuts things down and exists here
     loop {}

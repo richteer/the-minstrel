@@ -23,7 +23,7 @@ discord = { path = "../discord", optional = true }
 
 
 [features]
-default = ["discord-player", "discord-webdash", "web-server"]
+default = ["discord-player", "discord-frontend", "web-frontend"]
 discord-player = ["discord"]
-discord-webdash = ["discord-player", "web-server"]
-web-server = ["warp", "webapi"]
+discord-frontend = ["discord"]
+web-frontend = ["warp", "webapi"]
