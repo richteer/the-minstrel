@@ -187,7 +187,7 @@ pub async fn in_same_voice(ctx: &Context, msg: &Message) -> Result<(), Reason> {
 
 // Permit useless formats here mostly for code consistently and alignment.
 #[allow(clippy::useless_format)]
-pub fn show_queuestate(mstate: &mut MusicAdapter) -> String {
+pub async fn show_queuestate(mstate: &mut MusicAdapter) -> String {
     let mut q = None;
     let mut ap = None;
 
@@ -195,7 +195,7 @@ pub fn show_queuestate(mstate: &mut MusicAdapter) -> String {
         q = Some(mstate.show_queue());
     }
 
-    if mstate.autoplay.is_enabled() {
+    if mstate.autoplay.is_enabled().await {
         ap = Some(autoplay_show_upcoming(mstate, read_config!(discord.queuestate_ap_count)));
     }
 
@@ -223,10 +223,10 @@ pub fn show_queuestate(mstate: &mut MusicAdapter) -> String {
 }
 
 
-pub fn get_queuestate_embed(mstate: &mut MusicAdapter) -> CreateEmbed {
+pub async fn get_queuestate_embed(mstate: &mut MusicAdapter) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
-    ret.description(show_queuestate(mstate));
+    ret.description(show_queuestate(mstate).await);
 
     ret
 }

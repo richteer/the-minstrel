@@ -156,9 +156,9 @@ impl AutoplayAdapter {
 
     pub fn handle_cmd(cmd: AutoplayControlCmd, ap: &mut AutoplayState) -> Result<MusicOk, MusicError> {
         let ret = match cmd {
-            AutoplayControlCmd::Enable => todo!(),
-            AutoplayControlCmd::Disable => todo!(),
-            AutoplayControlCmd::Status => todo!(),
+            AutoplayControlCmd::Enable => { ap.enable(); Ok(AutoplayOk::Status(true)) },
+            AutoplayControlCmd::Disable => { ap.disable(); Ok(AutoplayOk::Status(false)) },
+            AutoplayControlCmd::Status => { Ok(AutoplayOk::Status(ap.is_enabled())) },
             AutoplayControlCmd::Register((req, url)) => ap.register(req, url.as_str()),
             AutoplayControlCmd::EnableUser(uid) => ap.enable_user(&uid),
             AutoplayControlCmd::DisableUser(uid) => ap.disable_user(&uid),
@@ -175,15 +175,15 @@ impl AutoplayAdapter {
         }
     }
 
-    fn invoke(&mut self, cmd: AutoplayControlCmd) -> Result<AutoplayOk, AutoplayError> {
+    async fn invoke(&mut self, cmd: AutoplayControlCmd) -> Result<AutoplayOk, AutoplayError> {
         let (tx, rx) = oneshot::channel();
 
-        if let Err(e) = self.tx.blocking_send((tx, MusicControlCmd::AutoplayCmd(cmd))) {
+        if let Err(e) = self.tx.send((tx, MusicControlCmd::AutoplayCmd(cmd))).await {
             error!("Failed to send Autoplay command to mstate = {:?}", e);
             return Err(AutoplayError::UnknownError);
         }
 
-        match rx.blocking_recv() {
+        match rx.await {
             Ok(r) => {
                 match r {
                     Ok(MusicOk::AutoplayOk(o)) => Ok(o),
@@ -201,52 +201,52 @@ impl AutoplayAdapter {
         }
     }
 
-    pub fn enable(&mut self) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::Enable)
+    pub async fn enable(&mut self) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::Enable).await
     }
 
-    pub fn disable(&mut self) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::Disable)
+    pub async fn disable(&mut self) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::Disable).await
     }
 
-    pub fn is_enabled(&mut self) -> bool {
-        match self.invoke(AutoplayControlCmd::Status) {
+    pub async fn is_enabled(&mut self) -> bool {
+        match self.invoke(AutoplayControlCmd::Status).await {
             Ok(AutoplayOk::Status(s)) => s,
             Ok(_) | Err(_) => panic!("unexpected return from Autoplay Status command"),
         }
     }
 
-    pub fn register(&mut self, requester: Requester, url: &str) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::Register((requester, String::from(url))))
+    pub async fn register(&mut self, requester: Requester, url: &str) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::Register((requester, String::from(url)))).await
     }
 
-    pub fn enable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::EnableUser(userid.clone()))
+    pub async fn enable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::EnableUser(userid.clone())).await
     }
 
-    pub fn disable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::DisableUser(userid.clone()))
-    }
-
-    // This function does not have a return, ignore result from invoke
-    pub fn disable_all_users(&mut self) {
-        self.invoke(AutoplayControlCmd::DisableAllUsers).unwrap();
-    }
-
-    pub fn shuffle_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::DisableUser(userid.clone()))
+    pub async fn disable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::DisableUser(userid.clone())).await
     }
 
     // This function does not have a return, ignore result from invoke
-    pub fn reset_usertime(&mut self) {
-        self.invoke(AutoplayControlCmd::Rebalance).unwrap();
+    pub async fn disable_all_users(&mut self) {
+        self.invoke(AutoplayControlCmd::DisableAllUsers).await.unwrap();
     }
 
-    pub fn update_userplaylist(&mut self, requester: &Requester) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::UpdatePlaylist(requester.clone()))
+    pub async fn shuffle_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::DisableUser(userid.clone())).await
     }
 
-    pub fn advance_userplaylist(&mut self, userid: &MinstrelUserId, num: u64) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::AdvancePlaylist((userid.clone(), num)))
+    // This function does not have a return, ignore result from invoke
+    pub async fn reset_usertime(&mut self) {
+        self.invoke(AutoplayControlCmd::Rebalance).await.unwrap();
+    }
+
+    pub async fn update_userplaylist(&mut self, requester: &Requester) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::UpdatePlaylist(requester.clone())).await
+    }
+
+    pub async fn advance_userplaylist(&mut self, userid: &MinstrelUserId, num: u64) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::AdvancePlaylist((userid.clone(), num))).await
     }
 }

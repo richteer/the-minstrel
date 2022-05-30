@@ -205,11 +205,12 @@ impl VoiceEventHandler for TrackEndNotifier {
             let dplayer = dplayer.lock().await;
 
             let data = mstate.get_webdata();
-            let embed = get_nowplay_embed(&ctx, &data).await;
+            let qs_embed = get_queuestate_embed(&mut mstate).await;
+            let np_embed = get_nowplay_embed(&ctx, &data).await;
 
             if let Some(sticky) = &dplayer.sticky {
                 sticky.channel_id.edit_message(&ctx.http, sticky, |m| {
-                    m.set_embeds(vec![get_queuestate_embed(&mut mstate), embed])
+                    m.set_embeds(vec![qs_embed, np_embed])
                 }).await.unwrap();
             }
         });
@@ -232,7 +233,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
     }
 
     get_mstate!(mut, mstate, ctx);
-    if !mstate.autoplay.is_enabled() {
+    if !mstate.autoplay.is_enabled().await {
         debug!("autoplay is not enabled, ignoring voice state change");
         return;
     }
@@ -244,7 +245,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
     if new.member.as_ref().unwrap().user.id == bot {
         if let Some(chan) = new.channel_id {
             // Clear out current autoplay users
-            mstate.autoplay.disable_all_users();
+            mstate.autoplay.disable_all_users().await;
 
             // ...and enable only users in this new channel
             for (uid, vs) in guild.voice_states.iter() {
@@ -273,7 +274,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
 
                 };
 
-                match mstate.autoplay.enable_user(&muid_from_userid(&user.id)) {
+                match mstate.autoplay.enable_user(&muid_from_userid(&user.id)).await {
                     Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
                     Err(e) => debug!("did not enroll user {}: {:?}", user.tag(), e),
                 };
@@ -287,7 +288,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
     if let Some(chan) = new.channel_id {
         if chan == bot_chan {
             let user = new.member.unwrap().user;
-            match mstate.autoplay.enable_user(&muid_from_userid(&user.id)) {
+            match mstate.autoplay.enable_user(&muid_from_userid(&user.id)).await {
                 Ok(o) => debug!("enrolling user {}: {:?}", user.tag(), o),
                 Err(e) => debug!("did not enroll {}: {:?}", user.tag(), e)
             }
@@ -315,7 +316,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
 
     if chan == bot_chan {
         let user = new.member.unwrap().user;
-        match mstate.autoplay.disable_user(&muid_from_userid(&user.id)) {
+        match mstate.autoplay.disable_user(&muid_from_userid(&user.id)).await {
             Ok(o) => debug!("unenrolling user {}: {:?}", user.tag(), o),
             Err(e) => debug!("did not unenroll {}: {:?}", user.tag(), e)
         }

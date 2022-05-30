@@ -23,13 +23,13 @@ use crate::helpers::*;
 async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    match mstate.autoplay.is_enabled() {
-        true => mstate.autoplay.disable(),
-        false => mstate.autoplay.enable(),
+    match mstate.autoplay.is_enabled().await {
+        true => mstate.autoplay.disable().await,
+        false => mstate.autoplay.enable().await,
     }.unwrap();
 
     // No need to do anything here if autoplay is disabled, it will probably stop itself
-    if !mstate.autoplay.is_enabled() {
+    if !mstate.autoplay.is_enabled().await {
         check_msg(msg.channel_id.say(&ctx.http, "Disabling autoplay.").await);
         return Ok(())
     }
@@ -73,7 +73,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
         match url.as_str() {
             "refetch"|"refresh"|"update" => {
-                match mstate.autoplay.update_userplaylist(&requester) {
+                match mstate.autoplay.update_userplaylist(&requester).await {
                     Ok(m)  => check_msg(msg.channel_id.say(&ctx.http, m).await),
                     Err(e) => check_msg(msg.channel_id.say(&ctx.http, format!("{:?}", e)).await),
                 };
@@ -83,7 +83,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
             _ => (),
         };
 
-        mstate.autoplay.register(requester, &url).ok();
+        mstate.autoplay.register(requester, &url).await.ok();
     }
 
     check_msg(msg.channel_id.say(&ctx.http, "Setlist Registered!").await);
@@ -101,7 +101,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    if !mstate.autoplay.is_enabled() {
+    if !mstate.autoplay.is_enabled().await {
         check_msg(msg.channel_id.say(&ctx.http, "Autoplay is not enabled").await);
         return Ok(())
     }
@@ -124,7 +124,7 @@ async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    let ret = match mstate.autoplay.enable_user(&muid_from_userid(&msg.author.id)) {
+    let ret = match mstate.autoplay.enable_user(&muid_from_userid(&msg.author.id)).await {
         Ok(m) => m.to_string(),
         Err(e) => format!("Error enabling user: {:?}", e),
     };
@@ -140,7 +140,7 @@ async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
 async fn removeuser(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    let ret = match mstate.autoplay.disable_user(&muid_from_userid(&msg.author.id)) {
+    let ret = match mstate.autoplay.disable_user(&muid_from_userid(&msg.author.id)).await {
         Ok(m) => m.to_string(),
         Err(e) => format!("Error disabling user: {:?}", e),
     };
@@ -158,7 +158,7 @@ async fn removeuser(ctx: &Context, msg: &Message) -> CommandResult {
 async fn rebalance(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    mstate.autoplay.reset_usertime();
+    mstate.autoplay.reset_usertime().await;
 
     check_msg(msg.channel_id.say(&ctx.http, "Reset all users' autoplay scores to 0.").await);
 
@@ -173,7 +173,7 @@ async fn rebalance(ctx: &Context, msg: &Message) -> CommandResult {
 async fn shuffle(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    mstate.autoplay.shuffle_user(&muid_from_userid(&msg.author.id)).unwrap();
+    mstate.autoplay.shuffle_user(&muid_from_userid(&msg.author.id)).await.unwrap();
 
     check_msg(msg.channel_id.say(&ctx.http, "Shuffled your playlist.").await);
 
@@ -208,7 +208,7 @@ async fn dump(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     get_mstate!(mut, mstate, ctx);
 
-    if !mstate.autoplay.is_enabled() {
+    if !mstate.autoplay.is_enabled().await {
         // TODO: this can probably work without autoplay enabled, but users need to be registered, etc etc
         check_msg(msg.channel_id.say(&ctx.http, "Autoplay is not enabled.").await);
         return Ok(())
@@ -235,7 +235,7 @@ async fn dump(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         };
     }
 
-    mstate.autoplay.disable().unwrap();
+    mstate.autoplay.disable().await.unwrap();
     check_msg(msg.channel_id.say(&ctx.http, "Autoplay has been disabled.").await);
 
     Ok(())
@@ -253,7 +253,7 @@ async fn advance(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     get_mstate!(mut, mstate, ctx);
 
-    let out = match mstate.autoplay.advance_userplaylist(&muid_from_userid(&msg.author.id), num) {
+    let out = match mstate.autoplay.advance_userplaylist(&muid_from_userid(&msg.author.id), num).await {
         Ok(_)  => format!("Advanced your playlist ahead {} song(s)", num),
         Err(e) => format!("Could not advance playlist: {:?}", e),
     };
