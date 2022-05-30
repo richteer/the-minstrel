@@ -1,0 +1,22 @@
+[package]
+name = "webapi"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
+serde = "1.0"
+serde_json = "1.0"
+log = "0.4"
+config = "0.12"
+warp = "0.3"
+futures-util = "0.3"
+rust-embed = "6.3.0"
+mime_guess = "2.0.4"
+chrono = "0.4"
+
+minstrel-config = { path = "../minstrel-config" }
+music = { path = "../music" }
+webdata = { path = "../webdata" }

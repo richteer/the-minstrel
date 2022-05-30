@@ -7,6 +7,7 @@ use std::collections::VecDeque;
 use tokio::sync::{
     oneshot,
     mpsc,
+    broadcast,
 };
 
 use log::*;
@@ -94,8 +95,9 @@ impl From<MusicStateStatus> for webdata::MusicStateStatus {
 //   a lot of the lower-level magic, so the commands can just operate on
 //   this instead and make life easier.
 pub struct MusicState {
-    // TODO: Actually get proper stuff here
     player: mpsc::Sender<MPCMD>,
+    // TODO: Perhaps put this in a higher level lock, so maybe it's automatic?
+    bcast: broadcast::Sender<String>,
     pub current_track: Option<Song>,
     pub status: MusicStateStatus,
     pub queue: VecDeque<Song>,
@@ -126,8 +128,10 @@ impl MusicState {
 
     pub fn new(player: mpsc::Sender<MPCMD>) -> MusicState {
         MusicState {
-            // TODO: use a proper channel buffer size here
+            // TODO: use a proper channel buffer sizes here
             player,
+            bcast: broadcast::channel(2).0,
+
             current_track: None,
             queue: VecDeque::<Song>::new(),
             history: VecDeque::<Song>::new(),
@@ -158,6 +162,8 @@ impl MusicState {
 
         self.current_track = Some(song);
         self.status = MusicStateStatus::Playing;
+
+        self.broadcast_update();
 
         Ok(MusicOk::StartedPlaying)
     }
@@ -301,6 +307,43 @@ impl MusicState {
             panic!("somehow disconnect responded with an Error: {:?}", e);
         };
     }
+
+    // TODO: These broadcasts should really be more robust.
+    //   Probably allow partial updates, as well as intelligently send them whenever
+    //   MusicState is mutated, rather than having to manually call
+    fn broadcast_update(&self) {
+        let out: webdata::MinstrelWebData = self.into();
+
+        if self.bcast.receiver_count() > 0 {
+            if let Err(e) = self.bcast.send(serde_json::to_string(&out).unwrap()) {
+                error!("error broadcasting update: {:?}", e);
+            }
+        }
+    }
+
+    pub fn get_webdata(&self) -> webdata::MinstrelWebData {
+        self.into()
+    }
+
+    pub fn subscribe(&self) -> broadcast::Receiver<String> {
+        self.bcast.subscribe()
+    }
+ }
+
+impl Into<webdata::MinstrelWebData> for &MusicState {
+    fn into(self) -> webdata::MinstrelWebData {
+        let upcoming = self.autoplay.prefetch(read_config!(discord.webdash_prefetch))
+        // TODO: Better handle when autoplay is not enabled, or no users are enrolled
+        .unwrap_or_default().iter()
+            .map(|e| e.clone().into())
+            .collect();
+
+        webdata::MinstrelWebData {
+            current_track: self.current_track.clone().map(|ct| ct.into()),
+            status: self.status.clone().into(),
+            queue: self.queue.iter().map(|e| e.clone().into()).collect(),
+            upcoming,
+            history: self.history.iter().map(|e| e.clone().into()).collect(),
+        }
+    }
 }
-
-

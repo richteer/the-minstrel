@@ -4,6 +4,7 @@ members = [
 	"music",
 	"webdata",
 	"discord",
+	"webapi",
 	"main",
 	"webdash", # TODO: Figure out how to automatically use trunk to build
 ]
@@ -12,6 +13,7 @@ default-members = [
 	"minstrel-config",
 	"music",
 	"webdata",
+	"webapi",
 	"discord",
 	"main",
 	# Not webdash, so we don't build a useless webdash native bin

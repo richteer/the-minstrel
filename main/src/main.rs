@@ -9,6 +9,7 @@ use tokio::sync::Mutex;
 
 use minstrel_config::{
     CONFIG,
+    read_config,
 };
 
 use music::MusicState;
@@ -32,12 +33,11 @@ async fn main() {
     debug!("config = {:?}", *CONFIG);
 
     let (tx, rx) = tokio::sync::mpsc::channel(3);
+    let mstate = Arc::new(Mutex::new(MusicState::new(tx)));
 
     // TODO: I really don't like this flow, it needs to be handled by some higher level controller probably.
     let dplayer = Arc::new(Mutex::new(discord::player::DiscordPlayer::new()));
     let mut dplayertask = music::player::MusicPlayerTask::new(dplayer.clone(), rx);
-    let mstate = Arc::new(Mutex::new(MusicState::new(tx)));
-
 
     let mut client = discord::client::create_player(mstate.clone(), dplayer.clone()).await;
 
@@ -53,22 +53,17 @@ async fn main() {
         }
     });
 
-    /*
-    // TODO: figure out a method of composing multiple filters if there ever are multiple filters
-    #[cfg(feature = "discord-webdash")]
-    let site = ddash;
 
-    #[cfg(feature = "web-server")]
-    {
-        let addr = format!("{}:{}", read_config!(web.bind_address), read_config!(web.port))
-            .parse::<std::net::SocketAddr>().unwrap();
+    let site = webapi::web::get_web_filter(mstate.clone());
+    let addr = format!("{}:{}", read_config!(web.bind_address), read_config!(web.port))
+        .parse::<std::net::SocketAddr>().unwrap();
 
-        info!("spawning web server");
+    info!("spawning web server");
+    tokio::spawn(async move {
         warp::serve(site)
-            .run(addr)
-            .await;
-    }
-    */
+        .run(addr)
+        .await;
+    });
 
     // TODO: Have an application controller that properly shuts things down and exists here
     loop {}

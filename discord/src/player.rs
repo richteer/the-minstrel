@@ -27,11 +27,6 @@ use songbird::{
 
 use async_trait::async_trait;
 
-use tokio::sync::broadcast::{
-    Sender,
-    channel as broadcast_channel,
-};
-
 use minstrel_config::read_config;
 
 use log::*;
@@ -88,7 +83,6 @@ pub struct DiscordPlayer {
     pub songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
     songhandler: Option<songbird::tracks::TrackHandle>,
     pub sticky: Option<Message>,
-    pub bcast: Sender<String>, // TODO: for now send a JSON-encoded webdata mstate, consider partial updates in the future
 }
 
 impl Default for DiscordPlayer {
@@ -99,7 +93,6 @@ impl Default for DiscordPlayer {
             sticky: None,
             // TODO: figure out a more sensible capacity, and also probably if there's a safe(r) way to detect stale connections
             // tossing the receiver portion, we'll give one to each spawned thread
-            bcast: broadcast_channel(2).0, // TODO: maybe only bother with this if webdash is enabled?
         }
     }
 }
@@ -241,29 +234,10 @@ impl VoiceEventHandler for TrackEndNotifier {
 
         drop(dplayer);
 
-        // TODO: this should really be in a top-level lock hackery
-        // TODO: Disabled for now, web stuff will be split out in next commit (probably)
-        //broadcast_mstate_update(&mstate).await;
-
         None
     }
 }
 
-/*
-// TODO: call this in a lot more places probably, or even better automatically when its mutated (somehow)
-// TODO: implement partial updates? perhaps through an enum or something similar so the whole dang thing doesn't have to be sent over
-// TODO: Disabled for now, web stuff will be split out in next commit (probably)
-pub async fn broadcast_mstate_update(mstate: &MusicState) {
-    let out = get_mstate_webdata(mstate);
-    let player = mstate.player.lock().await;
-
-    if player.bcast.receiver_count() > 0 {
-        if let Err(e) = player.bcast.send(serde_json::to_string(&out).unwrap()) {
-            error!("error broadcasting update: {:?}", e);
-        }
-    }
-}
-*/
 
 // Autoplay auto-rebalance userlists
 pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>, old: Option<VoiceState>, new: VoiceState) {
