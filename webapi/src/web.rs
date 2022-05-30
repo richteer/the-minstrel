@@ -26,6 +26,7 @@ async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicState>>) -> impl wa
             debug!("spawning ws thread");
             while let Ok(msg) = bc_rx.recv().await {
                 trace!("broadcast received, sending to websocket");
+                let msg = serde_json::to_string(&msg).unwrap();
                 if let Err(resp) = ws_tx.send(warp::ws::Message::text(msg)).await {
                     debug!("websocket appears to have disconnected, dropping? {}", resp);
                     break;

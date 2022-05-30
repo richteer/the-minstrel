@@ -97,7 +97,7 @@ impl From<MusicStateStatus> for webdata::MusicStateStatus {
 pub struct MusicState {
     player: mpsc::Sender<MPCMD>,
     // TODO: Perhaps put this in a higher level lock, so maybe it's automatic?
-    bcast: broadcast::Sender<String>,
+    bcast: broadcast::Sender<webdata::MinstrelWebData>,
     pub current_track: Option<Song>,
     pub status: MusicStateStatus,
     pub queue: VecDeque<Song>,
@@ -315,7 +315,7 @@ impl MusicState {
         let out: webdata::MinstrelWebData = self.into();
 
         if self.bcast.receiver_count() > 0 {
-            if let Err(e) = self.bcast.send(serde_json::to_string(&out).unwrap()) {
+            if let Err(e) = self.bcast.send(out) {
                 error!("error broadcasting update: {:?}", e);
             }
         }
@@ -325,7 +325,7 @@ impl MusicState {
         self.into()
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<String> {
+    pub fn subscribe(&self) -> broadcast::Receiver<webdata::MinstrelWebData> {
         self.bcast.subscribe()
     }
 
