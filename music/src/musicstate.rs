@@ -3,10 +3,19 @@ use super::song::Song;
 
 use std::fmt;
 use std::collections::VecDeque;
-use std::sync::Arc;
-use tokio::sync::Mutex;
+
+use tokio::sync::{
+    oneshot,
+    mpsc,
+};
+
 use log::*;
 use serde::Serialize;
+
+use crate::player::{
+    MusicPlayerCommand,
+    MPCMD,
+};
 
 use minstrel_config::read_config;
 
@@ -80,14 +89,13 @@ impl From<MusicStateStatus> for webdata::MusicStateStatus {
     }
 }
 
-use super::MusicPlayer;
-
 
 // Higher level manager for playing music. In theory, should abstract out
 //   a lot of the lower-level magic, so the commands can just operate on
 //   this instead and make life easier.
-pub struct MusicState<T: MusicPlayer> {
-    pub player: Arc<Mutex<Box<T>>>,
+pub struct MusicState {
+    // TODO: Actually get proper stuff here
+    player: mpsc::Sender<MPCMD>,
     pub current_track: Option<Song>,
     pub status: MusicStateStatus,
     pub queue: VecDeque<Song>,
@@ -95,7 +103,7 @@ pub struct MusicState<T: MusicPlayer> {
     pub autoplay: AutoplayState,
 }
 
-impl<T: MusicPlayer> fmt::Debug for MusicState<T> {
+impl fmt::Debug for MusicState {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "MusicState {{ \
             player: {:?}, \
@@ -114,11 +122,12 @@ impl<T: MusicPlayer> fmt::Debug for MusicState<T> {
     }
 }
 
-impl<T: MusicPlayer> MusicState<T> {
+impl MusicState {
 
-    pub fn new(player: T) -> MusicState<T> {
+    pub fn new(player: mpsc::Sender<MPCMD>) -> MusicState {
         MusicState {
-            player: Arc::new(Mutex::new(Box::new(player))),
+            // TODO: use a proper channel buffer size here
+            player,
             current_track: None,
             queue: VecDeque::<Song>::new(),
             history: VecDeque::<Song>::new(),
@@ -127,16 +136,25 @@ impl<T: MusicPlayer> MusicState<T> {
         }
     }
 
+    async fn invoke(&self, cmd: MusicPlayerCommand) -> Result<(), MusicError> {
+        let (tx, rx) = oneshot::channel();
+        self.player.send((tx, cmd)).await.unwrap();
+
+        match rx.await {
+            Ok(r) => r,
+            Err(e) => todo!("this shouldn't be hit, but handle it better anyway: {:?}", e),
+        }
+    }
+
     /// Start playing a song
     async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
         debug!("play called on song = {}", song);
-        let mut player = self.player.lock().await;
 
         if self.current_track.is_some() {
             return Err(MusicError::AlreadyPlaying);
         }
 
-        player.play(&song).await?;
+        self.invoke(MusicPlayerCommand::Play(song.clone())).await?;
 
         self.current_track = Some(song);
         self.status = MusicStateStatus::Playing;
@@ -178,9 +196,8 @@ impl<T: MusicPlayer> MusicState<T> {
     // This is stupid, and I don't like it.
     // TODO: This is hella discord-specific. Rewrite this function to actually skip.
     pub async fn skip(&mut self) -> Result<MusicOk, MusicError> {
-        let mut player = self.player.lock().await;
 
-        player.stop().await?;
+        self.invoke(MusicPlayerCommand::Stop).await?;
 
         Ok(MusicOk::SkippingSong)
     }
@@ -189,9 +206,7 @@ impl<T: MusicPlayer> MusicState<T> {
     pub async fn stop(&mut self) -> Result<MusicOk, MusicError> {
         self.status = MusicStateStatus::Stopping;
 
-        let mut player = self.player.lock().await;
-
-        if let Err(e) = player.stop().await {
+        if let Err(e) = self.invoke(MusicPlayerCommand::Stop).await {
             error!("Player encountered a problem stopping track: {:?}", e);
             return Err(e);
         }
@@ -267,6 +282,8 @@ impl<T: MusicPlayer> MusicState<T> {
 
 
     // TODO: this is slated for removal from MusicState, leaving for the scope of this refactor
+    // TODO: This is definitely to be removed soon. Only discord has a concept of a "connection" that needs to be
+    //   dropped without completely destroying the MusicPlayer, so this should be removed.
     pub async fn leave(&mut self) {
 
         self.queue.clear();
@@ -277,10 +294,12 @@ impl<T: MusicPlayer> MusicState<T> {
             error!("{:?}", e);
         };
 
-        let mut player = self.player.lock().await;
         // TODO: this assumes player stops on disconnect. Artifact of discordisms, since .stop() acts like skip sometimes
         //  explicitly stop the music first if this function actually remains here
-        player.disconnect().await;
+
+        if let Err(e) =  self.invoke(MusicPlayerCommand::Disconnect).await {
+            panic!("somehow disconnect responded with an Error: {:?}", e);
+        };
     }
 }
 

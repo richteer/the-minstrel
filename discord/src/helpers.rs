@@ -21,15 +21,27 @@ use std::{
 use music::MusicState;
 
 use crate::requester::*;
-use crate::MusicStateKey;
+use crate::client::{
+    MusicStateKey,
+    DiscordPlayerKey,
+};
+
 use crate::player::DiscordPlayer;
 
 use minstrel_config::*;
 
-pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState<DiscordPlayer>>>> {
+pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState>>> {
     let data = ctx.data.read().await;
 
     let mstate = data.get::<MusicStateKey>().cloned();
+
+    mstate
+}
+
+pub async fn dplayer_get(ctx: &Context) -> Option<Arc<Mutex<DiscordPlayer>>> {
+    let data = ctx.data.read().await;
+
+    let mstate = data.get::<DiscordPlayerKey>().cloned();
 
     mstate
 }
@@ -46,6 +58,19 @@ macro_rules! get_mstate {
     ($mut:ident, $mstate:ident, $ctx:ident) => {
         let $mstate = $crate::helpers::mstate_get(&$ctx).await.unwrap();
         let $mut $mstate = $mstate.lock().await;
+    };
+}
+
+#[macro_export]
+macro_rules! get_dplayer {
+    ($dplayer:ident, $ctx:ident) => {
+        let $dplayer = $crate::helpers::dplayer_get(&$ctx).await.unwrap();
+        let $dplayer = $dplayer.lock().await;
+    };
+
+    ($mut:ident, $dplayer:ident, $ctx:ident) => {
+        let $dplayer = $crate::helpers::dplayer_get(&$ctx).await.unwrap();
+        let $mut $dplayer = $dplayer.lock().await;
     };
 }
 
@@ -80,11 +105,15 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
         }
     };
 
-    get_mstate!(mstate, ctx);
     if let Some(bot_channel) = bot_channel_id {
         if bot_channel == connect_to {
-            if mstate.player.lock().await.songcall.is_some() {
-                return Ok(false); // We're done here, otherwise fall through and init
+            // TODO: determine if this extra scope is needed, probably not.
+            {
+                get_dplayer!(dplayer, ctx);
+
+                if dplayer.songcall.is_some() {
+                    return Ok(false); // We're done here, otherwise fall through and init
+                }
             }
         }
         else {
@@ -92,7 +121,8 @@ pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
         }
     }
 
-    mstate.player.lock().await.connect(ctx, guild_id, connect_to).await;
+    get_dplayer!(mut, dplayer, ctx);
+    dplayer.connect(ctx, guild_id, connect_to).await;
 
 
     Ok(true)
@@ -159,7 +189,7 @@ pub async fn in_same_voice(ctx: &Context, msg: &Message) -> Result<(), Reason> {
 
 // Permit useless formats here mostly for code consistently and alignment.
 #[allow(clippy::useless_format)]
-pub fn show_queuestate(mstate: &MusicState<DiscordPlayer>) -> String {
+pub fn show_queuestate(mstate: &MusicState) -> String {
     let mut q = None;
     let mut ap = None;
 
@@ -195,7 +225,7 @@ pub fn show_queuestate(mstate: &MusicState<DiscordPlayer>) -> String {
 }
 
 
-pub fn get_queuestate_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
+pub fn get_queuestate_embed(mstate: &MusicState) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     ret.description(show_queuestate(mstate));
@@ -203,7 +233,7 @@ pub fn get_queuestate_embed(mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
     ret
 }
 
-pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState<DiscordPlayer>) -> CreateEmbed {
+pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     let song = match mstate.current_song() {
@@ -242,7 +272,7 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState<DiscordPlayer>
     ret
 }
 
-pub fn show_history(mstate: &MusicState<DiscordPlayer>, num: usize) -> Option<String> {
+pub fn show_history(mstate: &MusicState, num: usize) -> Option<String> {
     if mstate.history.is_empty() {
         return None
     }
@@ -256,7 +286,7 @@ pub fn show_history(mstate: &MusicState<DiscordPlayer>, num: usize) -> Option<St
     Some(ret)
 }
 
-pub fn get_history_embed(mstate: &MusicState<DiscordPlayer>, num: usize) -> CreateEmbed {
+pub fn get_history_embed(mstate: &MusicState, num: usize) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     ret.description(match show_history(mstate, num) {
@@ -267,7 +297,7 @@ pub fn get_history_embed(mstate: &MusicState<DiscordPlayer>, num: usize) -> Crea
     ret
 }
 
-pub fn autoplay_show_upcoming(mstate: &MusicState<DiscordPlayer>, num: u64) -> String {
+pub fn autoplay_show_upcoming(mstate: &MusicState, num: u64) -> String {
     let num = if num > read_config!(discord.autoplay_upcoming_max) {
         read_config!(discord.autoplay_upcoming_max)
     } else {

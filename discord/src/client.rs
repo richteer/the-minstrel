@@ -7,7 +7,10 @@ use songbird::SerenityInit;
 use music::*;
 use crate::player::*;
 use crate::helpers::*;
-use crate::get_mstate;
+use crate::{
+    get_mstate,
+    get_dplayer,
+};
 
 
 use log::*;
@@ -48,10 +51,9 @@ async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
 #[hook]
 async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _error: Result<(), CommandError>) {
     get_mstate!(mstate, ctx);
+    get_dplayer!(mut, dplayer, ctx);
 
-    let mut player = mstate.player.lock().await;
-
-    if let Some(m) = &player.sticky {
+    if let Some(m) = &dplayer.sticky {
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();
 
         let embed = get_nowplay_embed(ctx, &mstate).await;
@@ -60,7 +62,7 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
             m.add_embeds(vec![get_queuestate_embed(&mstate), embed])
         }).await.unwrap();
 
-        player.sticky = Some(new);
+        dplayer.sticky = Some(new);
     }
 }
 
@@ -176,23 +178,38 @@ async fn last_one_in_checker(ctx: &Context, guildid: &Option<GuildId>, old: &Opt
 pub struct MusicStateKey;
 
 impl TypeMapKey for MusicStateKey {
-    type Value = Arc<Mutex<MusicState<DiscordPlayer>>>;
+    type Value = Arc<Mutex<MusicState>>;
 }
 
 pub trait MusicStateInit {
-    fn register_musicstate(self) -> Self;
+    fn register_musicstate(self, mstate: Arc<Mutex<MusicState>>) -> Self;
 }
 
 impl MusicStateInit for ClientBuilder<'_> {
-    fn register_musicstate(self) -> Self {
-        self.type_map_insert::<MusicStateKey>(Arc::new(Mutex::new(MusicState::new(DiscordPlayer::new()))))
+    fn register_musicstate(self, mstate: Arc<Mutex<MusicState>>) -> Self {
+        self.type_map_insert::<MusicStateKey>(mstate)
+    }
+}
+
+pub struct DiscordPlayerKey;
+
+impl TypeMapKey for DiscordPlayerKey {
+    type Value = Arc<Mutex<DiscordPlayer>>;
+}
+
+pub trait DiscordPlayerInit {
+    fn register_player(self, dplayer: Arc<Mutex<DiscordPlayer>>) -> Self;
+}
+
+impl DiscordPlayerInit for ClientBuilder<'_> {
+    fn register_player(self, dplayer: Arc<Mutex<DiscordPlayer>>) -> Self {
+        self.type_map_insert::<DiscordPlayerKey>(dplayer)
     }
 }
 
 
-pub async fn create_player() -> serenity::Client {
+pub async fn create_player(mstate: Arc<Mutex<MusicState>>, dplayer: Arc<Mutex<DiscordPlayer>>) -> serenity::Client {
     let token = env::var("DISCORD_TOKEN").expect("Must provide env var DISCORD_TOKEN");
-
     let framework = crate::frontend::framework::init_framework();
 
     // Create a new instance of the Client, logging in as a bot. This will
@@ -203,7 +220,8 @@ pub async fn create_player() -> serenity::Client {
             .event_handler(Handler)
             .framework(framework)
             .register_songbird()
-            .register_musicstate()
+            .register_musicstate(mstate)
+            .register_player(dplayer)
             .await.expect("Err creating client");
 
     // Finally, start a single shard, and start listening to events.

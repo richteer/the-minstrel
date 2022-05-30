@@ -10,7 +10,11 @@ use serenity::{
     },
 };
 
-use crate::{get_mstate, join_voice};
+use crate::{
+    get_mstate,
+    get_dplayer,
+    join_voice,
+};
 use crate::helpers::*;
 use crate::requester::*;
 use music::{
@@ -124,12 +128,10 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 #[only_in(guilds)]
 // TODO: consider permissions here, this might be annoying if regular users can toggle it
 async fn display(ctx: &Context, msg: &Message) -> CommandResult {
-    get_mstate!(mstate, ctx);
+    get_dplayer!(mut, dplayer, ctx);
 
-    let mut player = mstate.player.lock().await;
-
-    if player.sticky.is_some() {
-        player.sticky = None;
+    if dplayer.sticky.is_some() {
+        dplayer.sticky = None;
 
         check_msg(msg.channel_id.say(&ctx.http, "Disabled sticky display.").await);
 
@@ -141,7 +143,7 @@ async fn display(ctx: &Context, msg: &Message) -> CommandResult {
     // Just send a blank message to fill in sticky, let the hook actually send the first output
     let sticky = msg.channel_id.say(&ctx.http, ".").await.unwrap();
 
-    player.sticky = Some(sticky);
+    dplayer.sticky = Some(sticky);
 
     Ok(())
 }

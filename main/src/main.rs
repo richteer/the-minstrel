@@ -1,13 +1,17 @@
 use std::{
     env,
     path::Path,
+    sync::Arc,
 };
 use log::*;
 
+use tokio::sync::Mutex;
+
 use minstrel_config::{
     CONFIG,
-    read_config,
 };
+
+use music::MusicState;
 
 #[tokio::main]
 async fn main() {
@@ -27,26 +31,29 @@ async fn main() {
 
     debug!("config = {:?}", *CONFIG);
 
-    #[cfg(feature = "discord-webdash")]
-    let ddash;
+    let (tx, rx) = tokio::sync::mpsc::channel(3);
 
-    #[cfg(feature = "discord-player")]
-    {
-        let mut client = discord::client::create_player().await;
+    // TODO: I really don't like this flow, it needs to be handled by some higher level controller probably.
+    let dplayer = Arc::new(Mutex::new(discord::player::DiscordPlayer::new()));
+    let mut dplayertask = music::player::MusicPlayerTask::new(dplayer.clone(), rx);
+    let mstate = Arc::new(Mutex::new(MusicState::new(tx)));
 
-        #[cfg(all(feature = "discord-webdash"))]
-        {
-            ddash = discord::web::get_web_filter(&client).await;
+
+    let mut client = discord::client::create_player(mstate.clone(), dplayer.clone()).await;
+
+    debug!("spawning discord player task");
+    tokio::spawn(async move {
+        dplayertask.run().await;
+    });
+
+    info!("spawning discord client");
+    tokio::spawn(async move {
+        if let Err(why) = client.start().await {
+            error!("Client error: {:?}", why);
         }
+    });
 
-        info!("spawning discord player");
-        tokio::spawn(async move {
-            if let Err(why) = client.start().await {
-                error!("Client error: {:?}", why);
-            }
-        });
-    }
-
+    /*
     // TODO: figure out a method of composing multiple filters if there ever are multiple filters
     #[cfg(feature = "discord-webdash")]
     let site = ddash;
@@ -61,6 +68,8 @@ async fn main() {
             .run(addr)
             .await;
     }
+    */
 
-    info!("Exiting...");
+    // TODO: Have an application controller that properly shuts things down and exists here
+    loop {}
 }

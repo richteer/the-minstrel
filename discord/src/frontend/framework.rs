@@ -31,7 +31,10 @@ use crate::frontend::commands::{
 };
 
 use crate::helpers::*;
-use crate::get_mstate;
+use crate::{
+    get_mstate,
+    get_dplayer,
+};
 
 
 
@@ -81,10 +84,9 @@ async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
 #[hook]
 async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _error: Result<(), CommandError>) {
     get_mstate!(mstate, ctx);
+    get_dplayer!(mut, dplayer, ctx);
 
-    let mut player = mstate.player.lock().await;
-
-    if let Some(m) = &player.sticky {
+    if let Some(m) = &dplayer.sticky {
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();
 
         let embed = get_nowplay_embed(ctx, &mstate).await;
@@ -93,7 +95,7 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
             m.add_embeds(vec![get_queuestate_embed(&mstate), embed])
         }).await.unwrap();
 
-        player.sticky = Some(new);
+        dplayer.sticky = Some(new);
     }
 }
 

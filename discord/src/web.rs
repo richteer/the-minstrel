@@ -24,7 +24,7 @@ use rust_embed::RustEmbed;
 #[folder = "../webdash/dist/"]
 struct EmbeddedWebdash;
 
-pub fn get_mstate_webdata(mstate: &MusicState<DiscordPlayer>) -> webdata::MinstrelWebData {
+pub fn get_mstate_webdata(mstate: &MusicState) -> webdata::MinstrelWebData {
     let upcoming = mstate.autoplay.prefetch(read_config!(discord.webdash_prefetch))
         // TODO: Better handle when autoplay is not enabled, or no users are enrolled
         .unwrap_or_default().iter()
@@ -42,7 +42,7 @@ pub fn get_mstate_webdata(mstate: &MusicState<DiscordPlayer>) -> webdata::Minstr
 
 
 async fn show_state(
-    mstate: Arc<Mutex<MusicState<DiscordPlayer>>>
+    mstate: Arc<Mutex<MusicState>>
 ) -> Result<impl warp::Reply, Infallible> {
     let ret = {
         let mstate = mstate.lock().await;
@@ -53,7 +53,7 @@ async fn show_state(
     Ok(warp::reply::json(&ret))
 }
 
-async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicState<DiscordPlayer>>>) -> impl warp::reply::Reply {
+async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicState>>) -> impl warp::reply::Reply {
     ws.on_upgrade(|websocket| async move {
         let mstate = mstate.lock().await;
         let player = mstate.player.lock().await;

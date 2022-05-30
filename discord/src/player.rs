@@ -43,7 +43,7 @@ use crate::get_mstate;
 use crate::helpers::*;
 use crate::requester::*;
 
-use crate::web::get_mstate_webdata;
+//use crate::web::get_mstate_webdata;
 
 
 // Helper to write out song played to a CSV in theory
@@ -228,29 +228,32 @@ impl VoiceEventHandler for TrackEndNotifier {
             error!("{:?}", e);
         }
 
-        let player = mstate.player.lock().await;
+        let dplayer = dplayer_get(&self.ctx).await.unwrap();
+        let dplayer = dplayer.lock().await;
 
         let embed = get_nowplay_embed(&self.ctx, &mstate).await;
 
-        if let Some(sticky) = &player.sticky {
+        if let Some(sticky) = &dplayer.sticky {
             sticky.channel_id.edit_message(&self.ctx.http, sticky, |m| {
                 m.set_embeds(vec![get_queuestate_embed(&mstate), embed])
             }).await.unwrap();
         }
 
-        drop(player);
+        drop(dplayer);
 
         // TODO: this should really be in a top-level lock hackery
-        broadcast_mstate_update(&mstate).await;
+        // TODO: Disabled for now, web stuff will be split out in next commit (probably)
+        //broadcast_mstate_update(&mstate).await;
 
         None
     }
 }
 
-
+/*
 // TODO: call this in a lot more places probably, or even better automatically when its mutated (somehow)
 // TODO: implement partial updates? perhaps through an enum or something similar so the whole dang thing doesn't have to be sent over
-pub async fn broadcast_mstate_update(mstate: &MusicState<DiscordPlayer>) {
+// TODO: Disabled for now, web stuff will be split out in next commit (probably)
+pub async fn broadcast_mstate_update(mstate: &MusicState) {
     let out = get_mstate_webdata(mstate);
     let player = mstate.player.lock().await;
 
@@ -260,7 +263,7 @@ pub async fn broadcast_mstate_update(mstate: &MusicState<DiscordPlayer>) {
         }
     }
 }
-
+*/
 
 // Autoplay auto-rebalance userlists
 pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>, old: Option<VoiceState>, new: VoiceState) {

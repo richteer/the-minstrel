@@ -11,6 +11,7 @@ dotenv = "0.15"
 env_logger = "0.9"
 log = "0.4"
 
+music = { path = "../music" }
 minstrel-config = { path = "../minstrel-config" }
 
 # Used to provide a web server for dashboards, APIs, etc
