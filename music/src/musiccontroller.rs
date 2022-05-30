@@ -106,13 +106,6 @@ impl MusicAdapter {
         self.invoke(MusicControlCmd::SongEnded).await.unwrap();
     }
 
-    // TODO: this is slated for removal from MusicState, leaving for the scope of this refactor
-    // TODO: This is definitely to be removed soon. Only discord has a concept of a "connection" that needs to be
-    //   dropped without completely destroying the MusicPlayer, so this should be removed.
-    pub async fn leave(&mut self) {
-        todo!("just remove this .leave() call, don't bother implementing")
-    }
-
     pub async fn previous(&mut self) -> Result<MusicOk, MusicError> {
         self.invoke(MusicControlCmd::Previous).await
     }

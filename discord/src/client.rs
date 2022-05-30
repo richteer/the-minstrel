@@ -172,8 +172,8 @@ async fn last_one_in_checker(ctx: &Context, guildid: &Option<GuildId>, old: &Opt
         if cnt == 0 {
             info!("channel appears empty, disconnecting...");
 
-            get_mstate!(mut, mstate, ctx);
-            mstate.leave().await;
+            get_dstate!(mut, dstate, ctx);
+            dstate.leave().await;
         }
     }
 }
@@ -219,12 +219,12 @@ impl TypeMapKey for DiscordStateKey {
 }
 
 pub trait DiscordStateInit {
-    fn register_dstate(self, dplayer: Arc<Mutex<DiscordState>>) -> Self;
+    fn register_dstate(self, dstate: Arc<Mutex<DiscordState>>) -> Self;
 }
 
 impl DiscordStateInit for ClientBuilder<'_> {
-    fn register_dstate(self, dplayer: Arc<Mutex<DiscordState>>) -> Self {
-        self.type_map_insert::<DiscordStateKey>(dplayer)
+    fn register_dstate(self, dstate: Arc<Mutex<DiscordState>>) -> Self {
+        self.type_map_insert::<DiscordStateKey>(dstate)
     }
 }
 
@@ -232,6 +232,9 @@ impl DiscordStateInit for ClientBuilder<'_> {
 pub async fn create_player(mstate: MusicAdapter, dplayer: Arc<Mutex<DiscordPlayer>>) -> serenity::Client {
     let token = env::var("DISCORD_TOKEN").expect("Must provide env var DISCORD_TOKEN");
     let framework = crate::frontend::framework::init_framework();
+
+    let dstate = DiscordState::new(mstate.clone(), dplayer.clone());
+    let dstate = Arc::new(Mutex::new(dstate));
 
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement
@@ -241,9 +244,11 @@ pub async fn create_player(mstate: MusicAdapter, dplayer: Arc<Mutex<DiscordPlaye
             .event_handler(Handler)
             .framework(framework)
             .register_songbird()
+            // TODO: really consider unifying these maybe. DiscordState holds references to both
+            //  DiscordPlayer and MusicAdapter, maybe only dstate should be used everywhere.
             .register_musicstate(mstate)
-            .register_player(dplayer.clone())
-            .register_dstate(Arc::new(Mutex::new(DiscordState::new())))
+            .register_player(dplayer)
+            .register_dstate(dstate)
             .await.expect("Err creating client");
 
     // Finally, start a single shard, and start listening to events.

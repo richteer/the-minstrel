@@ -9,7 +9,7 @@ use serenity::{
     },
 };
 
-use crate::get_mstate;
+use crate::get_dstate;
 use crate::join_voice;
 use crate::helpers::*;
 
@@ -31,9 +31,9 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 async fn leave(ctx: &Context, _msg: &Message) -> CommandResult {
-    get_mstate!(mut, mstate, ctx);
+    get_dstate!(mut, dstate, ctx);
 
-    mstate.leave().await;
+    dstate.leave().await;
 
     Ok(())
 }

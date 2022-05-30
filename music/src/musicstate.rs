@@ -358,28 +358,6 @@ impl MusicState {
         self.queue.is_empty()
     }
 
-
-    // TODO: this is slated for removal from MusicState, leaving for the scope of this refactor
-    // TODO: This is definitely to be removed soon. Only discord has a concept of a "connection" that needs to be
-    //   dropped without completely destroying the MusicPlayer, so this should be removed.
-    pub async fn leave(&mut self) {
-
-        self.queue.clear();
-        self.autoplay.disable();
-        self.autoplay.disable_all_users();
-
-        if let Err(e) = self.stop().await {
-            error!("{:?}", e);
-        };
-
-        // TODO: this assumes player stops on disconnect. Artifact of discordisms, since .stop() acts like skip sometimes
-        //  explicitly stop the music first if this function actually remains here
-
-        if let Err(e) =  self.invoke(MusicPlayerCommand::Disconnect).await {
-            panic!("somehow disconnect responded with an Error: {:?}", e);
-        };
-    }
-
     // TODO: These broadcasts should really be more robust.
     //   Probably allow partial updates, as well as intelligently send them whenever
     //   MusicState is mutated, rather than having to manually call
