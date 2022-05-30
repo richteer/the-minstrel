@@ -6,8 +6,14 @@ use super::autoplay::{
 };
 use super::song::Song;
 
-use std::fmt;
-use std::collections::VecDeque;
+use std::{
+    collections::VecDeque,
+    fmt,
+    fs::OpenOptions,
+    io::Write,
+};
+
+use chrono::offset::Local;
 
 use tokio::sync::{
     oneshot,
@@ -226,6 +232,10 @@ impl MusicState {
 
         self.invoke(MusicPlayerCommand::Play(song.clone())).await?;
 
+        if read_config!(songlog.enabled) {
+            log_song(&song);
+        }
+
         self.current_track = Some(song);
         self.status = MusicStateStatus::Playing;
 
@@ -441,6 +451,8 @@ impl MusicState {
     }
  }
 
+
+
 impl Into<model::MinstrelWebData> for &MusicState {
     fn into(self) -> model::MinstrelWebData {
         let upcoming = self.autoplay.prefetch(read_config!(discord.webdash_prefetch))
@@ -456,5 +468,41 @@ impl Into<model::MinstrelWebData> for &MusicState {
             upcoming,
             history: self.history.iter().map(|e| e.clone().into()).collect(),
         }
+    }
+}
+
+// Helper to write out song played to a CSV in theory
+fn log_song(song: &Song) {
+    let path = &read_config!(songlog.path);
+
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open(path);
+
+    let mut file = match file {
+            Ok(f) => f,
+            Err(e) => {
+                error!("could not open/create songlog file: {:?}", e);
+                return;
+            }
+    };
+
+    let song = model::Song::from(song.clone());
+
+    // TODO: consider using a real serializer or CSV library
+    let ret = file.write(
+        format!("{time}{s}{title}{s}{artist}{s}{url}{s}{requester}\n",
+            s = read_config!(songlog.seperator),
+            time = Local::now().to_rfc3339(),
+            title = song.title,
+            artist = song.artist,
+            url = song.url,
+            requester = song.requested_by.username,
+        ).as_bytes());
+
+    if let Err(e) = ret {
+        error!("error writing to songlog file: {:?}", e);
     }
 }
