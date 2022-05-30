@@ -233,7 +233,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
     }
 
     get_mstate!(mut, mstate, ctx);
-    if !mstate.autoplay.enabled {
+    if !mstate.autoplay.is_enabled() {
         debug!("autoplay is not enabled, ignoring voice state change");
         return;
     }

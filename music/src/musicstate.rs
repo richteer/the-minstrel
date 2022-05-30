@@ -185,14 +185,14 @@ impl MusicState {
 
     fn get_next_song(&mut self) -> Option<Song> {
         if let Some(song) = self.queue.pop_front() {
-            if self.autoplay.enabled && read_config!(music.queue_adds_usertime) {
+            if self.autoplay.is_enabled() && read_config!(music.queue_adds_usertime) {
                 self.autoplay.add_time_to_user(&song.requested_by.id, song.duration);
             }
 
             return Some(song);
         }
 
-        if self.autoplay.enabled {
+        if self.autoplay.is_enabled() {
             return self.autoplay.next();
         }
 
@@ -308,7 +308,7 @@ impl MusicState {
     pub async fn leave(&mut self) {
 
         self.queue.clear();
-        self.autoplay.enabled = false;
+        self.autoplay.disable();
         self.autoplay.disable_all_users();
 
         if let Err(e) = self.stop().await {

@@ -103,7 +103,7 @@ pub struct AutoplayState {
     userlists: HashMap<MinstrelUserId, UserPlaylist>,
     usertime: PriorityQueue<MinstrelUserId, Reverse<i64>>,
     usertimecache: HashMap<MinstrelUserId, i64>,
-    pub enabled: bool,
+    enabled: bool,
     // TODO: make this a global db that all things can access. this is fine for now though.
     storage: Arc<RwLock<PickleDb>>,
 }
@@ -140,6 +140,18 @@ impl AutoplayState {
         }
 
         ret
+    }
+
+    pub fn enable(&mut self) {
+        self.enabled = true;
+    }
+
+    pub fn disable(&mut self) {
+        self.enabled = false;
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
     }
 
     /// Get the next song to play and increment the play state

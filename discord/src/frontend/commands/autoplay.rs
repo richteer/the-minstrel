@@ -23,10 +23,13 @@ use crate::helpers::*;
 async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    mstate.autoplay.enabled = !mstate.autoplay.enabled;
+    match mstate.autoplay.is_enabled() {
+        true => mstate.autoplay.disable(),
+        false => mstate.autoplay.enable(),
+    };
 
     // No need to do anything here if autoplay is disabled, it will probably stop itself
-    if !mstate.autoplay.enabled {
+    if !mstate.autoplay.is_enabled() {
         check_msg(msg.channel_id.say(&ctx.http, "Disabling autoplay.").await);
         return Ok(())
     }
@@ -98,7 +101,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     get_mstate!(mstate, ctx);
 
-    if !mstate.autoplay.enabled {
+    if !mstate.autoplay.is_enabled() {
         check_msg(msg.channel_id.say(&ctx.http, "Autoplay is not enabled").await);
         return Ok(())
     }
@@ -205,7 +208,7 @@ async fn dump(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     get_mstate!(mut, mstate, ctx);
 
-    if !mstate.autoplay.enabled {
+    if !mstate.autoplay.is_enabled() {
         // TODO: this can probably work without autoplay enabled, but users need to be registered, etc etc
         check_msg(msg.channel_id.say(&ctx.http, "Autoplay is not enabled.").await);
         return Ok(())
@@ -228,7 +231,7 @@ async fn dump(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         }
     }
 
-    mstate.autoplay.enabled = false;
+    mstate.autoplay.disable();
     check_msg(msg.channel_id.say(&ctx.http, "Autoplay has been disabled.").await);
 
     Ok(())

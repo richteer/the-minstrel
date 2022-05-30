@@ -197,7 +197,7 @@ pub fn show_queuestate(mstate: &MusicState) -> String {
         q = Some(mstate.show_queue());
     }
 
-    if mstate.autoplay.enabled {
+    if mstate.autoplay.is_enabled() {
         ap = Some(autoplay_show_upcoming(mstate, read_config!(discord.queuestate_ap_count)));
     }
 
