@@ -92,7 +92,10 @@ async fn clearqueue(ctx: &Context, msg: &Message) -> CommandResult {
 async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    let embed = get_queuestate_embed(&mut mstate).await;
+    let ap_enabled = mstate.autoplay.is_enabled().await;
+    let mstate = mstate.get_webdata().await;
+
+    let embed = get_queuestate_embed(&mstate, ap_enabled);
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
         m.set_embed(embed)

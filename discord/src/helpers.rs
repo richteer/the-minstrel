@@ -220,11 +220,8 @@ pub fn show_queuestate(mstate: &model::MinstrelWebData, ap_enabled: bool) -> Str
 }
 
 
-pub async fn get_queuestate_embed(mstate: &mut MusicAdapter) -> CreateEmbed {
+pub fn get_queuestate_embed(mdata: &model::MinstrelWebData, ap_enabled: bool) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
-
-    let mdata = mstate.get_webdata().await;
-    let ap_enabled = mstate.autoplay.is_enabled().await;
 
     ret.description(show_queuestate(&mdata, ap_enabled));
 

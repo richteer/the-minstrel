@@ -156,7 +156,7 @@ impl VoiceEventHandler for TrackEndNotifier {
             let dplayer = dplayer.lock().await;
 
             let data = mstate.get_webdata().await;
-            let qs_embed = get_queuestate_embed(&mut mstate).await;
+            let qs_embed = get_queuestate_embed(&data, mstate.autoplay.is_enabled().await);
             let np_embed = get_nowplay_embed(&ctx, &data).await;
 
             if let Some(sticky) = &dplayer.sticky {

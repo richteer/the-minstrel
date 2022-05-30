@@ -56,8 +56,11 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
     if let Some(m) = &dplayer.sticky {
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();
 
-        let qs_embed = get_queuestate_embed(&mut mstate).await;
-        let np_embed = get_nowplay_embed(ctx, &mstate.get_webdata().await).await;
+        let mdata = mstate.get_webdata().await;
+        let ap_enabled = mstate.autoplay.is_enabled().await;
+
+        let qs_embed = get_queuestate_embed(&mdata, ap_enabled);
+        let np_embed = get_nowplay_embed(ctx, &mdata).await;
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
             m.add_embeds(vec![qs_embed, np_embed])
