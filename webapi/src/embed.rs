@@ -11,12 +11,12 @@ pub fn get_embedded_file_filter() -> impl Filter<Extract = impl warp::Reply, Err
     let files = warp::get()
     .and(warp::path::param())
     .map(|filename: String| {
-        let file = EmbeddedWebdash::iter().find(|f| *f == filename);
+        let file = EmbeddedWebdash::get(&filename);
         debug!("GET /{}", filename);
 
         if let Some(data) = file {
+            let data = data.data;
             let mime = mime_guess::from_path(filename.as_str()).first();
-            let data = EmbeddedWebdash::get(&data).unwrap().data;
 
             if let Some(mime) = mime {
                 debug!("mime = {}", mime);
