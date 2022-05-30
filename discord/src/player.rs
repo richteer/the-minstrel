@@ -91,8 +91,6 @@ impl Default for DiscordPlayer {
             songcall: None,
             songhandler: None,
             sticky: None,
-            // TODO: figure out a more sensible capacity, and also probably if there's a safe(r) way to detect stale connections
-            // tossing the receiver portion, we'll give one to each spawned thread
         }
     }
 }
@@ -194,45 +192,29 @@ impl VoiceEventHandler for TrackEndNotifier {
     // TODO: somehow make this a signaling thing so we don't have to await here
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
         debug!("TrackEndNotifier fired");
+
         let mstate = mstate_get(&self.ctx).await.unwrap();
-        let mut mstate = mstate.lock().await;
-
-        if let Some(song) = &mstate.current_track.take() {
-            mstate.history.push_front(song.clone());
-            mstate.history.truncate(10); // TODO: config max history buffer length
-        }
-        else {
-            debug!("TrackEnd handler somehow called with mstate.current_track = None");
-        }
-
-        match mstate.status {
-            MusicStateStatus::Stopping | MusicStateStatus::Stopped => {
-                debug!("stopping music play via event handler");
-                return None; // We're done here
-            }
-            _ => {}
-        };
-
-        let ret = mstate.next().await;
-        if ret.is_ok() {
-            debug!("TrackEnd handler mstate.next() = {:?}", ret);
-        }
-        else if let Err(e) = ret {
-            error!("{:?}", e);
-        }
-
         let dplayer = dplayer_get(&self.ctx).await.unwrap();
-        let dplayer = dplayer.lock().await;
+        let ctx = self.ctx.clone(); // UUUUGGGGHHHHHH
 
-        let embed = get_nowplay_embed(&self.ctx, &mstate).await;
+        // Plopping this on another thread so that this VoiceEvent handler can be brief
+        tokio::spawn(async move {
+            let mut mstate = mstate.lock().await;
 
-        if let Some(sticky) = &dplayer.sticky {
-            sticky.channel_id.edit_message(&self.ctx.http, sticky, |m| {
-                m.set_embeds(vec![get_queuestate_embed(&mstate), embed])
-            }).await.unwrap();
-        }
+            mstate.song_ended().await;
 
-        drop(dplayer);
+            // TODO: the following should all be handled by a mstate broadcast to a frontend
+            let dplayer = dplayer.lock().await;
+
+            let embed = get_nowplay_embed(&ctx, &mstate).await;
+
+            if let Some(sticky) = &dplayer.sticky {
+                sticky.channel_id.edit_message(&ctx.http, sticky, |m| {
+                    m.set_embeds(vec![get_queuestate_embed(&mstate), embed])
+                }).await.unwrap();
+            }
+        });
+
 
         None
     }

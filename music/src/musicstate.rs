@@ -328,6 +328,37 @@ impl MusicState {
     pub fn subscribe(&self) -> broadcast::Receiver<String> {
         self.bcast.subscribe()
     }
+
+    /// Handler to be called by the player when a song ends
+    // TODO: perhaps replace this with a message event loop as well, maybe over a select
+    //   with a timeout set to slightly more than the song length
+    pub async fn song_ended(&mut self) {
+        if let Some(song) = &self.current_track.take() {
+            self.history.push_front(song.clone());
+            self.history.truncate(10); // TODO: config max history buffer length
+        }
+        else {
+            warn!("Song End handler somehow called with mstate.current_track = None, history may be inaccurate");
+        }
+
+        // TODO: perhaps have a "continuous play" bool instead in state?
+        match self.status {
+            MusicStateStatus::Stopping | MusicStateStatus::Stopped => {
+                debug!("MusicStateStatus requesting a stop, not enqueueing next track");
+                return; // We're done here
+            }
+            _ => {}
+        };
+
+        let ret = self.next().await;
+        if ret.is_ok() {
+            debug!("Song End handler mstate.next() = {:?}", ret);
+        }
+        else if let Err(e) = ret {
+            error!("{:?}", e);
+        }
+
+    }
  }
 
 impl Into<webdata::MinstrelWebData> for &MusicState {
