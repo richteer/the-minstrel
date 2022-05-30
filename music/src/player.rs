@@ -24,16 +24,12 @@ pub trait MusicPlayer {
 
     /// Stop playing the current track
     async fn stop(&mut self) -> Result<(), MusicError>;
-
-    /// Temporary trait function for this current refactor step. This should be a player-specific feature
-    async fn disconnect(&mut self);
 }
 
 #[derive(Clone, Debug)]
 pub enum MusicPlayerCommand {
     Play(Song),
     Stop,
-    Disconnect, // TODO: Hopefully not need this? Let this be frontend/application controller stuff
 }
 
 pub struct MusicPlayerTask<T: MusicPlayer> {
@@ -67,10 +63,6 @@ impl<T: MusicPlayer> MusicPlayerTask<T> {
                 match cmd {
                     MusicPlayerCommand::Play(s) => player.play(&s).await,
                     MusicPlayerCommand::Stop => player.stop().await,
-                    MusicPlayerCommand::Disconnect => {
-                        player.disconnect().await;
-                        Ok(())
-                    },
                 }
             };
 

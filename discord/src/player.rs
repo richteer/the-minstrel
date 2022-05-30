@@ -66,11 +66,27 @@ impl DiscordPlayer {
 
         self.songcall = Some(handler);
     }
+
+    pub async fn disconnect(&mut self) {
+        if let Some(call) = &mut self.songcall.take() {
+            let mut call = call.lock().await;
+
+            match call.leave().await {
+                Ok(()) => info!("left channel"),
+                Err(e) => error!("failed to disconnect: {}", e),
+            };
+
+            if let Err(e) = self.stop().await {
+                error!("Error stopping song: {:?}", e);
+            }
+
+            call.remove_all_global_events();
+        }
+    }
 }
 
 #[async_trait]
 impl MusicPlayer for DiscordPlayer {
-
 
     async fn init(&self) -> Result<(), MusicError> {
         Ok(())
@@ -105,25 +121,6 @@ impl MusicPlayer for DiscordPlayer {
 
         Ok(())
     }
-
-    async fn disconnect(&mut self) {
-        if let Some(call) = &mut self.songcall.take() {
-            let mut call = call.lock().await;
-
-            match call.leave().await {
-                Ok(()) => info!("left channel"),
-                Err(e) => error!("failed to disconnect: {}", e),
-            };
-
-            if let Err(e) = self.stop().await {
-                error!("Error stopping song: {:?}", e);
-            }
-
-            call.remove_all_global_events();
-        }
-    }
-
-
 }
 
 

@@ -4,7 +4,6 @@ use serenity::model::channel::Message;
 use music::musiccontroller::MusicAdapter;
 use log::*;
 use crate::player::DiscordPlayer;
-use music::player::MusicPlayer;
 
 pub struct DiscordState {
     pub sticky: Option<Message>,
