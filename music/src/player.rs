@@ -75,7 +75,7 @@ impl<T: MusicPlayer> MusicPlayerTask<T> {
             };
 
             if let Err(e) = rettx.send(ret) {
-                todo!("Apparently the receiver dropped? {:?}", e);
+                panic!("Apparently the receiver dropped? {:?}", e);
             }
         }
         warn!("exiting playertask loop, probably not intended yet?");

@@ -41,6 +41,7 @@ pub enum MusicOk {
     EmptyQueue,
     NothingToPlay,
     SkippingSong,
+    Data(webdata::MinstrelWebData),
     AutoplayOk(AutoplayOk),
     Unimplemented
 }
@@ -98,7 +99,7 @@ impl From<MusicStateStatus> for webdata::MusicStateStatus {
             MusicStateStatus::Stopping => webdata::MusicStateStatus::Stopping,
             MusicStateStatus::Stopped => webdata::MusicStateStatus::Stopped,
             #[allow(unreachable_patterns)]
-            _ => todo!("unknown music state status obtained from music crate"),
+            _ => panic!("unknown music state status obtained from music crate"),
         }
     }
 }
@@ -112,7 +113,10 @@ pub enum MusicControlCmd {
     Start,
     Enqueue(Song),
     EnqueueAndPlay(Song),
+    ClearQueue,
     Previous,
+    SongEnded,
+    GetData,
     AutoplayCmd(AutoplayControlCmd),
 }
 
@@ -177,7 +181,7 @@ impl MusicState {
 
         match rx.await {
             Ok(r) => r,
-            Err(e) => todo!("this shouldn't be hit, but handle it better anyway: {:?}", e),
+            Err(e) => panic!("this shouldn't be hit, but handle it better anyway: {:?}", e),
         }
     }
 
@@ -196,7 +200,10 @@ impl MusicState {
                     MusicControlCmd::Start => self.start().await,
                     MusicControlCmd::Enqueue(song) => self.enqueue(song), // TODO: probably just make this async...
                     MusicControlCmd::EnqueueAndPlay(song) => self.enqueue_and_play(song).await,
+                    MusicControlCmd::ClearQueue => self.clear_queue(),
                     MusicControlCmd::Previous => self.previous().await,
+                    MusicControlCmd::SongEnded => { self.song_ended().await; Ok(MusicOk::Unimplemented) },
+                    MusicControlCmd::GetData => Ok(MusicOk::Data(self.get_webdata())),
                     MusicControlCmd::AutoplayCmd(cmd) => AutoplayAdapter::handle_cmd(cmd, &mut self.autoplay),
                 };
 

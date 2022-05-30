@@ -187,21 +187,18 @@ pub async fn in_same_voice(ctx: &Context, msg: &Message) -> Result<(), Reason> {
 
 // Permit useless formats here mostly for code consistently and alignment.
 #[allow(clippy::useless_format)]
-pub async fn show_queuestate(mstate: &mut MusicAdapter) -> String {
-    let mut q = None;
-    let mut ap = None;
+pub fn show_queuestate(mstate: &webdata::MinstrelWebData, ap_enabled: bool) -> String {
+    let q = if !mstate.is_queue_empty() {
+        Some(mstate.show_queue())
+    } else { None };
 
-    if !mstate.is_queue_empty() {
-        q = Some(mstate.show_queue());
-    }
-
-    if mstate.autoplay.is_enabled().await {
-        ap = Some(autoplay_show_upcoming(mstate, read_config!(discord.queuestate_ap_count)));
-    }
+    let ap = if ap_enabled {
+        Some(autoplay_show_upcoming(mstate, read_config!(discord.queuestate_ap_count)))
+    } else { None };
 
     let mut ret = String::new();
 
-    if let Some(his) = show_history(mstate, 5) {
+    if let Some(his) = show_history(&mstate, 5) {
         ret += &format!("{}\n", his);
     }
 
@@ -226,7 +223,10 @@ pub async fn show_queuestate(mstate: &mut MusicAdapter) -> String {
 pub async fn get_queuestate_embed(mstate: &mut MusicAdapter) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
-    ret.description(show_queuestate(mstate).await);
+    let mdata = mstate.get_webdata().await;
+    let ap_enabled = mstate.autoplay.is_enabled().await;
+
+    ret.description(show_queuestate(&mdata, ap_enabled));
 
     ret
 }
@@ -262,7 +262,7 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &webdata::MinstrelWebData)
     ret
 }
 
-pub fn show_history(mstate: &MusicAdapter, num: usize) -> Option<String> {
+pub fn show_history(mstate: &webdata::MinstrelWebData, num: usize) -> Option<String> {
     let history = mstate.get_history();
 
     if history.is_empty() {
@@ -278,7 +278,7 @@ pub fn show_history(mstate: &MusicAdapter, num: usize) -> Option<String> {
     Some(ret)
 }
 
-pub fn get_history_embed(mstate: &MusicAdapter, num: usize) -> CreateEmbed {
+pub fn get_history_embed(mstate: &webdata::MinstrelWebData, num: usize) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     ret.description(match show_history(mstate, num) {
@@ -289,7 +289,7 @@ pub fn get_history_embed(mstate: &MusicAdapter, num: usize) -> CreateEmbed {
     ret
 }
 
-pub fn autoplay_show_upcoming(mstate: &MusicAdapter, num: u64) -> String {
+pub fn autoplay_show_upcoming(mstate: &webdata::MinstrelWebData, num: u64) -> String {
     let num = if num > read_config!(discord.autoplay_upcoming_max) {
         read_config!(discord.autoplay_upcoming_max)
     } else {
@@ -297,7 +297,7 @@ pub fn autoplay_show_upcoming(mstate: &MusicAdapter, num: u64) -> String {
     };
     let num = num.try_into().unwrap();
 
-    let songs = mstate.get_webdata().upcoming;
+    let songs = &mstate.upcoming;
     if songs.is_empty() {
         return String::from("No users enrolled in Autoplay\n");
     }

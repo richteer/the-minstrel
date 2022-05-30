@@ -92,7 +92,7 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();
 
         let qs_embed = get_queuestate_embed(&mut mstate).await;
-        let np_embed = get_nowplay_embed(&ctx, &mstate.get_webdata()).await;
+        let np_embed = get_nowplay_embed(&ctx, &mstate.get_webdata().await).await;
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
             m.set_embeds(vec![qs_embed, np_embed])

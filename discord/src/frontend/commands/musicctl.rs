@@ -58,8 +58,9 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 #[only_in(guilds)]
 async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
+    let mstate = mstate.get_webdata().await;
 
-    let embed = get_nowplay_embed(ctx, &mstate.get_webdata()).await;
+    let embed = get_nowplay_embed(ctx, &mstate).await;
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
         m.set_embed(embed)
@@ -158,6 +159,7 @@ async fn history(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     let num = args.single::<usize>().unwrap_or(5);
 
     get_mstate!(mstate, ctx);
+    let mstate = mstate.get_webdata().await;
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m|
         m.set_embed(get_history_embed(&mstate, num))

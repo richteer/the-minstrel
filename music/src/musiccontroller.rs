@@ -1,9 +1,3 @@
-use std::{
-    collections::{
-        VecDeque,
-    },
-};
-
 use tokio::sync::{
     oneshot,
     broadcast,
@@ -53,7 +47,7 @@ impl MusicAdapter {
 
         match rx.await {
             Ok(r) => r,
-            Err(e) => todo!("this shouldn't be hit, but handle it better anyway: {:?}", e),
+            Err(e) =>  panic!("this shouldn't be hit, but handle it better anyway: {:?}", e),
         }
     }
 
@@ -95,49 +89,32 @@ impl MusicAdapter {
         self.invoke(MusicControlCmd::EnqueueAndPlay(song)).await
     }
 
+    pub async fn clear_queue(&mut self) -> Result<MusicOk, MusicError> {
+        self.invoke(MusicControlCmd::ClearQueue).await
+    }
+
+    pub async fn get_webdata(&self) -> webdata::MinstrelWebData {
+        match self.invoke(MusicControlCmd::GetData).await {
+            Ok(MusicOk::Data(d)) => d,
+            _ => panic!("get_webdata invoke failed, should never happen"),
+        }
+    }
+
     /// Handler to be called by the player when a song ends
-    // TODO: perhaps replace this with a message event loop as well, maybe over a select
-    //   with a timeout set to slightly more than the song length
+    // Ignore the result from invoke, there is no meaningful response here
     pub async fn song_ended(&mut self) {
-        todo!()
+        self.invoke(MusicControlCmd::SongEnded).await.unwrap();
     }
 
     // TODO: this is slated for removal from MusicState, leaving for the scope of this refactor
     // TODO: This is definitely to be removed soon. Only discord has a concept of a "connection" that needs to be
     //   dropped without completely destroying the MusicPlayer, so this should be removed.
     pub async fn leave(&mut self) {
-        todo!()
+        todo!("just remove this .leave() call, don't bother implementing")
     }
 
     pub async fn previous(&mut self) -> Result<MusicOk, MusicError> {
-        todo!()
-    }
-
-    pub fn clear_queue(&mut self) -> Result<MusicOk, MusicError> {
-        todo!()
-    }
-
-    /* Accessors... perhaps later */
-
-    /// Get a display string for the queue
-    pub fn show_queue(&self) -> String {
-        todo!()
-    }
-
-    pub fn get_history(&self) -> VecDeque<Song> {
-        todo!()
-    }
-
-    pub fn current_song(&self) -> Option<Song> {
-        todo!()
-    }
-
-    pub fn is_queue_empty(&self) -> bool {
-        todo!()
-    }
-
-    pub fn get_webdata(&self) -> webdata::MinstrelWebData {
-        todo!()
+        self.invoke(MusicControlCmd::Previous).await
     }
 
 }

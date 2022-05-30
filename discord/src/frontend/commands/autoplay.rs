@@ -106,6 +106,8 @@ async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         return Ok(())
     }
 
+    let mstate = mstate.get_webdata().await;
+
     let num = args.single::<u64>().unwrap_or(10);
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
@@ -214,7 +216,7 @@ async fn dump(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         return Ok(())
     }
 
-    let upcoming = mstate.get_webdata().upcoming;
+    let upcoming = mstate.get_webdata().await.upcoming;
     let num = {
         let num = num.try_into().unwrap();
         let uplen = upcoming.len();

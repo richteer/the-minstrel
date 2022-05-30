@@ -23,6 +23,7 @@ use music::{
 #[only_in(guilds)]
 async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
+    let mstate = mstate.get_webdata().await;
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
         m.embed(|e| { e
@@ -72,7 +73,7 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 async fn clearqueue(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    let ret = mstate.clear_queue();
+    let ret = mstate.clear_queue().await;
 
     if let Ok(s) = ret {
         check_msg(msg.channel_id.say(&ctx.http, s).await);

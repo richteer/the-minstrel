@@ -10,7 +10,7 @@ pub async fn show_state(
     let ret = {
         let mstate = mstate.lock().await;
 
-        mstate.get_webdata()
+        mstate.get_webdata().await
     };
 
     Ok(warp::reply::json(&ret))

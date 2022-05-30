@@ -204,7 +204,7 @@ impl VoiceEventHandler for TrackEndNotifier {
             // TODO: the following should all be handled by a mstate broadcast to a frontend
             let dplayer = dplayer.lock().await;
 
-            let data = mstate.get_webdata();
+            let data = mstate.get_webdata().await;
             let qs_embed = get_queuestate_embed(&mut mstate).await;
             let np_embed = get_nowplay_embed(&ctx, &data).await;
 
