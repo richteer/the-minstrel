@@ -92,7 +92,7 @@ async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
-        m.set_embed(get_queuestate_embed(&mut *mstate))
+        m.set_embed(get_queuestate_embed(&mut mstate))
     }).await);
 
     Ok(())

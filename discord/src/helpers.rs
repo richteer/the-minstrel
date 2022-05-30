@@ -30,7 +30,7 @@ use crate::player::DiscordPlayer;
 
 use minstrel_config::*;
 
-pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicAdapter>>> {
+pub async fn mstate_get(ctx: &Context) -> Option<MusicAdapter> {
     let data = ctx.data.read().await;
 
     let mstate = data.get::<MusicStateKey>().cloned();
@@ -52,12 +52,10 @@ pub async fn dplayer_get(ctx: &Context) -> Option<Arc<Mutex<DiscordPlayer>>> {
 macro_rules! get_mstate {
     ($mstate:ident, $ctx:ident) => {
         let $mstate = $crate::helpers::mstate_get(&$ctx).await.unwrap();
-        let $mstate = $mstate.lock().await;
     };
 
     ($mut:ident, $mstate:ident, $ctx:ident) => {
-        let $mstate = $crate::helpers::mstate_get(&$ctx).await.unwrap();
-        let $mut $mstate = $mstate.lock().await;
+        let $mut $mstate = $crate::helpers::mstate_get(&$ctx).await.unwrap();
     };
 }
 

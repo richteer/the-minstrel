@@ -59,7 +59,7 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
         let embed = get_nowplay_embed(ctx, &mstate.get_webdata()).await;
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
-            m.add_embeds(vec![get_queuestate_embed(&mut *mstate), embed])
+            m.add_embeds(vec![get_queuestate_embed(&mut mstate), embed])
         }).await.unwrap();
 
         dplayer.sticky = Some(new);
@@ -178,15 +178,15 @@ async fn last_one_in_checker(ctx: &Context, guildid: &Option<GuildId>, old: &Opt
 pub struct MusicStateKey;
 
 impl TypeMapKey for MusicStateKey {
-    type Value = Arc<Mutex<MusicAdapter>>;
+    type Value = MusicAdapter;
 }
 
 pub trait MusicStateInit {
-    fn register_musicstate(self, mstate: Arc<Mutex<MusicAdapter>>) -> Self;
+    fn register_musicstate(self, mstate: MusicAdapter) -> Self;
 }
 
 impl MusicStateInit for ClientBuilder<'_> {
-    fn register_musicstate(self, mstate: Arc<Mutex<MusicAdapter>>) -> Self {
+    fn register_musicstate(self, mstate: MusicAdapter) -> Self {
         self.type_map_insert::<MusicStateKey>(mstate)
     }
 }
@@ -220,7 +220,7 @@ pub async fn create_player(mstate: MusicAdapter, dplayer: Arc<Mutex<DiscordPlaye
             .event_handler(Handler)
             .framework(framework)
             .register_songbird()
-            .register_musicstate(Arc::new(Mutex::new(mstate)))
+            .register_musicstate(mstate)
             .register_player(dplayer)
             .await.expect("Err creating client");
 

@@ -94,7 +94,7 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
         let embed = get_nowplay_embed(ctx, &mstate.get_webdata()).await;
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
-            m.add_embeds(vec![get_queuestate_embed(&mut *mstate), embed])
+            m.add_embeds(vec![get_queuestate_embed(&mut mstate), embed])
         }).await.unwrap();
 
         dplayer.sticky = Some(new);
