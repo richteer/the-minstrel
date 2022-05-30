@@ -27,7 +27,7 @@ use crate::frontend::commands::{
     queuectl::*,
     autoplay::*,
     config::*,
-    debug::*,
+    //debug::*,
 };
 
 use crate::helpers::*;
@@ -65,12 +65,14 @@ struct AutoplayCmd;
 // TODO: require owner
 struct ConfigCmd;
 
+/*
 #[group]
 #[description = "Commands for debugging purposes"]
 #[prefix("debug")]
 #[commands(usertime, dropapuser, addapuser, apenableall, modutime, musicstate, dumpconfig)]
 // TODO: require owner
 struct DebugCmd;
+*/
 
 #[hook]
 async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
@@ -83,16 +85,16 @@ async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
 
 #[hook]
 async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _error: Result<(), CommandError>) {
-    get_mstate!(mstate, ctx);
+    get_mstate!(mut, mstate, ctx);
     get_dplayer!(mut, dplayer, ctx);
 
     if let Some(m) = &dplayer.sticky {
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();
 
-        let embed = get_nowplay_embed(ctx, &mstate).await;
+        let embed = get_nowplay_embed(ctx, &mstate.get_webdata()).await;
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
-            m.add_embeds(vec![get_queuestate_embed(&mstate), embed])
+            m.add_embeds(vec![get_queuestate_embed(&mut *mstate), embed])
         }).await.unwrap();
 
         dplayer.sticky = Some(new);
@@ -131,7 +133,7 @@ pub fn init_framework() -> StandardFramework {
     .group(&QUEUECONTROLCMD_GROUP)
     .group(&AUTOPLAYCMD_GROUP)
     .group(&CONFIGCMD_GROUP)
-    .group(&DEBUGCMD_GROUP)
+    //.group(&DEBUGCMD_GROUP)
     .help(&HELPME)
 }
 

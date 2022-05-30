@@ -21,6 +21,7 @@ use youtube_dl::YoutubeDlOutput;
 #[non_exhaustive]
 #[derive(Debug)]
 pub enum AutoplayOk {
+    Status(bool),
     RegisteredUser,
     UpdatedPlaylist,
     EnrolledUser,
@@ -51,6 +52,21 @@ pub enum AutoplayError {
     UrlNotPlaylist,
     UserNotRegistered,
     UnknownError,
+}
+
+#[derive(Clone, Debug)]
+pub enum AutoplayControlCmd {
+    Enable,
+    Disable,
+    Status,
+    Register((Requester, String)),
+    EnableUser(MinstrelUserId),
+    DisableUser(MinstrelUserId),
+    DisableAllUsers,
+    ShuffleUser(MinstrelUserId),
+    Rebalance,
+    UpdatePlaylist(Requester),
+    AdvancePlaylist((MinstrelUserId, u64)),
 }
 
 

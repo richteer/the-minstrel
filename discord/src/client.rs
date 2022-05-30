@@ -4,7 +4,7 @@ use std::{
 };
 use songbird::SerenityInit;
 
-use music::*;
+use music::musiccontroller::MusicAdapter;
 use crate::player::*;
 use crate::helpers::*;
 use crate::{
@@ -50,16 +50,16 @@ async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
 
 #[hook]
 async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _error: Result<(), CommandError>) {
-    get_mstate!(mstate, ctx);
+    get_mstate!(mut, mstate, ctx);
     get_dplayer!(mut, dplayer, ctx);
 
     if let Some(m) = &dplayer.sticky {
         m.channel_id.delete_message(&ctx.http, m).await.unwrap();
 
-        let embed = get_nowplay_embed(ctx, &mstate).await;
+        let embed = get_nowplay_embed(ctx, &mstate.get_webdata()).await;
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
-            m.add_embeds(vec![get_queuestate_embed(&mstate), embed])
+            m.add_embeds(vec![get_queuestate_embed(&mut *mstate), embed])
         }).await.unwrap();
 
         dplayer.sticky = Some(new);
@@ -178,15 +178,15 @@ async fn last_one_in_checker(ctx: &Context, guildid: &Option<GuildId>, old: &Opt
 pub struct MusicStateKey;
 
 impl TypeMapKey for MusicStateKey {
-    type Value = Arc<Mutex<MusicState>>;
+    type Value = Arc<Mutex<MusicAdapter>>;
 }
 
 pub trait MusicStateInit {
-    fn register_musicstate(self, mstate: Arc<Mutex<MusicState>>) -> Self;
+    fn register_musicstate(self, mstate: Arc<Mutex<MusicAdapter>>) -> Self;
 }
 
 impl MusicStateInit for ClientBuilder<'_> {
-    fn register_musicstate(self, mstate: Arc<Mutex<MusicState>>) -> Self {
+    fn register_musicstate(self, mstate: Arc<Mutex<MusicAdapter>>) -> Self {
         self.type_map_insert::<MusicStateKey>(mstate)
     }
 }
@@ -208,7 +208,7 @@ impl DiscordPlayerInit for ClientBuilder<'_> {
 }
 
 
-pub async fn create_player(mstate: Arc<Mutex<MusicState>>, dplayer: Arc<Mutex<DiscordPlayer>>) -> serenity::Client {
+pub async fn create_player(mstate: MusicAdapter, dplayer: Arc<Mutex<DiscordPlayer>>) -> serenity::Client {
     let token = env::var("DISCORD_TOKEN").expect("Must provide env var DISCORD_TOKEN");
     let framework = crate::frontend::framework::init_framework();
 
@@ -220,7 +220,7 @@ pub async fn create_player(mstate: Arc<Mutex<MusicState>>, dplayer: Arc<Mutex<Di
             .event_handler(Handler)
             .framework(framework)
             .register_songbird()
-            .register_musicstate(mstate)
+            .register_musicstate(Arc::new(Mutex::new(mstate)))
             .register_player(dplayer)
             .await.expect("Err creating client");
 

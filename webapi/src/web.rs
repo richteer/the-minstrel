@@ -5,7 +5,9 @@ use tokio::sync::Mutex;
 
 use log::*;
 
-use music::MusicState;
+use music::{
+    musiccontroller::MusicAdapter,
+};
 
 use futures_util::{
     StreamExt,
@@ -13,7 +15,7 @@ use futures_util::{
 };
 
 
-async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicState>>) -> impl warp::reply::Reply {
+async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicAdapter>>) -> impl warp::reply::Reply {
     ws.on_upgrade(|websocket| async move {
         let mstate = mstate.lock().await;
 
@@ -37,7 +39,8 @@ async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicState>>) -> impl wa
     })
 }
 
-pub fn get_web_filter(mstate: Arc<Mutex<MusicState>>) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn get_web_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let mstate = Arc::new(Mutex::new(mstate));
     let mstate = warp::any().map(move || { mstate.clone() });
 
     let api = warp::get()

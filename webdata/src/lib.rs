@@ -4,6 +4,7 @@ use serde::{
 };
 
 use std::collections::VecDeque;
+use std::fmt;
 
 // Literal copy of what is in music::Requester
 //  Subject to deletion if/when all the structs in music:: become "web compatible"
@@ -46,7 +47,43 @@ pub enum MusicStateStatus {
     Idle,
 }
 
-// Foreign impls to make conversion easier for web APIs
 
+// TODO: Probably don't depend on this. Force frontends to format it themselves
+impl fmt::Display for Song {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let secs = self.duration;
+        let mins = secs / 60;
+        let secs = secs % 60;
 
+        write!(f, "**{0}** [{1}:{2:02}] _(requested by {3})_",
+            self.title,
+            mins, secs,
+            &self.requested_by.displayname,
+        )
+    }
+}
 
+impl MinstrelWebData {
+    /// Get a display string for the queue
+    pub fn show_queue(&self) -> String {
+        let mut ret = String::from("Current play queue:\n");
+
+        for (i,v) in self.queue.iter().enumerate() {
+            ret += &format!("{}: {}\n", i+1, &v).to_owned();
+        }
+
+        ret
+    }
+
+    pub fn get_history(&self) -> VecDeque<Song> {
+        self.history.clone()
+    }
+
+    pub fn current_song(&self) -> Option<Song> {
+        self.current_track.clone()
+    }
+
+    pub fn is_queue_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
+}

@@ -33,7 +33,7 @@ async fn main() {
     debug!("config = {:?}", *CONFIG);
 
     let (tx, rx) = tokio::sync::mpsc::channel(3);
-    let mstate = Arc::new(Mutex::new(MusicState::new(tx)));
+    let mut mstate = MusicState::new(tx);
 
     // TODO: I really don't like this flow, it needs to be handled by some higher level controller probably.
 
@@ -48,7 +48,7 @@ async fn main() {
             dplayertask.run().await;
         });
 
-        let mut client = discord::client::create_player(mstate.clone(), dplayer.clone()).await;
+        let mut client = discord::client::create_player(mstate.get_adapter(), dplayer.clone()).await;
 
 
         info!("spawning discord client");
@@ -61,7 +61,7 @@ async fn main() {
 
     #[cfg(feature = "web-frontend")]
     {
-        let site = webapi::web::get_web_filter(mstate.clone());
+        let site = webapi::web::get_web_filter(mstate.get_adapter());
         let addr = format!("{}:{}", read_config!(web.bind_address), read_config!(web.port))
             .parse::<std::net::SocketAddr>().unwrap();
 
@@ -72,6 +72,10 @@ async fn main() {
             .await;
         });
     }
+
+    tokio::spawn(async move {
+        mstate.run().await;
+    });
 
     // TODO: Have an application controller that properly shuts things down and exists here
     loop {}

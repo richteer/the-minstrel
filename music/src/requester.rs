@@ -24,3 +24,15 @@ impl From<Requester> for webdata::Requester {
         }
     }
 }
+
+// TODO: Just use the same Requester everywhere?
+impl From<webdata::Requester> for Requester {
+    fn from(req: webdata::Requester) -> Self {
+        Self {
+            username: req.username,
+            displayname: req.displayname,
+            icon: req.icon,
+            id: req.id,
+        }
+    }
+}

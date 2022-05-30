@@ -53,7 +53,7 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     get_mstate!(mut, mstate, ctx);
 
 
-    let ret = mstate.enqueue(url);
+    let ret = mstate.enqueue(url).await;
 
     // TODO: maybe factor this out into a generic reply handler?
     match ret {
@@ -89,10 +89,10 @@ async fn clearqueue(ctx: &Context, msg: &Message) -> CommandResult {
 #[aliases(qs)]
 #[only_in(guilds)]
 async fn queuestatus(ctx: &Context, msg: &Message) -> CommandResult {
-    get_mstate!(mstate, ctx);
+    get_mstate!(mut, mstate, ctx);
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
-        m.set_embed(get_queuestate_embed(&mstate))
+        m.set_embed(get_queuestate_embed(&mut *mstate))
     }).await);
 
     Ok(())

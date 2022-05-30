@@ -3,7 +3,7 @@ pub mod musicstate;
 pub mod song;
 pub mod requester;
 pub mod player;
-
+pub mod musiccontroller;
 
 // Re-exports for the sake of making the imports prettier in main.rs
 //  Probably not necessary, can be changed in the next big rework

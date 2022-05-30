@@ -18,7 +18,7 @@ use std::{
     sync::Arc,
 };
 
-use music::MusicState;
+use music::musiccontroller::MusicAdapter;
 
 use crate::requester::*;
 use crate::client::{
@@ -30,7 +30,7 @@ use crate::player::DiscordPlayer;
 
 use minstrel_config::*;
 
-pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicState>>> {
+pub async fn mstate_get(ctx: &Context) -> Option<Arc<Mutex<MusicAdapter>>> {
     let data = ctx.data.read().await;
 
     let mstate = data.get::<MusicStateKey>().cloned();
@@ -189,7 +189,7 @@ pub async fn in_same_voice(ctx: &Context, msg: &Message) -> Result<(), Reason> {
 
 // Permit useless formats here mostly for code consistently and alignment.
 #[allow(clippy::useless_format)]
-pub fn show_queuestate(mstate: &MusicState) -> String {
+pub fn show_queuestate(mstate: &mut MusicAdapter) -> String {
     let mut q = None;
     let mut ap = None;
 
@@ -225,7 +225,7 @@ pub fn show_queuestate(mstate: &MusicState) -> String {
 }
 
 
-pub fn get_queuestate_embed(mstate: &MusicState) -> CreateEmbed {
+pub fn get_queuestate_embed(mstate: &mut MusicAdapter) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     ret.description(show_queuestate(mstate));
@@ -233,7 +233,7 @@ pub fn get_queuestate_embed(mstate: &MusicState) -> CreateEmbed {
     ret
 }
 
-pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState) -> CreateEmbed {
+pub async fn get_nowplay_embed(ctx: &Context, mstate: &webdata::MinstrelWebData) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     let song = match mstate.current_song() {
@@ -246,24 +246,16 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState) -> CreateEmbe
 
     let user = get_user_from_muid(ctx, &song.requested_by.id).await.unwrap();
 
-    let md = song.metadata;
-    let thumb = match md.thumbnail.clone() {
-        Some(t) => t,
-        None => format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", &md.id),
-            // This URL might change in the future, but meh, it works.
-            // TODO: Config the thumbnail resolution probably
-    };
+    //let md = song.metadata;
+    let thumb = song.thumbnail.clone();
 
     let mins = song.duration / 60;
     let secs = song.duration % 60;
 
     ret.thumbnail(thumb)
-        .title(format!("{} [{}:{:02}]", md.title, mins, secs))
+        .title(format!("{} [{}:{:02}]", song.title, mins, secs))
         .url(song.url)
-        .description(format!("Uploaded by: {}",
-            md.uploader.unwrap_or_else(||"Unknown".to_string()),
-            )
-        )
+        .description(format!("Uploaded by: {}", song.artist))
         .footer(|f| { f
             .icon_url(user.face())
             .text(format!("Requested by: {}", user.name))
@@ -272,7 +264,7 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState) -> CreateEmbe
     ret
 }
 
-pub fn show_history(mstate: &MusicState, num: usize) -> Option<String> {
+pub fn show_history(mstate: &MusicAdapter, num: usize) -> Option<String> {
     let history = mstate.get_history();
 
     if history.is_empty() {
@@ -288,7 +280,7 @@ pub fn show_history(mstate: &MusicState, num: usize) -> Option<String> {
     Some(ret)
 }
 
-pub fn get_history_embed(mstate: &MusicState, num: usize) -> CreateEmbed {
+pub fn get_history_embed(mstate: &MusicAdapter, num: usize) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     ret.description(match show_history(mstate, num) {
@@ -299,22 +291,22 @@ pub fn get_history_embed(mstate: &MusicState, num: usize) -> CreateEmbed {
     ret
 }
 
-pub fn autoplay_show_upcoming(mstate: &MusicState, num: u64) -> String {
+pub fn autoplay_show_upcoming(mstate: &MusicAdapter, num: u64) -> String {
     let num = if num > read_config!(discord.autoplay_upcoming_max) {
         read_config!(discord.autoplay_upcoming_max)
     } else {
         num
     };
+    let num = num.try_into().unwrap();
 
-    let songs = mstate.autoplay.prefetch(num);
-    if songs.is_none() {
+    let songs = mstate.get_webdata().upcoming;
+    if songs.is_empty() {
         return String::from("No users enrolled in Autoplay\n");
     }
-    let songs = songs.unwrap();
 
     let mut ret = String::from("Upcoming Autoplay songs:\n");
 
-    for (i,v) in songs.iter().enumerate() {
+    for (i,v) in songs.iter().take(num).enumerate() {
         ret += &format!("{}: {}\n", i+1, &v).to_owned();
     }
 

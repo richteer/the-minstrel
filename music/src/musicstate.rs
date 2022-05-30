@@ -1,4 +1,9 @@
-use super::autoplay::AutoplayState;
+use super::autoplay::{
+    AutoplayState,
+    AutoplayControlCmd,
+    AutoplayOk,
+    AutoplayError,
+};
 use super::song::Song;
 
 use std::fmt;
@@ -18,6 +23,11 @@ use crate::player::{
     MPCMD,
 };
 
+use crate::musiccontroller::{
+    MusicAdapter,
+    AutoplayAdapter,
+};
+
 use minstrel_config::read_config;
 
 #[allow(dead_code)]
@@ -31,6 +41,7 @@ pub enum MusicOk {
     EmptyQueue,
     NothingToPlay,
     SkippingSong,
+    AutoplayOk(AutoplayOk),
     Unimplemented
 }
 
@@ -64,6 +75,7 @@ pub enum MusicError {
     InvalidUrl,
     FailedToRetrieve,
     EmptyHistory,
+    AutoplayError(AutoplayError),
 }
 
 
@@ -91,6 +103,21 @@ impl From<MusicStateStatus> for webdata::MusicStateStatus {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum MusicControlCmd {
+    Play(Song),
+    Next,
+    Skip,
+    Stop,
+    Start,
+    Enqueue(Song),
+    EnqueueAndPlay(Song),
+    Previous,
+    AutoplayCmd(AutoplayControlCmd),
+}
+
+pub type MusicResult = Result<MusicOk, MusicError>;
+pub type MSCMD = (oneshot::Sender<MusicResult>, MusicControlCmd);
 
 // Higher level manager for playing music. In theory, should abstract out
 //   a lot of the lower-level magic, so the commands can just operate on
@@ -99,6 +126,8 @@ pub struct MusicState {
     player: mpsc::Sender<MPCMD>,
     // TODO: Perhaps put this in a higher level lock, so maybe it's automatic?
     bcast: broadcast::Sender<webdata::MinstrelWebData>,
+    cmd_channel: (mpsc::Sender<MSCMD>, mpsc::Receiver<MSCMD>),
+
     current_track: Option<Song>,
     status: MusicStateStatus,
     queue: VecDeque<Song>,
@@ -132,6 +161,7 @@ impl MusicState {
             // TODO: use a proper channel buffer sizes here
             player,
             bcast: broadcast::channel(2).0,
+            cmd_channel: mpsc::channel(10),
 
             current_track: None,
             queue: VecDeque::<Song>::new(),
@@ -148,6 +178,34 @@ impl MusicState {
         match rx.await {
             Ok(r) => r,
             Err(e) => todo!("this shouldn't be hit, but handle it better anyway: {:?}", e),
+        }
+    }
+
+    pub fn get_adapter(&self) -> MusicAdapter {
+        MusicAdapter::new(self.cmd_channel.0.clone(), self.bcast.clone())
+    }
+
+    pub async fn run(&mut self) {
+        loop {
+            if let Some((rettx, cmd)) = self.cmd_channel.1.recv().await {
+                let ret = match cmd {
+                    MusicControlCmd::Play(song) => self.play(song).await,
+                    MusicControlCmd::Next => self.next().await,
+                    MusicControlCmd::Skip => self.skip().await,
+                    MusicControlCmd::Stop => self.stop().await,
+                    MusicControlCmd::Start => self.start().await,
+                    MusicControlCmd::Enqueue(song) => self.enqueue(song), // TODO: probably just make this async...
+                    MusicControlCmd::EnqueueAndPlay(song) => self.enqueue_and_play(song).await,
+                    MusicControlCmd::Previous => self.previous().await,
+                    MusicControlCmd::AutoplayCmd(cmd) => AutoplayAdapter::handle_cmd(cmd, &mut self.autoplay),
+                };
+
+                if let Err(e) = rettx.send(ret) {
+                    error!("oneshot return might have dropped, this shouldn't happen: {:?}", e);
+                };
+            } else {
+                error!("MusicState commandloop exiting?");
+            }
         }
     }
 

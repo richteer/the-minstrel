@@ -3,4 +3,4 @@ pub mod musicctl;
 pub mod queuectl;
 pub mod autoplay;
 pub mod config;
-pub mod debug;
+//pub mod debug;

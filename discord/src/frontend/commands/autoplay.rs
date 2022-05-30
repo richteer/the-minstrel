@@ -26,7 +26,7 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
     match mstate.autoplay.is_enabled() {
         true => mstate.autoplay.disable(),
         false => mstate.autoplay.enable(),
-    };
+    }.unwrap();
 
     // No need to do anything here if autoplay is disabled, it will probably stop itself
     if !mstate.autoplay.is_enabled() {
@@ -99,7 +99,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 #[min_args(0)]
 #[max_args(1)]
 async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    get_mstate!(mstate, ctx);
+    get_mstate!(mut, mstate, ctx);
 
     if !mstate.autoplay.is_enabled() {
         check_msg(msg.channel_id.say(&ctx.http, "Autoplay is not enabled").await);
@@ -214,24 +214,28 @@ async fn dump(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         return Ok(())
     }
 
-    for i in 0..num {
-        if let Some(song) = mstate.autoplay.next() {
-            match mstate.enqueue(song) {
-                Ok(_) => (),
-                Err(MusicError::QueueFull) => {
-                    check_msg(msg.channel_id.say(&ctx.http, format!("Queue capacity reached, only could add {}", i)).await);
-                    break;
-                },
-                Err(e) => panic!("dump: {:?}", e),
-            };
-        }
-        else {
-            // TODO: probably better error handle this, this implies there's no autoplay users registered
-            break;
-        }
+    let upcoming = mstate.get_webdata().upcoming;
+    let num = {
+        let num = num.try_into().unwrap();
+        let uplen = upcoming.len();
+        if num < uplen { num } else { uplen }
+    };
+
+    for (i, song) in upcoming.iter().take(num).enumerate() {
+        // TODO: This is gross. These models should really be unified so these extra allocations aren't needed
+        let req = song.requested_by.clone().into();
+        let song = music::Song::new(song.url.clone(), &req).unwrap();
+        match mstate.enqueue(song).await {
+            Ok(_) => (),
+            Err(MusicError::QueueFull) => {
+                check_msg(msg.channel_id.say(&ctx.http, format!("Queue capacity reached, only could add {}", i)).await);
+                break;
+            },
+            Err(e) => panic!("dump: {:?}", e),
+        };
     }
 
-    mstate.autoplay.disable();
+    mstate.autoplay.disable().unwrap();
     check_msg(msg.channel_id.say(&ctx.http, "Autoplay has been disabled.").await);
 
     Ok(())
