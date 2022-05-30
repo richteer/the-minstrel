@@ -24,9 +24,11 @@ use crate::requester::*;
 use crate::client::{
     MusicStateKey,
     DiscordPlayerKey,
+    DiscordStateKey,
 };
 
 use crate::player::DiscordPlayer;
+use crate::state::DiscordState;
 
 use minstrel_config::*;
 
@@ -42,6 +44,14 @@ pub async fn dplayer_get(ctx: &Context) -> Option<Arc<Mutex<DiscordPlayer>>> {
     let data = ctx.data.read().await;
 
     let mstate = data.get::<DiscordPlayerKey>().cloned();
+
+    mstate
+}
+
+pub async fn dstate_get(ctx: &Context) -> Option<Arc<Mutex<DiscordState>>> {
+    let data = ctx.data.read().await;
+
+    let mstate = data.get::<DiscordStateKey>().cloned();
 
     mstate
 }
@@ -69,6 +79,19 @@ macro_rules! get_dplayer {
     ($mut:ident, $dplayer:ident, $ctx:ident) => {
         let $dplayer = $crate::helpers::dplayer_get(&$ctx).await.unwrap();
         let $mut $dplayer = $dplayer.lock().await;
+    };
+}
+
+#[macro_export]
+macro_rules! get_dstate {
+    ($dstate:ident, $ctx:ident) => {
+        let $dstate = $crate::helpers::dstate_get(&$ctx).await.unwrap();
+        let $dstate = $dstate.lock().await;
+    };
+
+    ($mut:ident, $dstate:ident, $ctx:ident) => {
+        let $dstate = $crate::helpers::dstate_get(&$ctx).await.unwrap();
+        let $mut $dstate = $dstate.lock().await;
     };
 }
 

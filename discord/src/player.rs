@@ -8,7 +8,6 @@ use serenity::{
         GuildId,
         ChannelId,
     },
-    model::channel::Message,
     model::voice::VoiceState,
 };
 
@@ -35,7 +34,6 @@ use crate::requester::*;
 pub struct DiscordPlayer {
     pub songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
     songhandler: Option<songbird::tracks::TrackHandle>,
-    pub sticky: Option<Message>,
 }
 
 impl Default for DiscordPlayer {
@@ -43,7 +41,6 @@ impl Default for DiscordPlayer {
         Self {
             songcall: None,
             songhandler: None,
-            sticky: None,
         }
     }
 }
@@ -145,7 +142,7 @@ impl VoiceEventHandler for TrackEndNotifier {
         debug!("TrackEndNotifier fired");
 
         let mut mstate = mstate_get(&self.ctx).await.unwrap();
-        let dplayer = dplayer_get(&self.ctx).await.unwrap();
+        let dstate = dstate_get(&self.ctx).await.unwrap();
         let ctx = self.ctx.clone(); // UUUUGGGGHHHHHH
 
         // Plopping this on another thread so that this VoiceEvent handler can be brief
@@ -153,13 +150,13 @@ impl VoiceEventHandler for TrackEndNotifier {
             mstate.song_ended().await;
 
             // TODO: the following should all be handled by a mstate broadcast to a frontend
-            let dplayer = dplayer.lock().await;
+            let dstate = dstate.lock().await;
 
             let data = mstate.get_webdata().await;
             let qs_embed = get_queuestate_embed(&data, mstate.autoplay.is_enabled().await);
             let np_embed = get_nowplay_embed(&ctx, &data).await;
 
-            if let Some(sticky) = &dplayer.sticky {
+            if let Some(sticky) = &dstate.sticky {
                 sticky.channel_id.edit_message(&ctx.http, sticky, |m| {
                     m.set_embeds(vec![qs_embed, np_embed])
                 }).await.unwrap();
