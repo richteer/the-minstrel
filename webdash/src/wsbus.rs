@@ -5,7 +5,7 @@ use yew_agent::{
     HandlerId,
 };
 
-use webdata::MinstrelWebData;
+use model::MinstrelWebData;
 
 pub struct WsBus {
     link: AgentLink<WsBus>,

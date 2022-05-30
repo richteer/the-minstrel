@@ -14,7 +14,7 @@ pub struct Requester {
 // Keeping this one around so that the API is consistent internally,
 //  don't want to mess around with using a mix of remote structs and webdata structs
 
-impl From<Requester> for webdata::Requester {
+impl From<Requester> for model::Requester {
     fn from(req: Requester) -> Self {
         Self {
             username: req.username,
@@ -26,8 +26,8 @@ impl From<Requester> for webdata::Requester {
 }
 
 // TODO: Just use the same Requester everywhere?
-impl From<webdata::Requester> for Requester {
-    fn from(req: webdata::Requester) -> Self {
+impl From<model::Requester> for Requester {
+    fn from(req: model::Requester) -> Self {
         Self {
             username: req.username,
             displayname: req.displayname,

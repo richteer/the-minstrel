@@ -28,12 +28,12 @@ use log::*;
 #[derive(Debug, Clone)]
 pub struct MusicAdapter {
     pub autoplay: AutoplayAdapter,
-    bcast: broadcast::Sender<webdata::MinstrelWebData>,
+    bcast: broadcast::Sender<model::MinstrelWebData>,
     tx: mpsc::Sender<MSCMD>,
 }
 
 impl MusicAdapter {
-    pub fn new(tx: mpsc::Sender<MSCMD>, bcast: broadcast::Sender<webdata::MinstrelWebData>) -> Self {
+    pub fn new(tx: mpsc::Sender<MSCMD>, bcast: broadcast::Sender<model::MinstrelWebData>) -> Self {
         Self {
             autoplay: AutoplayAdapter::new(tx.clone()),
             tx,
@@ -51,7 +51,7 @@ impl MusicAdapter {
         }
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<webdata::MinstrelWebData> {
+    pub fn subscribe(&self) -> broadcast::Receiver<model::MinstrelWebData> {
         self.bcast.subscribe()
     }
 
@@ -93,7 +93,7 @@ impl MusicAdapter {
         self.invoke(MusicControlCmd::ClearQueue).await
     }
 
-    pub async fn get_webdata(&self) -> webdata::MinstrelWebData {
+    pub async fn get_webdata(&self) -> model::MinstrelWebData {
         match self.invoke(MusicControlCmd::GetData).await {
             Ok(MusicOk::Data(d)) => d,
             _ => panic!("get_webdata invoke failed, should never happen"),

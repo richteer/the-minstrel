@@ -38,8 +38,6 @@ use crate::get_mstate;
 use crate::helpers::*;
 use crate::requester::*;
 
-//use crate::web::get_mstate_webdata;
-
 
 // Helper to write out song played to a CSV in theory
 fn log_song(song: &Song) {
@@ -59,7 +57,7 @@ fn log_song(song: &Song) {
             }
     };
 
-    let song = webdata::Song::from(song.clone());
+    let song = model::Song::from(song.clone());
 
     // TODO: consider using a real serializer or CSV library
     let ret = file.write(

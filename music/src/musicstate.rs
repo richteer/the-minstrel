@@ -41,7 +41,7 @@ pub enum MusicOk {
     EmptyQueue,
     NothingToPlay,
     SkippingSong,
-    Data(webdata::MinstrelWebData),
+    Data(model::MinstrelWebData),
     AutoplayOk(AutoplayOk),
     Unimplemented
 }
@@ -91,13 +91,13 @@ pub enum MusicStateStatus {
 
 
 // TODO: delete this eventually when types are reconciled
-impl From<MusicStateStatus> for webdata::MusicStateStatus {
+impl From<MusicStateStatus> for model::MusicStateStatus {
     fn from(mss: MusicStateStatus) -> Self {
         match mss {
-            MusicStateStatus::Idle => webdata::MusicStateStatus::Idle,
-            MusicStateStatus::Playing => webdata::MusicStateStatus::Playing,
-            MusicStateStatus::Stopping => webdata::MusicStateStatus::Stopping,
-            MusicStateStatus::Stopped => webdata::MusicStateStatus::Stopped,
+            MusicStateStatus::Idle => model::MusicStateStatus::Idle,
+            MusicStateStatus::Playing => model::MusicStateStatus::Playing,
+            MusicStateStatus::Stopping => model::MusicStateStatus::Stopping,
+            MusicStateStatus::Stopped => model::MusicStateStatus::Stopped,
             #[allow(unreachable_patterns)]
             _ => panic!("unknown music state status obtained from music crate"),
         }
@@ -129,7 +129,7 @@ pub type MSCMD = (oneshot::Sender<MusicResult>, MusicControlCmd);
 pub struct MusicState {
     player: mpsc::Sender<MPCMD>,
     // TODO: Perhaps put this in a higher level lock, so maybe it's automatic?
-    bcast: broadcast::Sender<webdata::MinstrelWebData>,
+    bcast: broadcast::Sender<model::MinstrelWebData>,
     cmd_channel: (mpsc::Sender<MSCMD>, mpsc::Receiver<MSCMD>),
 
     current_track: Option<Song>,
@@ -392,7 +392,7 @@ impl MusicState {
     //   Probably allow partial updates, as well as intelligently send them whenever
     //   MusicState is mutated, rather than having to manually call
     fn broadcast_update(&self) {
-        let out: webdata::MinstrelWebData = self.into();
+        let out: model::MinstrelWebData = self.into();
 
         if self.bcast.receiver_count() > 0 {
             if let Err(e) = self.bcast.send(out) {
@@ -401,11 +401,11 @@ impl MusicState {
         }
     }
 
-    pub fn get_webdata(&self) -> webdata::MinstrelWebData {
+    pub fn get_webdata(&self) -> model::MinstrelWebData {
         self.into()
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<webdata::MinstrelWebData> {
+    pub fn subscribe(&self) -> broadcast::Receiver<model::MinstrelWebData> {
         self.bcast.subscribe()
     }
 
@@ -441,15 +441,15 @@ impl MusicState {
     }
  }
 
-impl Into<webdata::MinstrelWebData> for &MusicState {
-    fn into(self) -> webdata::MinstrelWebData {
+impl Into<model::MinstrelWebData> for &MusicState {
+    fn into(self) -> model::MinstrelWebData {
         let upcoming = self.autoplay.prefetch(read_config!(discord.webdash_prefetch))
         // TODO: Better handle when autoplay is not enabled, or no users are enrolled
         .unwrap_or_default().iter()
             .map(|e| e.clone().into())
             .collect();
 
-        webdata::MinstrelWebData {
+        model::MinstrelWebData {
             current_track: self.current_track.clone().map(|ct| ct.into()),
             status: self.status.clone().into(),
             queue: self.queue.iter().map(|e| e.clone().into()).collect(),

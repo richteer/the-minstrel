@@ -2,7 +2,7 @@
 members = [
 	"minstrel-config",
 	"music",
-	"webdata",
+	"model",
 	"discord",
 	"webapi",
 	"main",
@@ -12,7 +12,7 @@ members = [
 default-members = [
 	"minstrel-config",
 	"music",
-	"webdata",
+	"model",
 	"webapi",
 	"discord",
 	"main",

@@ -17,7 +17,7 @@ use gloo_net::websocket::{
 use futures_util::StreamExt;
 use wasm_bindgen_futures::spawn_local;
 
-use webdata::MinstrelWebData;
+use model::MinstrelWebData;
 
 mod components;
 use components::*;

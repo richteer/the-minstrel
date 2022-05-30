@@ -187,7 +187,7 @@ pub async fn in_same_voice(ctx: &Context, msg: &Message) -> Result<(), Reason> {
 
 // Permit useless formats here mostly for code consistently and alignment.
 #[allow(clippy::useless_format)]
-pub fn show_queuestate(mstate: &webdata::MinstrelWebData, ap_enabled: bool) -> String {
+pub fn show_queuestate(mstate: &model::MinstrelWebData, ap_enabled: bool) -> String {
     let q = if !mstate.is_queue_empty() {
         Some(mstate.show_queue())
     } else { None };
@@ -231,7 +231,7 @@ pub async fn get_queuestate_embed(mstate: &mut MusicAdapter) -> CreateEmbed {
     ret
 }
 
-pub async fn get_nowplay_embed(ctx: &Context, mstate: &webdata::MinstrelWebData) -> CreateEmbed {
+pub async fn get_nowplay_embed(ctx: &Context, mstate: &model::MinstrelWebData) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     let song = match mstate.current_song() {
@@ -262,7 +262,7 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &webdata::MinstrelWebData)
     ret
 }
 
-pub fn show_history(mstate: &webdata::MinstrelWebData, num: usize) -> Option<String> {
+pub fn show_history(mstate: &model::MinstrelWebData, num: usize) -> Option<String> {
     let history = mstate.get_history();
 
     if history.is_empty() {
@@ -278,7 +278,7 @@ pub fn show_history(mstate: &webdata::MinstrelWebData, num: usize) -> Option<Str
     Some(ret)
 }
 
-pub fn get_history_embed(mstate: &webdata::MinstrelWebData, num: usize) -> CreateEmbed {
+pub fn get_history_embed(mstate: &model::MinstrelWebData, num: usize) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     ret.description(match show_history(mstate, num) {
@@ -289,7 +289,7 @@ pub fn get_history_embed(mstate: &webdata::MinstrelWebData, num: usize) -> Creat
     ret
 }
 
-pub fn autoplay_show_upcoming(mstate: &webdata::MinstrelWebData, num: u64) -> String {
+pub fn autoplay_show_upcoming(mstate: &model::MinstrelWebData, num: u64) -> String {
     let num = if num > read_config!(discord.autoplay_upcoming_max) {
         read_config!(discord.autoplay_upcoming_max)
     } else {

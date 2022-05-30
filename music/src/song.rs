@@ -81,7 +81,7 @@ impl fmt::Display for Song {
 }
 
 
-impl From<Song> for webdata::Song {
+impl From<Song> for model::Song {
     fn from(song: Song) -> Self {
         Self {
             title: song.metadata.title,

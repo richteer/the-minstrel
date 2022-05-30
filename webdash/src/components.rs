@@ -4,7 +4,7 @@ use yew::{
     html,
     Children,
 };
-use webdata::{
+use model::{
     Song,
 };
 

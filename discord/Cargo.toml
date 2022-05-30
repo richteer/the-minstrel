@@ -17,7 +17,7 @@ chrono = "0.4"
 
 minstrel-config = { path = "../minstrel-config" }
 music = { path = "../music" }
-webdata = { path = "../webdata" }
+model = { path = "../model" }
 
 [dependencies.serenity]
 default-features = false
