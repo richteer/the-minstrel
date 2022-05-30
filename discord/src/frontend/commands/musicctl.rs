@@ -20,6 +20,7 @@ use crate::requester::*;
 use music::{
     Song,
     MusicOk,
+    MusicError,
 };
 
 
@@ -170,20 +171,14 @@ async fn history(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 #[only_in(guilds)]
 #[checks(in_same_voice)]
 async fn previous(ctx: &Context, msg: &Message) -> CommandResult {
-
-
     get_mstate!(mut, mstate, ctx);
 
-    if let Some(song) = mstate.history.pop_front() {
-        check_msg(msg.channel_id.say(&ctx.http, match mstate.enqueue_and_play(song).await {
-            Ok(MusicOk::EnqueuedSong) => "Enqueued last played song.".to_string(),
-            Ok(o) => o.to_string(),
-            Err(e) => format!("{:?}", e),
-        }).await);
-    }
-    else {
-        check_msg(msg.channel_id.say(&ctx.http, "Nothing in history to re-enqueue.").await);
-    }
+    check_msg(msg.channel_id.say(&ctx.http, match mstate.previous().await {
+        Ok(MusicOk::EnqueuedSong) => "Enqueued last played song.".to_string(),
+        Ok(o) => o.to_string(),
+        Err(MusicError::EmptyHistory) => "No history to pull a song from".to_string(),
+        Err(e) => format!("{:?}", e),
+    }).await);
 
     Ok(())
 }

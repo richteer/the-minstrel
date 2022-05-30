@@ -273,13 +273,15 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &MusicState) -> CreateEmbe
 }
 
 pub fn show_history(mstate: &MusicState, num: usize) -> Option<String> {
-    if mstate.history.is_empty() {
+    let history = mstate.get_history();
+
+    if history.is_empty() {
         return None
     }
 
     let mut ret = String::from("Last played songs:\n");
 
-    for (i,s) in mstate.history.iter().take(num).enumerate().rev() {
+    for (i,s) in history.iter().take(num).enumerate().rev() {
         ret += &format!("{0}: {1}\n", i+1, s);
     }
 

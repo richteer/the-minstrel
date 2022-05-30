@@ -63,6 +63,7 @@ pub enum MusicError {
     QueueFull,
     InvalidUrl,
     FailedToRetrieve,
+    EmptyHistory,
 }
 
 
@@ -98,10 +99,10 @@ pub struct MusicState {
     player: mpsc::Sender<MPCMD>,
     // TODO: Perhaps put this in a higher level lock, so maybe it's automatic?
     bcast: broadcast::Sender<webdata::MinstrelWebData>,
-    pub current_track: Option<Song>,
-    pub status: MusicStateStatus,
-    pub queue: VecDeque<Song>,
-    pub history: VecDeque<Song>,
+    current_track: Option<Song>,
+    status: MusicStateStatus,
+    queue: VecDeque<Song>,
+    history: VecDeque<Song>,
     pub autoplay: AutoplayState,
 }
 
@@ -270,6 +271,20 @@ impl MusicState {
         ret
     }
 
+    pub fn get_history(&self) -> VecDeque<Song> {
+        self.history.clone()
+    }
+
+    pub async fn previous(&mut self) -> Result<MusicOk, MusicError> {
+
+        if let Some(song) = self.history.pop_front() {
+            self.enqueue_and_play(song).await
+        }
+        else {
+            Err(MusicError::EmptyHistory)
+        }
+
+    }
 
 
     pub fn current_song(&self) -> Option<Song> {
