@@ -10,6 +10,8 @@ use model::{
 
 use gloo_timers::callback::Interval;
 
+use yew_feather::external_link;
+
 fn duration_text(dur: i64) -> String {
     let min = dur / 60;
     let secs = dur % 60;
@@ -67,7 +69,7 @@ pub fn song_row(props: &SongRowProps) -> Html {
                     <img src={song.thumbnail.clone()} alt="temp" />
                     <div class="songicon-overlay">
                         <div class="songicon-overlay-content">
-                            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9ImN1cnJlbnRDb2xvciIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItZXh0ZXJuYWwtbGluayI+PHBhdGggZD0iTTE4IDEzdjZhMiAyIDAgMCAxLTIgMkg1YTIgMiAwIDAgMS0yLTJWOGEyIDIgMCAwIDEgMi0yaDYiPjwvcGF0aD48cG9seWxpbmUgcG9pbnRzPSIxNSAzIDIxIDMgMjEgOSI+PC9wb2x5bGluZT48bGluZSB4MT0iMTAiIHkxPSIxNCIgeDI9IjIxIiB5Mj0iMyI+PC9saW5lPjwvc3ZnPg=="/>
+                            <external_link::ExternalLink color="white" size={if np { "48"} else { "28" }}/>
                         </div>
                     </div>
                 </a>
