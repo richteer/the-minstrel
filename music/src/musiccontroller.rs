@@ -60,11 +60,6 @@ impl MusicAdapter {
         self.invoke(MusicControlCmd::Play(song)).await
     }
 
-    /// Play the next song in the queue (autoplay?)
-    pub async fn next(&mut self) -> Result<MusicOk, MusicError> {
-        self.invoke(MusicControlCmd::Next).await
-    }
-
     pub async fn skip(&mut self) -> Result<MusicOk, MusicError> {
         self.invoke(MusicControlCmd::Skip).await
     }

@@ -89,7 +89,6 @@ pub enum MusicError {
 #[derive(Clone, Debug)]
 pub enum MusicControlCmd {
     Play(Song),
-    Next,
     Skip,
     Stop,
     Start,
@@ -176,7 +175,6 @@ impl MusicState {
             if let Some((rettx, cmd)) = self.cmd_channel.1.recv().await {
                 let ret = match cmd {
                     MusicControlCmd::Play(song) => self.play(song).await,
-                    MusicControlCmd::Next => self.next().await,
                     MusicControlCmd::Skip => self.skip().await,
                     MusicControlCmd::Stop => self.stop().await,
                     MusicControlCmd::Start => self.start().await,
@@ -221,7 +219,7 @@ impl MusicState {
     }
 
     /// Play the next song in the queue (autoplay?)
-    pub async fn next(&mut self) -> Result<MusicOk, MusicError> {
+    async fn next(&mut self) -> Result<MusicOk, MusicError> {
         let song = self.get_next_song();
 
         if let Some(song) = song {
