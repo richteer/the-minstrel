@@ -40,20 +40,22 @@ async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicAdapter>>) -> impl 
 }
 
 pub fn get_web_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let mstate = Arc::new(Mutex::new(mstate));
-    let mstate = warp::any().map(move || { mstate.clone() });
+    let mstate_mutex = Arc::new(Mutex::new(mstate.clone()));
+    let mstate_filter = warp::any().map(move || { mstate_mutex.clone() });
 
     let api = warp::get()
         .and(warp::path("api"))
-        .and(mstate.clone())
+        .and(mstate_filter.clone())
         .and_then(crate::api::show_state);
+
+    let api2 = crate::api::get_api_filter(mstate);
 
     let ws = warp::path("ws")
         .and(warp::ws())
-        .and(mstate)
+        .and(mstate_filter)
         .then(ws_connect);
 
     let files = crate::embed::get_embedded_file_filter();
 
-    api.or(ws).or(files)
+    api.or(api2).or(ws).or(files)
 }
