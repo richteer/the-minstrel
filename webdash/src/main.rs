@@ -25,7 +25,6 @@ use components::*;
 mod wsbus;
 use wsbus::WsBus;
 
-
 pub enum Msg {
     Data(MinstrelWebData),
 }
@@ -121,11 +120,13 @@ impl Component for Dash {
     fn view(&self, _ctx: &Context<Self>) -> Html {
         if let Some(data) = self.data.clone() {
             html! {
-                <div class="container">
+            <div class="container">
+                <div class="columns">
+                    <div class="column">
                     {
-                        if let Some(np) = data.current_track {
+                        if let Some(np) = &data.current_track {
                             html! {
-                            <SongRow song={np} nowplaying={true}/>
+                            <SongRow song={np.clone()} nowplaying={true}/>
                             }
                         } else {
                             html! {
@@ -133,18 +134,13 @@ impl Component for Dash {
                             }
                         }
                     }
-                    <div><span>{"Coming up:"}</span></div>
-                    <div>
-                        {
-                            for data.upcoming.iter().map(|e| {
-                                html! {
-                                <SongRow song={e.clone()} />
-                                }
-                            })
-                        }
                     </div>
-                </div>
+                    <div class="column fullheight">
+                        <SongListTabs data={data} />
+                    </div>
 
+                </div>
+            </div>
             }
         } else {
             html! {

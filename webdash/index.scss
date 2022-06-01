@@ -17,6 +17,7 @@ $icon-ar: math.div(4,3);
     height: $up-height;
     max-height: $up-height;
     font-size: small;
+    margin-right: 10px;
 }
 
 .nowplaying .songicon {
@@ -119,4 +120,19 @@ $icon-ar: math.div(4,3);
         top: $m !important;
         bottom: $m !important;
     }
+}
+
+.fullheight {
+    height: 100vh;
+}
+
+.songlist {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.tabview {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
 }
