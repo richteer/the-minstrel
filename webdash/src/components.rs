@@ -10,7 +10,13 @@ use model::{
 
 use gloo_timers::callback::Interval;
 
-use yew_feather::external_link;
+use yew_feather::{
+    external_link,
+    skip_back,
+    skip_forward,
+    play,
+};
+
 
 fn duration_text(dur: i64) -> String {
     let min = dur / 60;
@@ -163,10 +169,10 @@ impl Component for NowPlayingProgress {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let song = &ctx.props().song;
         html! {
-            <>
-                <span>{ format!("{} / {}", duration_text(self.time), duration_text(song.duration)) }</span>
-                <progress value={self.time.to_string()} max={song.duration.to_string()}/>
-            </>
+            <div class="columns">
+                <div class="column is-narrow"><span>{ format!("{} / {}", duration_text(self.time), duration_text(song.duration)) }</span></div>
+                <div class="column"><progress value={self.time.to_string()} max={song.duration.to_string()}/></div>
+            </div>
         }
     }
 }
@@ -239,7 +245,7 @@ pub fn songlisttabs(props: &SongListTabsProps) -> Html {
                     {
                         for props.data.history.iter().map(|e| {
                             html! {
-                            <SongRow song={e.clone()} />
+                                <SongRow song={e.clone()} />
                             }
                         })
                     }
@@ -249,5 +255,55 @@ pub fn songlisttabs(props: &SongListTabsProps) -> Html {
             </div>
         </div>
         </div>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct NowPlayingProps {
+    pub song: Song,
+}
+
+#[function_component(NowPlaying)]
+pub fn nowplaying(props: &NowPlayingProps) -> Html {
+    let song = props.song.clone();
+
+    html! {
+        <>
+        <div class="columns is-multiline is-centered">
+            <div class="column is-full">
+                <figure class="image">
+                <a href={song.url.clone()} target="_blank" rel="noopener noreferrer">
+                    <img src={song.thumbnail.clone()} alt="temp" />
+                </a>
+                </figure>
+            </div>
+            <div class="column is-full">
+                <div class="columns is-multiline">
+                    <div class="column is-full"><SongText song={song.clone()}/></div>
+                    <div class="column is-full"><NowPlayingProgress song={song.clone()}/></div>
+                </div>
+            </div>
+            <div class="column is-full">
+                <div class="columns is-centered">
+                    <div class="column is-2 is-flex" style="justify-content: start">
+                        <div>
+                            <skip_back::SkipBack />
+                        </div>
+                    </div>
+                    // TODO: probably have this switch back/forth between play/pause based on state
+                    <div class="column is-2 is-flex" style="justify-content: center">
+                        <div>
+                            <play::Play />
+                        </div>
+                    </div>
+                    <div class="column is-2 is-flex" style="justify-content: end;">
+                        <div>
+                            <skip_forward::SkipForward />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </>
     }
 }

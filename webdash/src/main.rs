@@ -121,12 +121,12 @@ impl Component for Dash {
         if let Some(data) = self.data.clone() {
             html! {
             <div class="container">
-                <div class="columns">
-                    <div class="column">
+                <div class="columns is-vcentered">
+                    <div class="column is-half">
                     {
                         if let Some(np) = &data.current_track {
                             html! {
-                            <SongRow song={np.clone()} nowplaying={true}/>
+                            <NowPlaying song={np.clone()}/>
                             }
                         } else {
                             html! {
@@ -135,7 +135,7 @@ impl Component for Dash {
                         }
                     }
                     </div>
-                    <div class="column fullheight">
+                    <div class="column is-half fullheight">
                         <SongListTabs data={data} />
                     </div>
 
