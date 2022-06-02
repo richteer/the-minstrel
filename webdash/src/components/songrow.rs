@@ -2,7 +2,6 @@ use yew::{
     prelude::*,
     function_component,
     html,
-    Children,
 };
 use model::{
     Song,
@@ -19,7 +18,6 @@ use crate::components::helpers::duration_text;
 #[derive(Properties, PartialEq)]
 pub struct SongTextProps {
     pub song: Song,
-    pub children: Option<Children>,
 }
 
 #[function_component(SongText)]
@@ -29,18 +27,7 @@ pub fn song_text(props: &SongTextProps) -> Html {
         <div class="songdata">
             <span class="songtitle songoverflow">{song.title.clone()}</span>
             <span class="songartist songoverflow">{song.artist.clone()}</span>
-            {
-                // TODO: there's probably a cleaner way to do this
-                if let Some(children) = &props.children {
-                    html! {
-                        <>
-                            { children.clone() }
-                        </>
-                    }
-                } else {
-                    html! {}
-                }
-            }
+            <span class="songduration">{duration_text(song.duration)}</span>
         </div>
     }
 }
@@ -68,13 +55,7 @@ pub fn song_row(props: &SongRowProps) -> Html {
                     </div>
                 </a>
             </div>
-            <SongText song={song.clone()}>
-                {
-                    html! {
-                        <div><span class="songduration">{duration_text(song.duration)}</span></div>
-                    }
-                }
-            </SongText>
+            <SongText song={song.clone()} />
             <div class="user">
                 <span class="username">{ song.requested_by.displayname.clone() }</span>
                 <img src={ song.requested_by.icon.clone() } alt="temp" />
