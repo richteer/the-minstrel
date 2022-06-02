@@ -79,9 +79,9 @@ impl Component for NowPlayingProgress {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let song = &ctx.props().song;
         html! {
-            <div class="columns">
-                <div class="column is-narrow"><span>{ format!("{} / {}", duration_text(self.time), duration_text(song.duration)) }</span></div>
-                <div class="column"><progress value={self.time.to_string()} max={song.duration.to_string()}/></div>
+            <div class="columns is-multiline">
+                <div class="column is-full py-0"><span>{ format!("{} / {}", duration_text(self.time), duration_text(song.duration)) }</span></div>
+                <div class="column is-full pt-1 pb-0"><progress class="progress is-primary" value={self.time.to_string()} max={song.duration.to_string()}/></div>
             </div>
         }
     }

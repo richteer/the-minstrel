@@ -114,15 +114,6 @@ $icon-ar: math.div(4,3);
     font-style: italic;
 }
 
-progress {
-    $m: 5px;
-    width: 100%;
-    margin: {
-        top: $m !important;
-        bottom: $m !important;
-    }
-}
-
 .fullheight {
     height: 100vh;
 }
