@@ -10,7 +10,6 @@ use model::{
 use gloo_timers::callback::Interval;
 
 use crate::components::helpers::duration_text;
-use crate::components::songrow::*;
 
 
 pub enum NpMsg {
@@ -101,6 +100,8 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
     html! {
         <>
         <div class="columns is-multiline is-centered">
+            // TODO: probably break this up into more subcomponents
+            // Album Art
             <div class="column is-full">
                 <figure class="image">
                 <a href={song.url.clone()} target="_blank" rel="noopener noreferrer">
@@ -108,13 +109,33 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
                 </a>
                 </figure>
             </div>
+            // Text
             <div class="column is-full">
-                <div class="columns is-multiline">
-                    // TODO: don't depend on SongText here probably, should be made private and internal to songrow
-                    <div class="column is-full"><SongText song={song.clone()}/></div>
-                    <div class="column is-full"><NowPlayingProgress song={song.clone()}/></div>
+                <div class="columns">
+                    // Song Title/Artist
+                    <div class="column ml-2 is-flex is-clipped">
+                        <div class="columns is-multiline is-gapless" style="min-width: 0;"> // min-width needed here for proper clipping/ellipsing
+                            <span class="column is-full songtitle songoverflow">{song.title.clone()}</span>
+                            <span class="column is-full songartist songoverflow">{song.artist.clone()}</span>
+                        </div>
+                    </div>
+                    // Requested by
+                    <div class="column is-narrow is-flex is-flex-direction-column is-justify-content-end">
+                        <div class="columns is-vcentered is-gapless">
+                            <div class="column mr-2">
+                                {song.requested_by.displayname.clone()}
+                            </div>
+                            <div class="column">
+                                <figure class="image is-32x32">
+                                    <img class="is-rounded" src={ song.requested_by.icon.clone() } alt="temp" />
+                                </figure>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+            // Progress bar
+            <div class="column is-full"><NowPlayingProgress song={song.clone()}/></div>
         </div>
         </>
     }

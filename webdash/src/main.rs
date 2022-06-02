@@ -128,12 +128,10 @@ impl Component for Dash {
                             html! {
                                 <>
                                 <div class="columns is-multiline is-centered">
-                                    <div class="column">
+                                    <div class="column is-full">
                                         <NowPlaying song={np.clone()}/>
                                     </div>
-                                </div>
-                                <div class="columns is-multiline is-centered">
-                                    <div class="column">
+                                    <div class="column is-full">
                                         <PlayControls/>
                                     </div>
                                 </div>
