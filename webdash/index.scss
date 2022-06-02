@@ -137,3 +137,10 @@ progress {
     height: 100%;
     flex-direction: column;
 }
+
+.controlicon {
+    cursor: pointer;
+    &:hover {
+        filter: drop-shadow(0 0 5px #fff);
+    }
+}

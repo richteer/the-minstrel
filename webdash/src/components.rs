@@ -17,6 +17,8 @@ use yew_feather::{
     play,
 };
 
+use gloo_net::http::Request;
+use yew_hooks::prelude::*;
 
 fn duration_text(dur: i64) -> String {
     let min = dur / 60;
@@ -283,27 +285,54 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
                     <div class="column is-full"><NowPlayingProgress song={song.clone()}/></div>
                 </div>
             </div>
-            <div class="column is-full">
-                <div class="columns is-centered">
-                    <div class="column is-2 is-flex" style="justify-content: start">
-                        <div>
-                            <skip_back::SkipBack />
-                        </div>
+        </div>
+        </>
+    }
+}
+
+#[function_component(PlayControls)]
+pub fn playcontrols() -> Html {
+
+    let skip = use_async(async move {
+        log::error!("actually called: {}", "skip");
+        let resp = Request::post(format!("/api/{}", "skip").as_str())
+            .json("").unwrap()
+            .send().await.unwrap();
+        if !resp.ok() {
+            log::error!("bad response from backend: {:?}", resp);
+            return Err(())
+        }
+        log::info!("resp = {:?}", resp);
+        Ok(())
+    });
+
+    let onclick = {
+        let skip = skip.clone();
+        Callback::from(move |_| {
+            skip.run();
+        })
+    };
+
+    html! {
+        <div class="column is-full">
+            <div class="columns is-centered is-mobile">
+                <div class="column is-2 is-flex" style="justify-content: start">
+                    <div class="controlicon">
+                        <skip_back::SkipBack />
                     </div>
-                    // TODO: probably have this switch back/forth between play/pause based on state
-                    <div class="column is-2 is-flex" style="justify-content: center">
-                        <div>
-                            <play::Play />
-                        </div>
+                </div>
+                // TODO: probably have this switch back/forth between play/pause based on state
+                <div class="column is-2 is-flex" style="justify-content: center;">
+                    <div class="controlicon">
+                        <play::Play />
                     </div>
-                    <div class="column is-2 is-flex" style="justify-content: end;">
-                        <div>
-                            <skip_forward::SkipForward />
-                        </div>
+                </div>
+                <div class="column is-2 is-flex" style="justify-content: end;">
+                    <div class="controlicon" onclick={onclick}>
+                        <skip_forward::SkipForward />
                     </div>
                 </div>
             </div>
         </div>
-        </>
     }
 }

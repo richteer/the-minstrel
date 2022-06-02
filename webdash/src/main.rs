@@ -126,7 +126,18 @@ impl Component for Dash {
                     {
                         if let Some(np) = &data.current_track {
                             html! {
-                            <NowPlaying song={np.clone()}/>
+                                <>
+                                <div class="columns is-multiline is-centered">
+                                    <div class="column">
+                                        <NowPlaying song={np.clone()}/>
+                                    </div>
+                                </div>
+                                <div class="columns is-multiline is-centered">
+                                    <div class="column">
+                                        <PlayControls/>
+                                    </div>
+                                </div>
+                                </>
                             }
                         } else {
                             html! {
