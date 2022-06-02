@@ -40,18 +40,18 @@ pub fn playcontrols() -> Html {
     html! {
         <div class="column is-full">
             <div class="columns is-centered is-mobile">
-                <div class="column is-2 is-flex" style="justify-content: start">
+                <div class="column is-2 is-flex">
                     <div class="controlicon">
                         <skip_back::SkipBack />
                     </div>
                 </div>
                 // TODO: probably have this switch back/forth between play/pause based on state
-                <div class="column is-2 is-flex" style="justify-content: center;">
+                <div class="column is-2 is-flex">
                     <div class="controlicon">
                         <play::Play />
                     </div>
                 </div>
-                <div class="column is-2 is-flex" style="justify-content: end;">
+                <div class="column is-2 is-flex">
                     <div class="controlicon" onclick={onclick}>
                         <skip_forward::SkipForward />
                     </div>
