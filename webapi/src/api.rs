@@ -13,6 +13,7 @@ use serde::{
 
 use warp::{
     Filter,
+    Rejection,
 };
 
 use log::*;
@@ -92,7 +93,7 @@ async fn handle_body_api(
         id: "0".to_string(),
     };
 
-    let song = match Song::new(body.song, &requester) {
+    let song = match Song::new(body.song.clone(), &requester) {
         Ok(s) => s,
         Err(e) =>
             return Ok(warp::reply::json(&ReplyStatus::new(400, &format!("error fetching song: {:?}", e))))
@@ -117,15 +118,16 @@ async fn handle_body_api(
 async fn handle_simple_api(
     mut mstate: MusicAdapter,
     func: String,
-) -> Result<impl warp::Reply, Infallible> {
+) -> Result<impl warp::Reply, Rejection> {
 
+    debug!("called simple, func = '{}'", &func);
     let ret = match func.as_str() {
         "skip" => mstate.skip().await,
         "stop" => mstate.stop().await,
         "start" => mstate.start().await,
         "clearqueue" => mstate.clear_queue().await,
         "previous" => mstate.previous().await,
-        _ => return Ok(warp::reply::json(&ReplyStatus::new(400, "no such function")))
+        _ => return Err(Rejection::from(warp::reject::reject()))
     };
 
     match ret {
@@ -146,7 +148,8 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
     let api_base = warp::post()
         .and(warp::path("api"))
         .and(mstate.clone())
-        .and(warp::path::param::<String>());
+        .and(warp::path::param::<String>()
+        .and(warp::path::end()));
 
     let api_body = api_base.clone()
         .and(body)
@@ -155,5 +158,5 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
     let api_no_body = api_base
         .and_then(handle_simple_api);
 
-    api_body.or(api_no_body)
+    api_no_body.or(api_body)
 }

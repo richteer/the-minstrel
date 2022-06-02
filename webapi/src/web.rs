@@ -45,6 +45,7 @@ pub fn get_web_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
 
     let api = warp::get()
         .and(warp::path("api"))
+        .and(warp::path::end())
         .and(mstate_filter.clone())
         .and_then(crate::api::show_state);
 
