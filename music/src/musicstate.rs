@@ -413,7 +413,7 @@ impl MusicState {
 
 impl Into<model::MinstrelWebData> for &MusicState {
     fn into(self) -> model::MinstrelWebData {
-        let upcoming = self.autoplay.prefetch(read_config!(discord.webdash_prefetch))
+        let upcoming = self.autoplay.prefetch(read_config!(music.upcoming_count))
         // TODO: Better handle when autoplay is not enabled, or no users are enrolled
         .unwrap_or_default().iter()
             .map(|e| e.clone().into())
