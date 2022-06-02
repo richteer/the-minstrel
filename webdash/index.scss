@@ -140,6 +140,12 @@ progress {
 
 .controlicon {
     cursor: pointer;
+
+    & {
+        will-change: filter;
+        transition: .2s ease-out;
+    }
+
     &:hover {
         filter: drop-shadow(0 0 5px #fff);
     }
