@@ -8,6 +8,7 @@ pub struct MusicConfig {
     pub queue_adds_usertime: bool,
     pub autoplay_prefetch_max: u64,
     pub upcoming_count: u64,
+    pub history_count: u64,
 }
 
 impl Default for MusicConfig {
@@ -17,6 +18,7 @@ impl Default for MusicConfig {
             queue_adds_usertime: true,
             autoplay_prefetch_max: 50,
             upcoming_count: 20,
+            history_count: 20,
         }
     }
 }

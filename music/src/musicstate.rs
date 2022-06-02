@@ -383,7 +383,7 @@ impl MusicState {
     pub async fn song_ended(&mut self) {
         if let Some(song) = &self.current_track.take() {
             self.history.push_front(song.clone());
-            self.history.truncate(10); // TODO: config max history buffer length
+            self.history.truncate(read_config!(music.history_count) as usize);
         }
         else {
             warn!("Song End handler somehow called with mstate.current_track = None, history may be inaccurate");
