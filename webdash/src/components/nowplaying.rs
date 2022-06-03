@@ -122,7 +122,7 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
                     </div>
                     // Requested by
                     <div class="column is-narrow is-flex is-flex-direction-column is-justify-content-end mr-2">
-                        <RequesterTag requester={song.requested_by.clone()} />
+                        <RequesterTag requester={song.requested_by.clone()} size={RequesterSize::Large}/>
                     </div>
                 </div>
             </div>
