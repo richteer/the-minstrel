@@ -24,10 +24,10 @@ pub struct SongTextProps {
 pub fn song_text(props: &SongTextProps) -> Html {
     let song = &props.song;
     html! {
-        <div class="songdata">
-            <span class="songtitle songoverflow">{song.title.clone()}</span>
-            <span class="songartist songoverflow">{song.artist.clone()}</span>
-            <span class="songduration">{duration_text(song.duration)}</span>
+        <div class="is-flex is-flex-direction-column is-gapless mx-2">
+            <span class="songoverflow has-text-weight-bold">{song.title.clone()}</span>
+            <span class="songoverflow is-italic" style="font-size: 90%">{song.artist.clone()}</span>
+            <span class="" style="font-size: 80%">{duration_text(song.duration)}</span>
         </div>
     }
 }
