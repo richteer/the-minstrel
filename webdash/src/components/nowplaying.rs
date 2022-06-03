@@ -116,8 +116,8 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
                     // Song Title/Artist
                     <div class="column ml-2 is-flex is-clipped">
                         <div class="columns is-multiline is-gapless" style="min-width: 0;"> // min-width needed here for proper clipping/ellipsing
-                            <span class="column is-full songtitle songoverflow">{song.title.clone()}</span>
-                            <span class="column is-full songartist songoverflow">{song.artist.clone()}</span>
+                            <span class="column is-full songoverflow is-size-5 has-text-weight-bold">{song.title.clone()}</span>
+                            <span class="column is-full songoverflow is-size-6 is-italic">{song.artist.clone()}</span>
                         </div>
                     </div>
                     // Requested by
