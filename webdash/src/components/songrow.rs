@@ -44,7 +44,7 @@ pub fn song_row(props: &SongRowProps) -> Html {
     let song = &props.song;
 
     html! {
-        <div class="columns is-gapless is-mobile mb-0">
+        <div class="columns is-gapless is-mobile mb-0 is-vcentered">
             <div class="column container is-narrow">
                 <a href={song.url.clone()} target="_blank" rel="noopener noreferrer">
                     <figure class="image is-flex is-4by3 is-justify-content-center" style={"width: 96px"}>
