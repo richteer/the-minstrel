@@ -26,46 +26,17 @@ $icon-ar: math.div(4,3);
     width: auto;
 }
 
-.songicon {
-    justify-content: right;
-    height: 100%;
-    width: $up-height * $icon-ar;
-}
-
-.songicon img {
-    max-height: 100%;
-    height: 100%;
-    width: 100%;
-    object-fit: cover;
-    float: right;
-}
-
-.songicon:hover .songicon-overlay {
-    opacity: 50%;
-}
-
 .songicon-overlay {
-    position: relative;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 100%;
-    width: 100%;
-    opacity: 0;
-    transition: .2s ease;
     background-color: black;
-}
+    height: 100%;
+    opacity: 0;
 
-.songicon-overlay-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-    -ms-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
-}
+    transition: .2s ease;
 
+    &:hover {
+        opacity: 50%;
+    }
+}
 
 .user {
     display: flex;
@@ -107,11 +78,16 @@ $icon-ar: math.div(4,3);
 
 .songtitle {
     font-weight: bold;
-    font-size: 120%;
+    font-size: 100%;
 }
 
 .songartist {
     font-style: italic;
+    font-size: 90%;
+}
+
+.songduration {
+    font-size: 80%;
 }
 
 .fullheight {

@@ -12,7 +12,7 @@ use yew_feather::{
 };
 
 use crate::components::helpers::duration_text;
-
+use crate::components::requester::*;
 
 
 #[derive(Properties, PartialEq)]
@@ -44,21 +44,24 @@ pub fn song_row(props: &SongRowProps) -> Html {
     let song = &props.song;
 
     html! {
-        <div class={"upcomingitem"}>
-            <div class="songicon">
+        <div class="columns is-gapless is-mobile mb-0">
+            <div class="column container is-narrow">
                 <a href={song.url.clone()} target="_blank" rel="noopener noreferrer">
-                    <img src={song.thumbnail.clone()} alt="temp" />
-                    <div class="songicon-overlay">
-                        <div class="songicon-overlay-content">
+                    <figure class="image is-flex is-4by3 is-justify-content-center" style={"width: 96px"}>
+                        <img src={song.thumbnail.clone()} alt="temp" style="object-fit: cover"/>
+                    </figure>
+                    <div class="is-overlay">
+                        <div class="container songicon-overlay is-flex is-justify-content-center is-align-items-center">
                             <external_link::ExternalLink color="white" size="28"/>
                         </div>
                     </div>
                 </a>
             </div>
-            <SongText song={song.clone()} />
-            <div class="user">
-                <span class="username">{ song.requested_by.displayname.clone() }</span>
-                <img src={ song.requested_by.icon.clone() } alt="temp" />
+            <div class="column is-clipped">
+                <SongText song={song.clone()} />
+            </div>
+            <div class="column is-narrow is-flex is-flex-direction-column is-justify-content-center mr-2">
+                <RequesterTag requester={song.requested_by.clone()} />
             </div>
         </div>
     }
