@@ -10,6 +10,7 @@ use model::{
 use gloo_timers::callback::Interval;
 
 use crate::components::helpers::duration_text;
+use crate::components::requester::*;
 
 
 pub enum NpMsg {
@@ -120,17 +121,8 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
                         </div>
                     </div>
                     // Requested by
-                    <div class="column is-narrow is-flex is-flex-direction-column is-justify-content-end">
-                        <div class="columns is-vcentered is-gapless">
-                            <div class="column mr-2">
-                                {song.requested_by.displayname.clone()}
-                            </div>
-                            <div class="column">
-                                <figure class="image is-32x32">
-                                    <img class="is-rounded" src={ song.requested_by.icon.clone() } alt="temp" />
-                                </figure>
-                            </div>
-                        </div>
+                    <div class="column is-narrow is-flex is-flex-direction-column is-justify-content-end mr-2">
+                        <RequesterTag requester={song.requested_by.clone()} />
                     </div>
                 </div>
             </div>
