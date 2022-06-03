@@ -32,7 +32,7 @@ pub fn requester_tag(props: &RequesterTagProps) -> Html {
     };
 
     html! {
-        <div class="columns is-vcentered is-gapless">
+        <div class="columns is-vcentered is-gapless is-mobile">
             <div class={format!("column mr-2 {}", namesize)}>
                 { props.requester.displayname.clone() }
             </div>

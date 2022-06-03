@@ -112,7 +112,7 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
             </div>
             // Text
             <div class="column is-full">
-                <div class="columns">
+                <div class="columns is-mobile">
                     // Song Title/Artist
                     <div class="column ml-2 is-flex is-clipped">
                         <div class="columns is-multiline is-gapless" style="min-width: 0;"> // min-width needed here for proper clipping/ellipsing
