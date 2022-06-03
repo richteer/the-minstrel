@@ -11,15 +11,6 @@ $icon-ar: math.div(4,3);
     max-height: $np-height;
 }
 
-.upcomingitem {
-    display: flex;
-    justify-content: center;
-    height: $up-height;
-    max-height: $up-height;
-    font-size: small;
-    margin-right: 10px;
-}
-
 .nowplaying .songicon {
     height: 100%;
     flex-shrink: 1;
@@ -38,56 +29,10 @@ $icon-ar: math.div(4,3);
     }
 }
 
-.user {
-    display: flex;
-    flex-direction: row;
-    justify-content: left;
-    align-items: center;
-    height: 100%;
-    max-height: 100%;
-    float: left;
-}
-
-.user img {
-    border-radius: 50%;
-    max-height: 50%;
-    height: 50%;
-}
-
-.username {
-    margin-right: 10px;
-}
-
-.songdata {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 2;
-    flex-shrink: 2;
-    justify-content: space-evenly;
-    margin-left: 10px;
-    margin-right: 20px;
-    min-width: 0;
-    height: 100%;
-}
-
 .songoverflow {
     white-space: nowrap;
     overflow-x: hidden;
     text-overflow: ellipsis;
-}
-
-.songtitle {
-    font-weight: bold;
-    font-size: 100%;
-}
-
-.songartist {
-    font-style: italic;
-    font-size: 90%;
-}
-
-.songduration {
-    font-size: 80%;
 }
 
 .fullheight {
