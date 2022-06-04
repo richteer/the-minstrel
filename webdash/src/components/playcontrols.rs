@@ -38,26 +38,20 @@ pub fn playcontrols() -> Html {
     let onprev = gen_callback("previous");
     let onskip = gen_callback("skip");
 
+    let iconclass = "column is-flex is-2 is-justify-content-center controlicon";
+
     html! {
-        <div class="column is-full">
             <div class="columns is-centered is-mobile">
-                <div class="column is-flex is-justify-content-end">
-                    <div class="controlicon" onclick={onprev}>
-                        <skip_back::SkipBack />
-                    </div>
+                <div class={iconclass} onclick={onprev}>
+                    <skip_back::SkipBack />
                 </div>
                 // TODO: probably have this switch back/forth between play/pause based on state
-                <div class="column is-3 is-flex is-justify-content-center">
-                    <div class="controlicon">
-                        <play::Play />
-                    </div>
+                <div class={iconclass}>
+                    <play::Play />
                 </div>
-                <div class="column is-flex is-justify-content-start">
-                    <div class="controlicon" onclick={onskip}>
-                        <skip_forward::SkipForward />
-                    </div>
+                <div class={iconclass} onclick={onskip}>
+                    <skip_forward::SkipForward />
                 </div>
             </div>
-        </div>
     }
 }
