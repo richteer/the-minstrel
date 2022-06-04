@@ -159,7 +159,7 @@ impl MusicState {
         }
     }
 
-    async fn invoke(&self, cmd: MusicPlayerCommand) -> Result<(), MusicError> {
+    async fn player_invoke(&self, cmd: MusicPlayerCommand) -> Result<(), MusicError> {
         let (tx, rx) = oneshot::channel();
         self.player.send((tx, cmd)).await.unwrap();
 
@@ -207,7 +207,7 @@ impl MusicState {
             return Err(MusicError::AlreadyPlaying);
         }
 
-        let ret = self.invoke(MusicPlayerCommand::Play(song.clone())).await;
+        let ret = self.player_invoke(MusicPlayerCommand::Play(song.clone())).await;
 
         if let Err(e) = ret {
             if self.bcast.receiver_count() > 0 {
@@ -277,7 +277,7 @@ impl MusicState {
     // TODO: This is hella discord-specific. Rewrite this function to actually skip.
     pub async fn skip(&mut self) -> Result<MusicOk, MusicError> {
 
-        self.invoke(MusicPlayerCommand::Stop).await?;
+        self.player_invoke(MusicPlayerCommand::Stop).await?;
 
         Ok(MusicOk::SkippingSong)
     }
@@ -286,7 +286,7 @@ impl MusicState {
     pub async fn stop(&mut self) -> Result<MusicOk, MusicError> {
         self.status = MusicStateStatus::Stopping;
 
-        if let Err(e) = self.invoke(MusicPlayerCommand::Stop).await {
+        if let Err(e) = self.player_invoke(MusicPlayerCommand::Stop).await {
             error!("Player encountered a problem stopping track: {:?}", e);
             return Err(e);
         }
