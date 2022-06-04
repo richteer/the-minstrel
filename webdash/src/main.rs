@@ -154,7 +154,9 @@ impl Component for Dash {
                         html! {}
                     }
                 }
-                <div class="columns is-vcentered">
+                // m-0 set to override the negative margins set by columns
+                //  no idea why columns is like that, but centers the main div to the container->viewport
+                <div class="columns is-vcentered m-0">
                     <div class="column is-half">
                     {
                         if let Some(np) = &data.current_track {

@@ -70,3 +70,8 @@ $icon-ar: math.div(4,3);
     bottom: 10px;
     right: 10px;
 }
+
+// I have no idea why this fixed a width overflow.
+html {
+    height: 100vh;
+}
