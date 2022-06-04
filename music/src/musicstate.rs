@@ -207,7 +207,28 @@ impl MusicState {
             return Err(MusicError::AlreadyPlaying);
         }
 
-        self.invoke(MusicPlayerCommand::Play(song.clone())).await?;
+        let ret = self.invoke(MusicPlayerCommand::Play(song.clone())).await;
+
+        if let Err(e) = ret {
+            if self.bcast.receiver_count() > 0 {
+                let errmsg = format!("Error playing track: {:?}", e);
+                let ret = self.bcast.send(MinstrelBroadcast::Error(errmsg));
+                if let Err(e) = ret {
+                    error!("error broadcasting update: {:?}", e);
+                }
+            }
+
+            // TODO: This is really gross. A song failed to play, so signal SongEnded so that the next song can play.
+            // However, this can get explosively recursive if the next N songs all fail too, since directly calling
+            //   .song_ended() will lead back here (via .next()).
+            // Rather than create a loop, end the call to .play() and let the event loop handle the SongEnd event.
+            let mut temp = self.get_adapter();
+            tokio::spawn(async move {
+                temp.song_ended().await;
+            });
+
+            return Err(e);
+        }
 
         if read_config!(songlog.enabled) {
             log_song(&song);
