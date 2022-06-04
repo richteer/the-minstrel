@@ -14,12 +14,9 @@ use gloo_net::http::Request;
 use yew_hooks::prelude::*;
 
 
-#[function_component(PlayControls)]
-pub fn playcontrols() -> Html {
-
-    let skip = use_async(async move {
-        log::error!("actually called: {}", "skip");
-        let resp = Request::post(format!("/api/{}", "skip").as_str())
+fn gen_callback(path: &'static str) -> Callback<MouseEvent> {
+    let ahandle = use_async(async move {
+        let resp = Request::post(format!("/api/{}", path).as_str())
             .json("").unwrap()
             .send().await.unwrap();
         if !resp.ok() {
@@ -30,18 +27,22 @@ pub fn playcontrols() -> Html {
         Ok(())
     });
 
-    let onclick = {
-        let skip = skip.clone();
-        Callback::from(move |_| {
-            skip.run();
-        })
-    };
+    Callback::from(move |_| {
+        ahandle.run();
+    })
+}
+
+#[function_component(PlayControls)]
+pub fn playcontrols() -> Html {
+
+    let onprev = gen_callback("previous");
+    let onskip = gen_callback("skip");
 
     html! {
         <div class="column is-full">
             <div class="columns is-centered is-mobile">
                 <div class="column is-flex is-justify-content-end">
-                    <div class="controlicon">
+                    <div class="controlicon" onclick={onprev}>
                         <skip_back::SkipBack />
                     </div>
                 </div>
@@ -52,7 +53,7 @@ pub fn playcontrols() -> Html {
                     </div>
                 </div>
                 <div class="column is-flex is-justify-content-start">
-                    <div class="controlicon" onclick={onclick}>
+                    <div class="controlicon" onclick={onskip}>
                         <skip_forward::SkipForward />
                     </div>
                 </div>
