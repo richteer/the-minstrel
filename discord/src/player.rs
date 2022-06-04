@@ -149,11 +149,11 @@ impl VoiceEventHandler for TrackEndNotifier {
             // TODO: the following should all be handled by a mstate broadcast to a frontend
             let dstate = dstate.lock().await;
 
-            let data = mstate.get_webdata().await;
-            let qs_embed = get_queuestate_embed(&data, mstate.autoplay.is_enabled().await);
-            let np_embed = get_nowplay_embed(&ctx, &data).await;
-
             if let Some(sticky) = &dstate.sticky {
+                let data = mstate.get_webdata().await;
+                let qs_embed = get_queuestate_embed(&data, mstate.autoplay.is_enabled().await);
+                let np_embed = get_nowplay_embed(&ctx, &data).await;
+
                 sticky.channel_id.edit_message(&ctx.http, sticky, |m| {
                     m.set_embeds(vec![qs_embed, np_embed])
                 }).await.unwrap();
