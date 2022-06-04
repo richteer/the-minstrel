@@ -54,17 +54,30 @@ pub fn songlisttabs(props: &SongListTabsProps) -> Html {
         <div class="songlist">
             <div class={get_class(*active, ActiveTab::ComingUp, true)}>
             {
-                if props.data.upcoming.is_empty() {
+                if props.data.queue.is_empty() && props.data.upcoming.is_empty() {
                     html! {<i>{"Nothing coming up"}</i>}
                 } else {
                     html! {
-                    {
-                        for props.data.upcoming.iter().map(|e| {
-                            html! {
-                            <SongRow song={e.clone()} />
-                            }
-                        })
-                    }
+                        <>
+                        <>
+                        {
+                            for props.data.queue.iter().map(|e| {
+                                html! {
+                                <SongRow song={e.clone()} />
+                                }
+                            })
+                        }
+                        </>
+                        <>
+                        {
+                            for props.data.upcoming.iter().map(|e| {
+                                html! {
+                                <SongRow song={e.clone()} />
+                                }
+                            })
+                        }
+                        </>
+                        </>
                     }
                 }
             }
