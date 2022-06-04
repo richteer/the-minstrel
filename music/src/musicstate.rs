@@ -34,7 +34,10 @@ use crate::musiccontroller::{
 };
 
 use minstrel_config::read_config;
-use model::MusicStateStatus;
+use model::{
+    MinstrelBroadcast,
+    MusicStateStatus,
+};
 
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -110,7 +113,7 @@ pub type MSCMD = (oneshot::Sender<MusicResult>, MusicControlCmd);
 pub struct MusicState {
     player: mpsc::Sender<MPCMD>,
     // TODO: Perhaps put this in a higher level lock, so maybe it's automatic?
-    bcast: broadcast::Sender<model::MinstrelWebData>,
+    bcast: broadcast::Sender<model::MinstrelBroadcast>,
     cmd_channel: (mpsc::Sender<MSCMD>, mpsc::Receiver<MSCMD>),
 
     current_track: Option<Song>,
@@ -363,7 +366,7 @@ impl MusicState {
         let out: model::MinstrelWebData = self.into();
 
         if self.bcast.receiver_count() > 0 {
-            if let Err(e) = self.bcast.send(out) {
+            if let Err(e) = self.bcast.send(MinstrelBroadcast::MusicState(out)) {
                 error!("error broadcasting update: {:?}", e);
             }
         }
@@ -373,7 +376,7 @@ impl MusicState {
         self.into()
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<model::MinstrelWebData> {
+    pub fn subscribe(&self) -> broadcast::Receiver<MinstrelBroadcast> {
         self.bcast.subscribe()
     }
 

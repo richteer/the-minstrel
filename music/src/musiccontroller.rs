@@ -28,12 +28,12 @@ use log::*;
 #[derive(Debug, Clone)]
 pub struct MusicAdapter {
     pub autoplay: AutoplayAdapter,
-    bcast: broadcast::Sender<model::MinstrelWebData>,
+    bcast: broadcast::Sender<model::MinstrelBroadcast>,
     tx: mpsc::Sender<MSCMD>,
 }
 
 impl MusicAdapter {
-    pub fn new(tx: mpsc::Sender<MSCMD>, bcast: broadcast::Sender<model::MinstrelWebData>) -> Self {
+    pub fn new(tx: mpsc::Sender<MSCMD>, bcast: broadcast::Sender<model::MinstrelBroadcast>) -> Self {
         Self {
             autoplay: AutoplayAdapter::new(tx.clone()),
             tx,
@@ -51,7 +51,7 @@ impl MusicAdapter {
         }
     }
 
-    pub fn subscribe(&self) -> broadcast::Receiver<model::MinstrelWebData> {
+    pub fn subscribe(&self) -> broadcast::Receiver<model::MinstrelBroadcast> {
         self.bcast.subscribe()
     }
 

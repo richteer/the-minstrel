@@ -62,3 +62,11 @@ $icon-ar: math.div(4,3);
         filter: drop-shadow(0 0 5px #fff);
     }
 }
+
+.errornotif {
+    opacity: 90%;
+    position: fixed !important;
+    z-index: 9999999;
+    bottom: 10px;
+    right: 10px;
+}

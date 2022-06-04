@@ -86,3 +86,11 @@ impl MinstrelWebData {
         self.queue.is_empty()
     }
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+// TODO: Add other types of partial broadcasts here after MusicState gets broken up
+pub enum MinstrelBroadcast {
+    MusicState(MinstrelWebData),
+    // TODO: This should probably be an enum, so that frontends can display errors as they choose
+    Error(String),
+}

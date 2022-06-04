@@ -17,7 +17,7 @@ use gloo_net::websocket::{
 use futures_util::StreamExt;
 use wasm_bindgen_futures::spawn_local;
 
-use model::MinstrelWebData;
+use model::{MinstrelWebData, MinstrelBroadcast};
 
 mod components;
 use components::*;
@@ -27,10 +27,13 @@ use wsbus::WsBus;
 
 pub enum Msg {
     Data(MinstrelWebData),
+    SetError(String),
+    ClearError,
 }
 
 struct Dash {
     data: Option<MinstrelWebData>,
+    error: Option<String>,
     _recv: Box<dyn Bridge<WsBus>>,
 }
 
@@ -76,8 +79,12 @@ impl Component for Dash {
         let mut wsbus = WsBus::dispatcher();
 
         // "Connect" to our websocket bus, keep this in scope else it falls out and disappears from the universe
-        // TODO: update this when/if the websocket sends anything other than full mstates
-        let recv = WsBus::bridge(ctx.link().callback(|data| Msg::Data(data)));
+        let recv = WsBus::bridge(ctx.link().callback(|data|
+            match data {
+                MinstrelBroadcast::MusicState(data) => Msg::Data(data),
+                MinstrelBroadcast::Error(err) => Msg::SetError(err),
+            }
+        ));
 
         // Listen on the websocket for data, pump it through the WsBus to send it back to us as MinstrelWebData
         spawn_local(async move {
@@ -95,6 +102,7 @@ impl Component for Dash {
 
         Self {
             data: None,
+            error: None,
             _recv: recv,
         }
     }
@@ -114,6 +122,14 @@ impl Component for Dash {
 
                 true
             },
+            Msg::SetError(err) => {
+                self.error = Some(err);
+                true
+            }
+            Msg::ClearError => {
+                self.error = None;
+                true
+            },
         }
     }
 
@@ -121,6 +137,23 @@ impl Component for Dash {
         if let Some(data) = self.data.clone() {
             html! {
             <div class="container">
+                {
+                    if let Some(error) = &self.error {
+                        let onclick = _ctx.link().callback(|_| Msg::ClearError);
+                        let scope = _ctx.link().clone();
+                        gloo_timers::callback::Timeout::new(5_000, move || {
+                            scope.send_message(Msg::ClearError);
+                        }).forget();
+                        html! {
+                            <div class="notification is-danger errornotif">
+                                <div class="delete" {onclick}/>
+                                {error}
+                            </div>
+                        }
+                    } else {
+                        html! {}
+                    }
+                }
                 <div class="columns is-vcentered">
                     <div class="column is-half">
                     {
@@ -147,7 +180,6 @@ impl Component for Dash {
                     <div class="column is-half fullheight">
                         <SongListTabs data={data} />
                     </div>
-
                 </div>
             </div>
             }
