@@ -80,9 +80,9 @@ impl Component for NowPlayingProgress {
     fn view(&self, ctx: &Context<Self>) -> Html {
         let song = &ctx.props().song;
         html! {
-            <div class="columns is-multiline">
-                <div class="column is-full py-0"><span>{ format!("{} / {}", duration_text(self.time), duration_text(song.duration)) }</span></div>
-                <div class="column is-full pt-1 pb-0"><progress class="progress is-primary" value={self.time.to_string()} max={song.duration.to_string()}/></div>
+            <div class="is-flex is-flex-direction-column">
+                <div class="py-0"><span>{ format!("{} / {}", duration_text(self.time), duration_text(song.duration)) }</span></div>
+                <div class="pt-1 pb-0"><progress class="progress is-primary" value={self.time.to_string()} max={song.duration.to_string()}/></div>
             </div>
         }
     }
@@ -100,10 +100,10 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
 
     html! {
         <>
-        <div class="columns is-multiline is-centered">
+        <div id="nowplaying" class="is-flex is-justify-content-center is-flex-direction-column is-align-items-stretch">
             // TODO: probably break this up into more subcomponents
             // Album Art
-            <div class="column is-full">
+            <div class="p-3">
                 <figure class="image">
                 <a href={song.url.clone()} target="_blank" rel="noopener noreferrer">
                     <img src={song.thumbnail.clone()} alt="temp" />
@@ -111,7 +111,7 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
                 </figure>
             </div>
             // Text
-            <div class="column is-full">
+            <div class="p-3">
                 <div class="columns is-mobile">
                     // Song Title/Artist
                     <div class="column ml-2 is-flex is-clipped">
@@ -127,7 +127,9 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
                 </div>
             </div>
             // Progress bar
-            <div class="column is-full"><NowPlayingProgress song={song.clone()}/></div>
+            <div class="p-3">
+                <NowPlayingProgress song={song.clone()}/>
+            </div>
         </div>
         </>
     }
