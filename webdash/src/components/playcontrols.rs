@@ -42,14 +42,14 @@ pub fn playcontrols() -> Html {
 
     html! {
             <div class="columns is-centered is-mobile">
-                <div class={iconclass} onclick={onprev}>
+                <div class={iconclass} onclick={onprev} title="Enqueue last played song">
                     <skip_back::SkipBack />
                 </div>
                 // TODO: probably have this switch back/forth between play/pause based on state
-                <div class={iconclass}>
+                <div class={iconclass} style="cursor: not-allowed" title="Play/Pause function currently unsupported">
                     <play::Play />
                 </div>
-                <div class={iconclass} onclick={onskip}>
+                <div class={iconclass} onclick={onskip} title="Skip to the next track">
                     <skip_forward::SkipForward />
                 </div>
             </div>
