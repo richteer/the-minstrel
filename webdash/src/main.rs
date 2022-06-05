@@ -134,7 +134,6 @@ impl Component for Dash {
     }
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
-        if let Some(data) = self.data.clone() {
             html! {
             <div class="container">
                 {
@@ -154,43 +153,42 @@ impl Component for Dash {
                         html! {}
                     }
                 }
+                if let Some(data) = self.data.clone() {
                 // m-0 set to override the negative margins set by columns
                 //  no idea why columns is like that, but centers the main div to the container->viewport
-                <div class="columns is-vcentered m-0">
-                    <div class="column is-half">
-                    {
-                        if let Some(np) = &data.current_track {
-                            html! {
-                                <>
-                                <div class="columns is-multiline is-centered">
-                                    <div class="column is-full">
-                                        <NowPlaying song={np.clone()}/>
+                    <div class="columns is-vcentered m-0">
+                        <div class="column is-half">
+                        {
+                            if let Some(np) = &data.current_track {
+                                html! {
+                                    <>
+                                    <div class="columns is-multiline is-centered">
+                                        <div class="column is-full">
+                                            <NowPlaying song={np.clone()}/>
+                                        </div>
+                                        <div class="column is-full">
+                                            <PlayControls/>
+                                        </div>
                                     </div>
-                                    <div class="column is-full">
-                                        <PlayControls/>
-                                    </div>
-                                </div>
-                                </>
-                            }
-                        } else {
-                            html! {
-                            <span><i>{"Nothing currently playing"}</i></span>
+                                    </>
+                                }
+                            } else {
+                                html! {
+                                <span><i>{"Nothing currently playing"}</i></span>
+                                }
                             }
                         }
-                    }
+                        </div>
+                        <div class="column is-half fullheight">
+                            <SongListTabs data={data} />
+                        </div>
                     </div>
-                    <div class="column is-half fullheight">
-                        <SongListTabs data={data} />
-                    </div>
-                </div>
-            </div>
-            }
-        } else {
-            html! {
-                <div>
+                } else {
+                    <div>
                     { "Nothing currently playing" }
-                </div>
-            }
+                    </div>
+                }
+            </div>
         }
     }
 }
