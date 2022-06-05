@@ -73,11 +73,9 @@ async fn main() {
         });
     }
 
-    tokio::spawn(async move {
-        info!("spawning musicmanager task");
-        mstate.run().await;
-    });
-
     // TODO: Have an application controller that properly shuts things down and exits here
-    loop {}
+
+    // This currently never ends (probably?), so use this to keep the application waiting until end
+    info!("spawning musicmanager task");
+    mstate.run().await;
 }
