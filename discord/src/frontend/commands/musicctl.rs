@@ -28,7 +28,7 @@ use music::{
 
 #[group]
 #[description = "Commands for controlling the music player"]
-#[commands(play, nowplaying, next, stop, start, display, history, previous)]
+#[commands(play, nowplaying, next, stop, start, display, history, clearhistory, previous)]
 struct MusicControlCmd;
 
 
@@ -172,6 +172,20 @@ async fn history(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     check_msg(msg.channel_id.send_message(&ctx.http, |m|
         m.set_embed(get_history_embed(&mstate, num))
     ).await);
+
+    Ok(())
+}
+
+#[command]
+#[only_in(guilds)]
+// TODO: probably add a bunch of other args to manage the output, order and such
+async fn clearhistory(ctx: &Context, msg: &Message) -> CommandResult {
+    get_mstate!(mut, mstate, ctx);
+
+    // Should never panic
+    mstate.clear_history().await.unwrap();
+
+    check_msg(msg.channel_id.say(&ctx.http, "Cleared history.").await);
 
     Ok(())
 }
