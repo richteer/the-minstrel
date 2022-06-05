@@ -140,7 +140,7 @@ impl Component for Dash {
                     if let Some(error) = &self.error {
                         let onclick = _ctx.link().callback(|_| Msg::ClearError);
                         let scope = _ctx.link().clone();
-                        gloo_timers::callback::Timeout::new(5_000, move || {
+                        gloo_timers::callback::Timeout::new(10_000, move || {
                             scope.send_message(Msg::ClearError);
                         }).forget();
                         html! {
