@@ -6,7 +6,7 @@ use yew::{
 use yew_agent::{
     Dispatched,
     Bridge,
-    Bridged,
+    Bridged, Dispatcher,
 };
 
 use gloo_net::http::Request;
@@ -27,13 +27,12 @@ use wsbus::WsBus;
 
 pub enum Msg {
     Data(MinstrelWebData),
-    SetError(String),
-    ClearError,
+    BackendError(String),
 }
 
 struct Dash {
     data: Option<MinstrelWebData>,
-    error: Option<String>,
+    toastbridge: Dispatcher<ToastBus>,
     _recv: Box<dyn Bridge<WsBus>>,
 }
 
@@ -43,7 +42,7 @@ async fn update_data() -> Msg {
 
     match resp.json::<MinstrelWebData>().await {
         Ok(data) => Msg::Data(data),
-        Err(e) => Msg::SetError(format!("Error fetching data: {}", e))
+        Err(e) => Msg::BackendError(format!("Error fetching data: {}", e))
     }
 }
 
@@ -85,7 +84,7 @@ impl Component for Dash {
         let recv = WsBus::bridge(ctx.link().callback(|data|
             match data {
                 MinstrelBroadcast::MusicState(data) => Msg::Data(data),
-                MinstrelBroadcast::Error(err) => Msg::SetError(err),
+                MinstrelBroadcast::Error(err) => Msg::BackendError(err),
             }
         ));
 
@@ -103,9 +102,11 @@ impl Component for Dash {
             }
         });
 
+        let toastbridge = ToastBus::dispatcher();
+
         Self {
             data: None,
-            error: None,
+            toastbridge,
             _recv: recv,
         }
     }
@@ -125,37 +126,19 @@ impl Component for Dash {
 
                 true
             },
-            Msg::SetError(err) => {
-                self.error = Some(err);
-                true
+            Msg::BackendError(err) => {
+                log::error!("attempting to toast...");
+                self.toastbridge.send(ToastType::Error(err));
+                false
             }
-            Msg::ClearError => {
-                self.error = None;
-                true
-            },
         }
     }
 
     fn view(&self, _ctx: &Context<Self>) -> Html {
             html! {
             <div class="container">
-                {
-                    if let Some(error) = &self.error {
-                        let onclick = _ctx.link().callback(|_| Msg::ClearError);
-                        let scope = _ctx.link().clone();
-                        gloo_timers::callback::Timeout::new(10_000, move || {
-                            scope.send_message(Msg::ClearError);
-                        }).forget();
-                        html! {
-                            <div class="notification is-danger errornotif">
-                                <div class="delete" {onclick}/>
-                                {error}
-                            </div>
-                        }
-                    } else {
-                        html! {}
-                    }
-                }
+                <ToastTray />
+
                 if let Some(data) = self.data.clone() {
                 // m-0 set to override the negative margins set by columns
                 //  no idea why columns is like that, but centers the main div to the container->viewport

@@ -13,6 +13,11 @@ use yew_feather::{
 use gloo_net::http::Request;
 use yew_hooks::prelude::*;
 
+use crate::components::toast::{
+    use_toast,
+    ToastType,
+};
+
 
 fn gen_callback(path: &'static str) -> Callback<MouseEvent> {
     let ahandle = use_async(async move {
@@ -35,6 +40,16 @@ fn gen_callback(path: &'static str) -> Callback<MouseEvent> {
 #[function_component(PlayControls)]
 pub fn playcontrols() -> Html {
 
+    // Output unused, so output type and callback are empty
+    let bridge = use_toast();
+
+    let onplay = {
+        let bridge = bridge.clone();
+        Callback::from(move |_| {
+            bridge.send(ToastType::Warning("Play/Pause functionality not currently implemented".into()))
+        })
+    };
+
     let onprev = gen_callback("previous");
     let onskip = gen_callback("skip");
 
@@ -46,7 +61,7 @@ pub fn playcontrols() -> Html {
                     <skip_back::SkipBack />
                 </div>
                 // TODO: probably have this switch back/forth between play/pause based on state
-                <div class={iconclass} style="cursor: not-allowed" title="Play/Pause function currently unsupported">
+                <div class={iconclass} onclick={onplay} style="cursor: not-allowed" title="Play/Pause function currently unsupported">
                     <play::Play />
                 </div>
                 <div class={iconclass} onclick={onskip} title="Skip to the next track">

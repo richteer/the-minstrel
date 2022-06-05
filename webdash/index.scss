@@ -83,3 +83,24 @@ html {
     right: 0.25rem;
     filter: drop-shadow(0 0 5px black);
 }
+
+.toasttray {
+    display: flex;
+    flex-direction: column-reverse;
+    margin-right: 1.5rem;
+
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    z-index: 9999;
+}
+
+.toast {
+    opacity: 90%;
+
+    transition: opacity 0.25s linear;
+
+    &.toastclosing {
+        opacity: 0%;
+    };
+}
