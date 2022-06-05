@@ -6,6 +6,8 @@ use serde::{
 use std::collections::VecDeque;
 use std::fmt;
 
+pub mod web;
+
 // Literal copy of what is in music::Requester
 //  Subject to deletion if/when all the structs in music:: become "web compatible"
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]

@@ -36,30 +36,8 @@ pub enum MusicControlCmd {
     AutoplayCmd(AutoplayControlCmd),
 }
 
+use model::web::ReplyStatus;
 
-// TODO: Definitely make this way more robust, consider enuming and consider allowing
-//   payload returns
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct ReplyStatus {
-    status: u64,
-    error: String,
-}
-
-impl ReplyStatus {
-    pub fn new(status: u64, error: &str) -> Self {
-        Self {
-            status,
-            error: String::from(error)
-        }
-    }
-
-    pub fn _ok() -> Self {
-        Self {
-            status: 200,
-            error: "ok".to_string(),
-        }
-    }
-}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SongBody {
