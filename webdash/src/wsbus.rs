@@ -20,7 +20,7 @@ impl Agent for WsBus {
 
     fn create(link: AgentLink<Self>) -> Self {
         Self {
-            link: link,
+            link,
             dash: None,
         }
     }

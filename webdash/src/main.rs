@@ -72,7 +72,7 @@ impl Component for Dash {
 
         let wsurl = format!("{}//{}/ws", protocol, window.location().host().unwrap());
         log::debug!("connecting to websocket at {}", &wsurl);
-        let ws = WebSocket::open(&String::from(wsurl)).unwrap();
+        let ws = WebSocket::open(&wsurl).unwrap();
         let (_, mut ws_rx) = ws.split();
 
         // This needs to be called before the bridge call for some unknown reason.
