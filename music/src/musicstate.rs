@@ -98,6 +98,7 @@ pub enum MusicControlCmd {
     Enqueue(Song),
     EnqueueAndPlay(Song),
     ClearQueue,
+    ClearHistory,
     Previous,
     SongEnded,
     GetData,
@@ -184,6 +185,7 @@ impl MusicState {
                     MusicControlCmd::Enqueue(song) => self.enqueue(song), // TODO: probably just make this async...
                     MusicControlCmd::EnqueueAndPlay(song) => self.enqueue_and_play(song).await,
                     MusicControlCmd::ClearQueue => self.clear_queue(),
+                    MusicControlCmd::ClearHistory => self.clear_history(),
                     MusicControlCmd::Previous => self.previous().await,
                     MusicControlCmd::SongEnded => { self.song_ended().await; Ok(MusicOk::Unimplemented) },
                     MusicControlCmd::GetData => Ok(MusicOk::Data(self.get_webdata())),
@@ -370,6 +372,14 @@ impl MusicState {
 
     pub fn clear_queue(&mut self) -> Result<MusicOk, MusicError> {
         self.queue.clear();
+
+        self.broadcast_update();
+
+        Ok(MusicOk::EmptyQueue)
+    }
+
+    pub fn clear_history(&mut self) -> Result<MusicOk, MusicError> {
+        self.history.clear();
 
         self.broadcast_update();
 

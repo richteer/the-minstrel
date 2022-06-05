@@ -88,6 +88,10 @@ impl MusicAdapter {
         self.invoke(MusicControlCmd::ClearQueue).await
     }
 
+    pub async fn clear_history(&mut self) -> Result<MusicOk, MusicError> {
+        self.invoke(MusicControlCmd::ClearHistory).await
+    }
+
     pub async fn get_webdata(&self) -> model::MinstrelWebData {
         match self.invoke(MusicControlCmd::GetData).await {
             Ok(MusicOk::Data(d)) => d,
