@@ -127,7 +127,7 @@ async fn handle_simple_api(
         "start" => mstate.start().await,
         "clearqueue" => mstate.clear_queue().await,
         "previous" => mstate.previous().await,
-        _ => return Err(Rejection::from(warp::reject::reject()))
+        _ => return Err(warp::reject::reject())
     };
 
     match ret {
@@ -147,7 +147,7 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
 
     let api_base = warp::post()
         .and(warp::path("api"))
-        .and(mstate.clone())
+        .and(mstate)
         .and(warp::path::param::<String>()
         .and(warp::path::end()));
 

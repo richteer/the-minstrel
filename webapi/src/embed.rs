@@ -8,7 +8,7 @@ struct EmbeddedWebdash;
 
 
 pub fn get_embedded_file_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
-    let files = warp::get()
+    warp::get()
     .and(warp::path::param())
     .map(|filename: String| {
         let file = EmbeddedWebdash::get(&filename);
@@ -30,7 +30,5 @@ pub fn get_embedded_file_filter() -> impl Filter<Extract = impl warp::Reply, Err
             warn!("file not embedded: {}", filename);
             warp::http::Response::builder().status(404).body(Vec::new())
         }
-    });
-
-    files
+    })
 }
