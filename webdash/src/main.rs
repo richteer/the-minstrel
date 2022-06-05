@@ -40,8 +40,11 @@ struct Dash {
 async fn update_data() -> Msg {
     // TODO: consider using location/origin here too, might be needed for proper hosting
     let resp = Request::get("/api").send().await.unwrap();
-    let json = resp.json::<MinstrelWebData>().await.unwrap();
-    Msg::Data(json)
+
+    match resp.json::<MinstrelWebData>().await {
+        Ok(data) => Msg::Data(data),
+        Err(e) => Msg::SetError(format!("Error fetching data: {}", e))
+    }
 }
 
 
