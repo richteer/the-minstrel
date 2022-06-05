@@ -31,18 +31,10 @@ use crate::requester::*;
 
 
 /// Struct to maintain discord's music player state
+#[derive(Default)]
 pub struct DiscordPlayer {
     pub songcall: Option<Arc<tokio::sync::Mutex<songbird::Call>>>,
     songhandler: Option<songbird::tracks::TrackHandle>,
-}
-
-impl Default for DiscordPlayer {
-    fn default() -> Self {
-        Self {
-            songcall: None,
-            songhandler: None,
-        }
-    }
 }
 
 impl DiscordPlayer {

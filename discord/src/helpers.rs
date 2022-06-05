@@ -221,7 +221,7 @@ pub fn show_queuestate(mstate: &model::MinstrelWebData, ap_enabled: bool) -> Str
 
     let mut ret = String::new();
 
-    if let Some(his) = show_history(&mstate, 5) {
+    if let Some(his) = show_history(mstate, 5) {
         ret += &format!("{}\n", his);
     }
 
@@ -246,7 +246,7 @@ pub fn show_queuestate(mstate: &model::MinstrelWebData, ap_enabled: bool) -> Str
 pub fn get_queuestate_embed(mdata: &model::MinstrelWebData, ap_enabled: bool) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
-    ret.description(show_queuestate(&mdata, ap_enabled));
+    ret.description(show_queuestate(mdata, ap_enabled));
 
     ret
 }

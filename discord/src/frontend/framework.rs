@@ -57,7 +57,7 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
         let mdata = mstate.get_webdata().await;
 
         let qs_embed = get_queuestate_embed(&mdata, mstate.autoplay.is_enabled().await);
-        let np_embed = get_nowplay_embed(&ctx, &mdata).await;
+        let np_embed = get_nowplay_embed(ctx, &mdata).await;
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
             m.set_embeds(vec![qs_embed, np_embed])
