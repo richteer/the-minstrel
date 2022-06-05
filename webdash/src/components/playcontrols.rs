@@ -4,6 +4,7 @@ use yew::{
     html,
 };
 
+use yew_agent::UseBridgeHandle;
 use yew_feather::{
     skip_back,
     skip_forward,
@@ -16,19 +17,32 @@ use yew_hooks::prelude::*;
 use crate::components::toast::{
     use_toast,
     ToastType,
+    ToastBus,
 };
 
+use model::web::ReplyStatus;
 
-fn gen_callback(path: &'static str) -> Callback<MouseEvent> {
+fn gen_callback(path: &'static str, toast_string: Option<&'static str>, tbridge: UseBridgeHandle<ToastBus>) -> Callback<MouseEvent> {
     let ahandle = use_async(async move {
         let resp = Request::post(format!("/api/{}", path).as_str())
             .json("").unwrap()
             .send().await.unwrap();
         if !resp.ok() {
-            log::error!("bad response from backend: {:?}", resp);
+            let resp = resp.json::<ReplyStatus>().await;
+            if let Ok(msg) = resp {
+                tbridge.send(ToastType::Error(msg.error));
+            } else {
+                log::error!("bad response from backend: {:?}", resp);
+                tbridge.send(ToastType::Error("Bad data from API, check console".into()));
+            }
+
             return Err(())
         }
-        log::info!("resp = {:?}", resp);
+
+        if let Some(toast) = toast_string {
+            tbridge.send(ToastType::Info(toast.into()));
+        }
+
         Ok(())
     });
 
@@ -50,8 +64,8 @@ pub fn playcontrols() -> Html {
         })
     };
 
-    let onprev = gen_callback("previous");
-    let onskip = gen_callback("skip");
+    let onprev = gen_callback("previous", Some("Enqueued previous track"), bridge.clone());
+    let onskip = gen_callback("skip", None, bridge.clone());
 
     let iconclass = "column is-flex is-2 is-justify-content-center controlicon";
 
