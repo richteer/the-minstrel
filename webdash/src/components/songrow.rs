@@ -9,6 +9,7 @@ use model::{
 
 use yew_feather::{
     external_link,
+    plus_circle,
 };
 
 use crate::components::helpers::duration_text;
@@ -37,11 +38,23 @@ pub fn song_text(props: &SongTextProps) -> Html {
 #[derive(Properties, PartialEq)]
 pub struct SongRowProps {
     pub song: Song,
+    pub enqueued: Option<bool>,
 }
 
 #[function_component(SongRow)]
 pub fn song_row(props: &SongRowProps) -> Html {
     let song = &props.song;
+
+    let qicon = match props.enqueued {
+        Some(true) => html! {
+            <div class="queuedicon" title="In Queue">
+                <plus_circle::PlusCircle />
+            </div>
+        },
+        _ => html! {
+            <></>
+        },
+    };
 
     html! {
         <div class="columns is-gapless is-mobile mb-0 is-vcentered">
@@ -56,6 +69,7 @@ pub fn song_row(props: &SongRowProps) -> Html {
                         </div>
                     </div>
                 </a>
+                { qicon }
             </div>
             <div class="column is-clipped">
                 <SongText song={song.clone()} />
@@ -63,6 +77,7 @@ pub fn song_row(props: &SongRowProps) -> Html {
             <div class="column is-narrow is-flex is-flex-direction-column is-justify-content-center mr-2">
                 <RequesterTag requester={song.requested_by.clone()} />
             </div>
+
         </div>
     }
 }

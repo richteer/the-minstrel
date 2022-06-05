@@ -63,7 +63,7 @@ pub fn songlisttabs(props: &SongListTabsProps) -> Html {
                         {
                             for props.data.queue.iter().map(|e| {
                                 html! {
-                                <SongRow song={e.clone()} />
+                                <SongRow song={e.clone()} enqueued={true}/>
                                 }
                             })
                         }
