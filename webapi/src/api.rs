@@ -13,7 +13,9 @@ use serde::{
 
 use warp::{
     Filter,
+    Reply,
     Rejection,
+    hyper::StatusCode,
 };
 
 use log::*;
@@ -57,6 +59,7 @@ pub async fn show_state(
     Ok(warp::reply::json(&ret))
 }
 
+// TODO: Unify these, or implement handlers for each unique endpoint
 async fn handle_body_api(
     mut mstate: MusicAdapter,
     func: String,
@@ -74,21 +77,26 @@ async fn handle_body_api(
     let song = match Song::new(body.song.clone(), &requester) {
         Ok(s) => s,
         Err(e) =>
-            return Ok(warp::reply::json(&ReplyStatus::new(400, &format!("error fetching song: {:?}", e))))
+            return Ok(warp::reply::json(&ReplyStatus::new(400, &format!("error fetching song: {:?}", e))).into_response())
     };
 
     let ret = match func.as_str() {
         "play" => mstate.play(song).await,
         "enqueue" => mstate.enqueue(song).await,
         "enqueueandplay" => mstate.enqueue_and_play(song).await,
-        _ => return Ok(warp::reply::json(&ReplyStatus::new(400, "no such function")))
+        _ => return Ok(warp::reply::json(&ReplyStatus::new(400, "no such function")).into_response())
     };
 
     match ret {
-        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new(200, &o.to_string()))),
+        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new(200, &o.to_string())).into_response()),
         Err(e) => {
-            error!("error from musicstatus: {:?}", e);
-            Ok(warp::reply::json(&ReplyStatus::new(500, &format!("{:?}", e))))
+            debug!("error from musicstatus: {:?}", e);
+
+            let resp = warp::reply::json(&ReplyStatus::new(StatusCode::BAD_REQUEST.as_u16() as u64, &format!("{:?}", e)));
+            let mut resp = resp.into_response();
+            *resp.status_mut() = StatusCode::BAD_REQUEST;
+
+            Ok(resp)
         }
     }
 }
@@ -109,10 +117,15 @@ async fn handle_simple_api(
     };
 
     match ret {
-        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new(200, &o.to_string()))),
+        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new(200, &o.to_string())).into_response()),
         Err(e) => {
-            error!("error from musicstatus: {:?}", e);
-            Ok(warp::reply::json(&ReplyStatus::new(500, &format!("{:?}", e))))
+            debug!("error from musicstatus: {:?}", e);
+
+            let resp = warp::reply::json(&ReplyStatus::new(StatusCode::BAD_REQUEST.as_u16() as u64, &format!("{:?}", e)));
+            let mut resp = resp.into_response();
+            *resp.status_mut() = StatusCode::BAD_REQUEST;
+
+            Ok(resp)
         }
     }
 }
