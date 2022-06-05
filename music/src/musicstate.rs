@@ -445,7 +445,7 @@ impl Into<model::MinstrelWebData> for &MusicState {
 
         model::MinstrelWebData {
             current_track: self.current_track.clone().map(|ct| ct.into()),
-            status: self.status.clone().into(),
+            status: self.status.clone(),
             queue: self.queue.iter().map(|e| e.clone().into()).collect(),
             upcoming,
             history: self.history.iter().map(|e| e.clone().into()).collect(),
