@@ -50,7 +50,7 @@ pub enum MusicOk {
     EmptyQueue,
     NothingToPlay,
     SkippingSong,
-    Data(model::MinstrelWebData),
+    Data(Box<model::MinstrelWebData>),
     AutoplayOk(AutoplayOk),
     Unimplemented
 }
@@ -188,7 +188,7 @@ impl MusicState {
                     MusicControlCmd::ClearHistory => self.clear_history(),
                     MusicControlCmd::Previous => self.previous().await,
                     MusicControlCmd::SongEnded => { self.song_ended().await; Ok(MusicOk::Unimplemented) },
-                    MusicControlCmd::GetData => Ok(MusicOk::Data(self.get_webdata())),
+                    MusicControlCmd::GetData => Ok(MusicOk::Data(Box::new(self.get_webdata()))),
                     MusicControlCmd::AutoplayCmd(cmd) => AutoplayAdapter::handle_cmd(cmd, &mut self.autoplay),
                 };
 

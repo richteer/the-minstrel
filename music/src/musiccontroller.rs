@@ -94,7 +94,7 @@ impl MusicAdapter {
 
     pub async fn get_webdata(&self) -> model::MinstrelWebData {
         match self.invoke(MusicControlCmd::GetData).await {
-            Ok(MusicOk::Data(d)) => d,
+            Ok(MusicOk::Data(d)) => *d,
             _ => panic!("get_webdata invoke failed, should never happen"),
         }
     }
