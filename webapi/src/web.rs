@@ -1,3 +1,4 @@
+use model::MinstrelBroadcast;
 use warp::Filter;
 
 use std::sync::Arc;
@@ -17,7 +18,7 @@ use futures_util::{
 
 async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicAdapter>>) -> impl warp::reply::Reply {
     ws.on_upgrade(|websocket| async move {
-        let mstate = mstate.lock().await;
+        let mstate = mstate.lock().await.clone();
 
         let (mut ws_tx, _) = websocket.split();
 
@@ -26,6 +27,19 @@ async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicAdapter>>) -> impl 
         tokio::task::spawn(async move {
             // TODO: figure out a nicer way to assign these task or thread IDs, would be nice for debug
             debug!("spawning ws thread");
+
+            {
+                debug!("sending initial state");
+                let msg = mstate.get_webdata().await;
+                let msg = MinstrelBroadcast::MusicState(msg);
+                let msg = serde_json::to_string(&msg).unwrap();
+                let msg = warp::ws::Message::text(msg);
+                if let Err(resp) = ws_tx.send(msg).await {
+                    error!("websocket appears to have disconnected before it could even receive the initial state {}", resp);
+                    return;
+                };
+            }
+
             while let Ok(msg) = bc_rx.recv().await {
                 trace!("broadcast received, sending to websocket");
                 let msg = serde_json::to_string(&msg).unwrap();
