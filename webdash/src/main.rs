@@ -3,58 +3,23 @@ use yew::{
     html
 };
 
-use yew_agent::{
-    Dispatched,
-    Bridge,
-    Bridged, Dispatcher,
-};
-
-use gloo_net::http::Request;
-use gloo_net::websocket::{
-    futures::WebSocket,
-    Message,
-};
-use futures_util::StreamExt;
-use wasm_bindgen_futures::spawn_local;
-
 use model::{MinstrelWebData, MinstrelBroadcast};
 
 mod components;
 use components::*;
 
-mod wsbus;
-use wsbus::WsBus;
-
-pub enum Msg {
-    Data(MinstrelWebData),
-    BackendError(String),
-}
-
-struct Dash {
-    data: Option<MinstrelWebData>,
-    toastbridge: Dispatcher<ToastBus>,
-    _recv: Box<dyn Bridge<WsBus>>,
-}
-
-async fn update_data() -> Msg {
-    // TODO: consider using location/origin here too, might be needed for proper hosting
-    let resp = Request::get("/api").send().await.unwrap();
-
-    match resp.json::<MinstrelWebData>().await {
-        Ok(data) => Msg::Data(data),
-        Err(e) => Msg::BackendError(format!("Error fetching data: {}", e))
-    }
-}
+use yew_hooks::use_web_socket_with_options;
 
 
-impl Component for Dash {
-    type Message = Msg;
-    type Properties = ();
+#[function_component(FDash)]
+pub fn fdash() -> Html {
+    let data: UseStateHandle<Option<MinstrelWebData>> = use_state(|| None);
 
-    fn create(ctx: &Context<Self>) -> Self {
-        ctx.link().send_future(update_data());
+    let toastbridge = use_toast();
 
-        // TODO: have some method of reconnecting to the websocket if connection lost
+    let _ws = {
+        let data = data.clone();
+
         let window = web_sys::window().unwrap();
         let protocol = window.location().protocol();
         let protocol = match protocol {
@@ -72,114 +37,85 @@ impl Component for Dash {
             },
         }.unwrap();
 
+
         let wsurl = format!("{}//{}/ws", protocol, window.location().host().unwrap());
-        log::debug!("connecting to websocket at {}", &wsurl);
-        let ws = WebSocket::open(&wsurl).unwrap();
-        let (_, mut ws_rx) = ws.split();
 
-        // This needs to be called before the bridge call for some unknown reason.
-        let mut wsbus = WsBus::dispatcher();
+        let tb_mess = toastbridge.clone();
+        let tb_err = toastbridge.clone();
 
-        // "Connect" to our websocket bus, keep this in scope else it falls out and disappears from the universe
-        let recv = WsBus::bridge(ctx.link().callback(|data|
-            match data {
-                MinstrelBroadcast::MusicState(data) => Msg::Data(data),
-                MinstrelBroadcast::Error(err) => Msg::BackendError(err),
-            }
-        ));
-
-        // Listen on the websocket for data, pump it through the WsBus to send it back to us as MinstrelWebData
-        spawn_local(async move {
-            while let Some(msg) = ws_rx.next().await {
-                match msg {
-                    Ok(Message::Text(data)) => {
-                        wsbus.send(data);
-                    },
-                    Ok(Message::Bytes(_)) =>
-                        log::error!("received unexpected binary data from the websocket"),
-                    Err(e) => log::error!("error reading from websocket: {:?}", e),
+        use_web_socket_with_options(wsurl, yew_hooks::UseWebSocketOptions {
+            //onopen:(),
+            onmessage: Some(Box::new(move |message| {
+                match serde_json::from_str::<MinstrelBroadcast>(&message).unwrap() {
+                    MinstrelBroadcast::MusicState(newdata) => data.set(Some(newdata)),
+                    MinstrelBroadcast::Error(err) =>{
+                        log::info!("error from backend: {}", err);
+                        tb_mess.send(ToastType::Error(err));
+                    }
                 };
-            }
-        });
 
-        let toastbridge = ToastBus::dispatcher();
+            })),
+            onmessage_bytes: Some(Box::new(move |_| {
+                log::error!("received bytes from Ws for some reason");
+            })),
+            onerror: Some(Box::new(move |event|{
+                log::error!("WS error: {:?}", event);
+                tb_err.send(ToastType::Error(format!("Websocket lost connection")))
+            })),
+            //onclose: (),
+            // TODO: probably figure out sane reconnect limit/intervals
+            reconnect_limit: Some(10_000),
+            reconnect_interval: Some(10_000),
+            //manual: (),
+            //protocols: ()
+            ..Default::default()
+        })
+    };
 
-        Self {
-            data: None,
-            toastbridge,
-            _recv: recv,
-        }
-    }
+    html! {
+        <div class="container">
+        <ToastTray />
 
-    fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
-        match msg {
-            Msg::Data(json) => {
-                if let Some(data) = &self.data {
-                    if data == &json {
-                        log::debug!("fetched data did not change, ignoring");
-                        return false
+        if let Some(data) = &*data.clone() {
+        // m-0 set to override the negative margins set by columns
+        //  no idea why columns is like that, but centers the main div to the container->viewport
+            <div class="columns is-vcentered m-0">
+                <div class="column is-half">
+                {
+                    if let Some(np) = &data.current_track {
+                        html! {
+                            <>
+                            <div class="columns is-multiline is-centered">
+                                <div class="column is-full">
+                                    <NowPlaying song={np.clone()}/>
+                                </div>
+                                <div class="column is-full">
+                                    <PlayControls/>
+                                </div>
+                            </div>
+                            </>
+                        }
+                    } else {
+                        html! {
+                        <span><i>{"Nothing currently playing"}</i></span>
+                        }
                     }
                 }
-
-                log::debug!("updating data");
-                self.data = Some(json);
-
-                true
-            },
-            Msg::BackendError(err) => {
-                log::error!("attempting to toast...");
-                self.toastbridge.send(ToastType::Error(err));
-                false
-            }
-        }
-    }
-
-    fn view(&self, _ctx: &Context<Self>) -> Html {
-            html! {
-            <div class="container">
-                <ToastTray />
-
-                if let Some(data) = self.data.clone() {
-                // m-0 set to override the negative margins set by columns
-                //  no idea why columns is like that, but centers the main div to the container->viewport
-                    <div class="columns is-vcentered m-0">
-                        <div class="column is-half">
-                        {
-                            if let Some(np) = &data.current_track {
-                                html! {
-                                    <>
-                                    <div class="columns is-multiline is-centered">
-                                        <div class="column is-full">
-                                            <NowPlaying song={np.clone()}/>
-                                        </div>
-                                        <div class="column is-full">
-                                            <PlayControls/>
-                                        </div>
-                                    </div>
-                                    </>
-                                }
-                            } else {
-                                html! {
-                                <span><i>{"Nothing currently playing"}</i></span>
-                                }
-                            }
-                        }
-                        </div>
-                        <div class="column is-half fullheight">
-                            <SongListTabs data={data} />
-                        </div>
-                    </div>
-                } else {
-                    <div>
-                    { "Nothing currently playing" }
-                    </div>
-                }
+                </div>
+                <div class="column is-half fullheight">
+                    <SongListTabs data={data.clone()} />
+                </div>
+            </div>
+        } else {
+            <div>
+            { "Nothing currently playing" }
             </div>
         }
+        </div>
     }
 }
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
-    yew::start_app::<Dash>();
+    yew::start_app::<FDash>();
 }
