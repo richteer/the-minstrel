@@ -444,21 +444,20 @@ impl MusicState {
  }
 
 
-
-impl Into<model::MinstrelWebData> for &MusicState {
-    fn into(self) -> model::MinstrelWebData {
-        let upcoming = self.autoplay.prefetch(read_config!(music.upcoming_count))
+impl From<&MusicState> for model::MinstrelWebData {
+    fn from(other: &MusicState) -> Self {
+        let upcoming = other.autoplay.prefetch(read_config!(music.upcoming_count))
         // TODO: Better handle when autoplay is not enabled, or no users are enrolled
         .unwrap_or_default().iter()
             .map(|e| e.clone().into())
             .collect();
 
-        model::MinstrelWebData {
-            current_track: self.current_track.clone().map(|ct| ct.into()),
-            status: self.status.clone(),
-            queue: self.queue.iter().map(|e| e.clone().into()).collect(),
+        Self {
+            current_track: other.current_track.clone().map(|ct| ct.into()),
+            status: other.status.clone(),
+            queue: other.queue.iter().map(|e| e.clone().into()).collect(),
             upcoming,
-            history: self.history.iter().map(|e| e.clone().into()).collect(),
+            history: other.history.iter().map(|e| e.clone().into()).collect(),
         }
     }
 }
