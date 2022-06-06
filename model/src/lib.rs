@@ -89,6 +89,7 @@ impl MinstrelWebData {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 // TODO: Add other types of partial broadcasts here after MusicState gets broken up
 pub enum MinstrelBroadcast {
