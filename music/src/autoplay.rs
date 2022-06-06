@@ -345,10 +345,8 @@ impl AutoplayState {
     }
 
     pub fn shuffle_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
-        if let Some(list) = self.userlists.get(userid) {
-            let mut list = list.clone();
+        if let Some(list) = self.userlists.get_mut(userid) {
             list.shuffle();
-            self.userlists.insert(userid.clone(), list);
             // TODO: shuffled ok
             Ok(AutoplayOk::EnrolledUser)
         }
