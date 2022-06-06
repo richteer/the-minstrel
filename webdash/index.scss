@@ -87,6 +87,7 @@ html {
 .toasttray {
     display: flex;
     flex-direction: column-reverse;
+    align-items: flex-end;
     margin-right: 1.5rem;
 
     position: fixed;
