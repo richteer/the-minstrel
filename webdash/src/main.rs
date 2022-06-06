@@ -66,7 +66,7 @@ pub fn fdash() -> Html {
             })),
             //onclose: (),
             // TODO: probably figure out sane reconnect limit/intervals
-            reconnect_limit: Some(10_000),
+            reconnect_limit: Some(10),
             reconnect_interval: Some(10_000),
             //manual: (),
             //protocols: ()
