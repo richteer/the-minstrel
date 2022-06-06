@@ -203,7 +203,7 @@ impl AutoplayAdapter {
     }
 
     pub async fn shuffle_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::DisableUser(userid.clone())).await
+        self.invoke(AutoplayControlCmd::ShuffleUser(userid.clone())).await
     }
 
     // This function does not have a return, ignore result from invoke
