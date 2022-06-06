@@ -25,6 +25,7 @@ pub struct NowPlayingProgress {
 #[derive(Properties, PartialEq)]
 pub struct NowPlayingProgressProps {
     pub song: Song,
+    pub initial: u64,
 }
 
 impl Component for NowPlayingProgress {
@@ -38,7 +39,7 @@ impl Component for NowPlayingProgress {
         });
 
         Self {
-            time: 0,
+            time: ctx.props().initial as i64,
             interval: Some(interval),
         }
     }
@@ -92,6 +93,7 @@ impl Component for NowPlayingProgress {
 #[derive(Properties, PartialEq)]
 pub struct NowPlayingProps {
     pub song: Song,
+    pub progress: u64,
 }
 
 #[function_component(NowPlaying)]
@@ -128,7 +130,7 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
             </div>
             // Progress bar
             <div class="p-3">
-                <NowPlayingProgress song={song.clone()}/>
+                <NowPlayingProgress song={song.clone()} initial={props.progress}/>
             </div>
         </div>
         </>

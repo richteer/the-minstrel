@@ -118,6 +118,7 @@ pub struct MusicState {
     cmd_channel: (mpsc::Sender<MSCMD>, mpsc::Receiver<MSCMD>),
 
     current_track: Option<Song>,
+    songstarted: Option<std::time::Instant>,
     status: MusicStateStatus,
     queue: VecDeque<Song>,
     history: VecDeque<Song>,
@@ -153,6 +154,7 @@ impl MusicState {
             cmd_channel: mpsc::channel(10),
 
             current_track: None,
+            songstarted: None,
             queue: VecDeque::<Song>::new(),
             history: VecDeque::<Song>::new(),
             status: MusicStateStatus::Idle,
@@ -237,6 +239,7 @@ impl MusicState {
         }
 
         self.current_track = Some(song);
+        self.songstarted = Some(std::time::Instant::now());
         self.status = MusicStateStatus::Playing;
 
         self.broadcast_update();
@@ -441,6 +444,13 @@ impl MusicState {
         }
 
     }
+
+    pub fn song_progress(&self) -> u64 {
+        match &self.songstarted {
+            Some(d) => d.elapsed().as_secs(),
+            None => 0,
+        }
+    }
  }
 
 
@@ -454,6 +464,7 @@ impl From<&MusicState> for model::MinstrelWebData {
 
         Self {
             current_track: other.current_track.clone().map(|ct| ct.into()),
+            song_progress: other.song_progress(),
             status: other.status.clone(),
             queue: other.queue.iter().map(|e| e.clone().into()).collect(),
             upcoming,

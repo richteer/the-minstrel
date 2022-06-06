@@ -31,6 +31,7 @@ pub struct Song {
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
 pub struct MinstrelWebData {
     pub current_track: Option<Song>,
+    pub song_progress: u64,
     pub status: MusicStateStatus,
     pub queue: VecDeque<Song>,
     pub upcoming: Vec<Song>,
