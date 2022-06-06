@@ -9,13 +9,14 @@ mod components;
 use components::*;
 
 use yew_hooks::use_web_socket_with_options;
+use yew_toast::*;
 
 
 #[function_component(FDash)]
 pub fn fdash() -> Html {
     let data: UseStateHandle<Option<MinstrelWebData>> = use_state(|| None);
 
-    let toastbridge = use_toast();
+    let toastlist = use_reducer(|| ToastList::new());
 
     let _ws = {
         let data = data.clone();
@@ -40,8 +41,8 @@ pub fn fdash() -> Html {
 
         let wsurl = format!("{}//{}/ws", protocol, window.location().host().unwrap());
 
-        let tb_mess = toastbridge.clone();
-        let tb_err = toastbridge;
+        let tb_mess = toastlist.dispatcher();
+        let tb_err = toastlist.dispatcher();
 
         use_web_socket_with_options(wsurl, yew_hooks::UseWebSocketOptions {
             //onopen:(),
@@ -50,7 +51,7 @@ pub fn fdash() -> Html {
                     MinstrelBroadcast::MusicState(newdata) => data.set(Some(newdata)),
                     MinstrelBroadcast::Error(err) =>{
                         log::info!("error from backend: {}", err);
-                        tb_mess.send(ToastType::Error(err));
+                        tb_mess.dispatch(toast_error!(err));
                     }
                 };
 
@@ -61,7 +62,7 @@ pub fn fdash() -> Html {
             onerror: Some(Box::new(move |event|{
                 log::error!("WS error: {:?}", event);
                 // TODO: probably handle different types of errors here
-                tb_err.send(ToastType::Error("Websocket lost connection".into()))
+                tb_err.dispatch(toast_error!("Websocket lost connection".into()))
             })),
             //onclose: (),
             // TODO: probably figure out sane reconnect limit/intervals
@@ -75,6 +76,7 @@ pub fn fdash() -> Html {
 
     html! {
         <div class="container">
+        <ContextProvider<ToastContext> context={toastlist}>
         <ToastTray />
 
         if let Some(data) = &*data.clone() {
@@ -112,6 +114,7 @@ pub fn fdash() -> Html {
             { "Nothing currently playing" }
             </div>
         }
+        </ContextProvider<ToastContext>>
         </div>
     }
 }

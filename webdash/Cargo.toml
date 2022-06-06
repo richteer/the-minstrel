@@ -21,3 +21,4 @@ yew-feather = "0.2.1"
 yew-hooks= "0.1"
 
 model = { path = "../model" }
+yew-toast = { path = "toast" }

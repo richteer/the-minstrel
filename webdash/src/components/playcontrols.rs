@@ -4,7 +4,6 @@ use yew::{
     html,
 };
 
-use yew_agent::UseBridgeHandle;
 use yew_feather::{
     skip_back,
     skip_forward,
@@ -14,15 +13,11 @@ use yew_feather::{
 use gloo_net::http::Request;
 use yew_hooks::prelude::*;
 
-use crate::components::toast::{
-    use_toast,
-    ToastType,
-    ToastBus,
-};
+use yew_toast::*;
 
 use model::web::ReplyStatus;
 
-fn gen_callback(path: &'static str, toast_string: Option<&'static str>, tbridge: UseBridgeHandle<ToastBus>) -> Callback<MouseEvent> {
+fn gen_callback(path: &'static str, toast_string: Option<&'static str>, tdis: UseReducerDispatcher<ToastList>) -> Callback<MouseEvent> {
     let ahandle = use_async(async move {
         let resp = Request::post(format!("/api/{}", path).as_str())
             .json("").unwrap()
@@ -30,17 +25,17 @@ fn gen_callback(path: &'static str, toast_string: Option<&'static str>, tbridge:
         if !resp.ok() {
             let resp = resp.json::<ReplyStatus>().await;
             if let Ok(msg) = resp {
-                tbridge.send(ToastType::Error(msg.error));
+                tdis.dispatch(toast_error!(msg.error));
             } else {
                 log::error!("bad response from backend: {:?}", resp);
-                tbridge.send(ToastType::Error("Bad data from API, check console".into()));
+                tdis.dispatch(toast_error!("Bad data from API, check console".into()));
             }
 
             return Err(())
         }
 
         if let Some(toast) = toast_string {
-            tbridge.send(ToastType::Info(toast.into()));
+            tdis.dispatch(toast_info!(toast.into()));
         }
 
         Ok(())
@@ -53,19 +48,17 @@ fn gen_callback(path: &'static str, toast_string: Option<&'static str>, tbridge:
 
 #[function_component(PlayControls)]
 pub fn playcontrols() -> Html {
-
-    // Output unused, so output type and callback are empty
-    let bridge = use_toast();
+    let toast = use_context::<ToastContext>().unwrap();
 
     let onplay = {
-        let bridge = bridge.clone();
+        let toast = toast.clone();
         Callback::from(move |_| {
-            bridge.send(ToastType::Warning("Play/Pause functionality not currently implemented".into()))
+            toast.dispatch(toast_warning!("Play/Pause functionality not currently implemented".into()))
         })
     };
 
-    let onprev = gen_callback("previous", Some("Enqueued previous track"), bridge.clone());
-    let onskip = gen_callback("skip", None, bridge);
+    let onprev = gen_callback("previous", Some("Enqueued previous track"), toast.dispatcher());
+    let onskip = gen_callback("skip", None, toast.dispatcher());
 
     let iconclass = "column is-flex is-2 is-justify-content-center controlicon";
 
