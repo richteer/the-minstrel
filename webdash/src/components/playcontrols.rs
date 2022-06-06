@@ -65,7 +65,7 @@ pub fn playcontrols() -> Html {
     };
 
     let onprev = gen_callback("previous", Some("Enqueued previous track"), bridge.clone());
-    let onskip = gen_callback("skip", None, bridge.clone());
+    let onskip = gen_callback("skip", None, bridge);
 
     let iconclass = "column is-flex is-2 is-justify-content-center controlicon";
 

@@ -90,7 +90,7 @@ impl Component for ToastTray {
                 // Create a timeout to delete the toast after a certain amount of time
                 let _timeout = {
                     let link = ctx.link().clone();
-                    let tid = self.counter.clone();
+                    let tid = self.counter;
 
                     // First timeout, to start fading the message...
                     Timeout::new(5_000, move || {
@@ -103,7 +103,6 @@ impl Component for ToastTray {
                     })
                 };
 
-                let toast = toast.clone();
                 self.toasts.insert(self.counter, InternalToast{ _timeout, fade: false, toast});
                 self.counter += 1;
             },
@@ -131,7 +130,7 @@ impl Component for ToastTray {
                     for self.toasts.iter().rev()
                         .map(|(i,int_toast)| {
                             let message = int_toast.toast.clone();
-                            let i = i.clone();
+                            let i = *i;
                             html! {
                                 <ToastPopup {message} fade={int_toast.fade} ondeath={_ctx.link().callback(move |_|
                                     Msg::Delete(i)

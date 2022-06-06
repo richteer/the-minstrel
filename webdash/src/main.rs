@@ -41,7 +41,7 @@ pub fn fdash() -> Html {
         let wsurl = format!("{}//{}/ws", protocol, window.location().host().unwrap());
 
         let tb_mess = toastbridge.clone();
-        let tb_err = toastbridge.clone();
+        let tb_err = toastbridge;
 
         use_web_socket_with_options(wsurl, yew_hooks::UseWebSocketOptions {
             //onopen:(),
@@ -60,7 +60,8 @@ pub fn fdash() -> Html {
             })),
             onerror: Some(Box::new(move |event|{
                 log::error!("WS error: {:?}", event);
-                tb_err.send(ToastType::Error(format!("Websocket lost connection")))
+                // TODO: probably handle different types of errors here
+                tb_err.send(ToastType::Error("Websocket lost connection".into()))
             })),
             //onclose: (),
             // TODO: probably figure out sane reconnect limit/intervals
