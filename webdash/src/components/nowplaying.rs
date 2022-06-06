@@ -64,7 +64,7 @@ impl Component for NowPlayingProgress {
             interval.cancel();
         }
 
-        self.time = 0;
+        self.time = ctx.props().initial as i64;
         self.interval = Some(Interval::new(1000, move || {
             link.send_message(Self::Message::IncrementNowplaying);
         }));
@@ -96,6 +96,8 @@ pub struct NowPlayingProps {
     pub progress: u64,
 }
 
+// TODO: This gets called on every broadcast since song progress in the broadcast will push an update
+// consider using context or a on-first-render approach to avoid needless updates on regular API calls
 #[function_component(NowPlaying)]
 pub fn nowplaying(props: &NowPlayingProps) -> Html {
     let song = props.song.clone();
