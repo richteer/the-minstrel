@@ -36,8 +36,8 @@ pub fn songlisttabs(props: &SongListTabsProps) -> Html {
 
     fn get_class(active: ActiveTab, target: ActiveTab, content: bool) -> String {
         match (content, active == target) {
-            (false, true)  => String::from("tabs is-active has-text-weight-bold"),
-            (false, false) => String::from("tabs"),
+            (false, true)  => String::from("is-active has-text-weight-bold"),
+            (false, false) => String::from(""),
             (true,  true)  => String::from("is-active"),
             (true,  false) => String::from("is-hidden"),
         }
