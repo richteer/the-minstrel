@@ -14,3 +14,6 @@ pub use songlist::*;
 
 mod requester;
 pub use requester::*;
+
+mod background;
+pub use background::*;

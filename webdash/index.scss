@@ -74,6 +74,9 @@ $icon-ar: math.div(4,3);
 // I have no idea why this fixed a width overflow.
 html {
     height: 100vh;
+
+    // TODO: Consider putting this somewhere more targeted
+    text-shadow: 0 0 5px black;
 }
 
 .queuedicon {
@@ -104,4 +107,24 @@ html {
     &.toastclosing {
         opacity: 0%;
     };
+}
+
+.background {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    height: 100vh;
+    width: 100vw;
+    z-index: -9999;
+}
+
+.background-image {
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+
+    filter: blur(100px) brightness(30%) saturate(3);
 }

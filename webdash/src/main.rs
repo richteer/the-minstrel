@@ -88,6 +88,7 @@ pub fn fdash() -> Html {
                     if let Some(np) = &data.current_track {
                         html! {
                             <>
+                            <BackgroundImage url={np.thumbnail.clone()} />
                             <div class="columns is-multiline is-centered">
                                 <div class="column is-full">
                                     <NowPlaying song={np.clone()} progress={data.song_progress}/>
