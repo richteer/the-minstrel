@@ -106,8 +106,10 @@ pub fn fdash() -> Html {
                     }
                 }
                 </div>
-                <div class="column is-half fullheight">
+                <div class="column container is-half fullheight">
                     <SongListTabs data={data.clone()} />
+                    // TODO: consider a navbar, or somewhere better to put this
+                    <Login />
                 </div>
             </div>
         } else {

@@ -31,3 +31,9 @@ impl ReplyStatus {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LoginRequest {
+    pub username: String,
+    pub password: String,
+}
