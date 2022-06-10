@@ -4,7 +4,7 @@ use yew::{
     html,
 };
 use model::{
-    Song,
+    Song, SongRequest,
 };
 
 use yew_feather::{
@@ -37,13 +37,14 @@ pub fn song_text(props: &SongTextProps) -> Html {
 
 #[derive(Properties, PartialEq)]
 pub struct SongRowProps {
-    pub song: Song,
+    pub song: SongRequest,
     pub enqueued: Option<bool>,
 }
 
 #[function_component(SongRow)]
 pub fn song_row(props: &SongRowProps) -> Html {
-    let song = &props.song;
+    let requested_by = &props.song.requested_by;
+    let song = &props.song.song;
 
     let qicon = match props.enqueued {
         Some(true) => html! {
@@ -75,7 +76,7 @@ pub fn song_row(props: &SongRowProps) -> Html {
                 <SongText song={song.clone()} />
             </div>
             <div class="column is-narrow is-flex is-flex-direction-column is-justify-content-center mr-2">
-                <RequesterTag requester={song.requested_by.clone()} />
+                <RequesterTag requester={requested_by.clone()} />
             </div>
 
         </div>

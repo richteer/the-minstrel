@@ -4,7 +4,7 @@ use yew::{
     html,
 };
 use model::{
-    Song,
+    Song, SongRequest,
 };
 
 use gloo_timers::callback::Interval;
@@ -92,7 +92,7 @@ impl Component for NowPlayingProgress {
 
 #[derive(Properties, PartialEq)]
 pub struct NowPlayingProps {
-    pub song: Song,
+    pub song: SongRequest,
     pub progress: u64,
 }
 
@@ -100,7 +100,8 @@ pub struct NowPlayingProps {
 // consider using context or a on-first-render approach to avoid needless updates on regular API calls
 #[function_component(NowPlaying)]
 pub fn nowplaying(props: &NowPlayingProps) -> Html {
-    let song = props.song.clone();
+    let requested_by = props.song.requested_by.clone();
+    let song = props.song.song.clone();
 
     html! {
         <>
@@ -126,7 +127,7 @@ pub fn nowplaying(props: &NowPlayingProps) -> Html {
                     </div>
                     // Requested by
                     <div class="column is-narrow is-flex is-flex-direction-column is-justify-content-end mr-2">
-                        <RequesterTag requester={song.requested_by.clone()} size={RequesterSize::Large}/>
+                        <RequesterTag requester={requested_by} size={RequesterSize::Large}/>
                     </div>
                 </div>
             </div>
