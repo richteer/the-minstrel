@@ -18,6 +18,8 @@ pub struct Requester {
     pub id: String, // same as MinstrelId probably
 }
 
+pub type MinstrelUserId = String;
+
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
 pub struct Song {
     pub title: String,
@@ -25,17 +27,32 @@ pub struct Song {
     pub url: String,
     pub thumbnail: String,
     pub duration: i64,
+}
+
+#[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
+pub struct SongRequest {
+    pub song: Song,
     pub requested_by: Requester,
+}
+
+impl SongRequest {
+    /// Convenience constructor
+    pub fn new(song: Song, requested_by: Requester) -> Self {
+        Self {
+            song,
+            requested_by,
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
 pub struct MinstrelWebData {
-    pub current_track: Option<Song>,
+    pub current_track: Option<SongRequest>,
     pub song_progress: u64,
     pub status: MusicStateStatus,
-    pub queue: VecDeque<Song>,
-    pub upcoming: Vec<Song>,
-    pub history: VecDeque<Song>,
+    pub queue: VecDeque<SongRequest>,
+    pub upcoming: Vec<SongRequest>,
+    pub history: VecDeque<SongRequest>,
 }
 
 
@@ -51,14 +68,14 @@ pub enum MusicStateStatus {
 
 
 // TODO: Probably don't depend on this. Force frontends to format it themselves
-impl fmt::Display for Song {
+impl fmt::Display for SongRequest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let secs = self.duration;
+        let secs = self.song.duration;
         let mins = secs / 60;
         let secs = secs % 60;
 
         write!(f, "**{0}** [{1}:{2:02}] _(requested by {3})_",
-            self.title,
+            self.song.title,
             mins, secs,
             &self.requested_by.displayname,
         )
@@ -77,11 +94,11 @@ impl MinstrelWebData {
         ret
     }
 
-    pub fn get_history(&self) -> VecDeque<Song> {
+    pub fn get_history(&self) -> VecDeque<SongRequest> {
         self.history.clone()
     }
 
-    pub fn current_song(&self) -> Option<Song> {
+    pub fn current_song(&self) -> Option<SongRequest> {
         self.current_track.clone()
     }
 

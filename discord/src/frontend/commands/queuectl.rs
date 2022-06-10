@@ -1,3 +1,4 @@
+use music::song::fetch_song_from_yt;
 use serenity::{
     model::{
         channel::Message,
@@ -16,9 +17,11 @@ use serenity::{
 use crate::get_mstate;
 use crate::helpers::*;
 use crate::requester::*;
-use music::{
-    Song,
+
+use model::{
+    SongRequest
 };
+
 
 #[group]
 #[description = "Commands to manage the music queue"]
@@ -51,7 +54,7 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     let requester = requester_from_user(ctx, &msg.guild_id, &msg.author).await;
 
-    let url = match Song::new(url, &requester) {
+    let song = match fetch_song_from_yt(url) {
         Ok(u) => u,
         Err(_) => { // TODO: actually handle errors, probably make a generic surrender replier
             check_msg(msg.channel_id.say(&ctx.http, "Must provide a URL to a video or audio").await);
@@ -59,10 +62,12 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
         }
     };
 
+    let song = SongRequest::new(song, requester);
+
     get_mstate!(mut, mstate, ctx);
 
 
-    let ret = mstate.enqueue(url).await;
+    let ret = mstate.enqueue(song).await;
 
     // TODO: maybe factor this out into a generic reply handler?
     match ret {

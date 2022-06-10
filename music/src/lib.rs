@@ -10,7 +10,6 @@ pub mod musiccontroller;
 pub use musicstate::MusicState as MusicState;
 pub use musicstate::MusicOk as MusicOk;
 pub use musicstate::MusicError as MusicError;
-pub use song::Song as Song;
 pub use requester::Requester as Requester;
 
 pub use player::MusicPlayer as MusicPlayer;

@@ -22,7 +22,7 @@ use async_trait::async_trait;
 
 use log::*;
 use music::player::MusicPlayer;
-use music::Song;
+use model::Song;
 use music::*;
 
 use crate::get_mstate;

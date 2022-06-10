@@ -1,8 +1,13 @@
 use minstrel_config::read_config;
+use crate::song::song_request_from_video;
+
 use super::{
-    song::Song,
     requester::MinstrelUserId,
-    requester::Requester,
+};
+
+use model::{
+    Requester,
+    SongRequest,
 };
 
 use std::fmt;
@@ -73,12 +78,12 @@ pub enum AutoplayControlCmd {
 #[derive(Clone, Debug)]
 struct UserPlaylist {
     index: usize, // For non-destructive randomization, keeping consistent
-    list: Vec<Song>,
+    list: Vec<SongRequest>,
     url: String, // For refetching purposes
 }
 
 impl UserPlaylist {
-    pub fn new(list: Vec<Song>, url: String) -> UserPlaylist {
+    pub fn new(list: Vec<SongRequest>, url: String) -> UserPlaylist {
         UserPlaylist {
             index: 0,
             list,
@@ -88,7 +93,7 @@ impl UserPlaylist {
 
     // TODO: implement a better playlist randomizer logic, especially one that avoids
     //  repeating songs too much
-    pub fn next(&mut self) -> Song {
+    pub fn next(&mut self) -> SongRequest {
         let ret = self.list.get(self.index);
         self.index += 1;
 
@@ -172,7 +177,7 @@ impl AutoplayState {
 
     /// Get the next song to play and increment the play state
     #[allow(clippy::should_implement_trait)] // TODO: actually make autoplay iterable
-    pub fn next(&mut self) -> Option<Song> {
+    pub fn next(&mut self) -> Option<SongRequest> {
         let ut = match self.usertime.pop() {
             Some(ut) => ut,
             None => return None, // No users
@@ -186,7 +191,7 @@ impl AutoplayState {
 
         let song = up.next();
 
-        time += song.duration;
+        time += song.song.duration;
         self.usertime.push(user.clone(), Reverse(time));
         self.usertimecache.insert(user, time);
 
@@ -224,7 +229,7 @@ impl AutoplayState {
 
         let tmpdata = data.entries.unwrap();
         let tmpdata = tmpdata.iter()
-                        .map(|e| Song::from_video(e.clone(), &requester))
+                        .map(|e| song_request_from_video(e.clone(), &requester))
                         .collect();
 
         let mut tmpdata = UserPlaylist::new(tmpdata, url.to_string());
@@ -241,7 +246,7 @@ impl AutoplayState {
         Ok(AutoplayOk::RegisteredUser)
     }
 
-    pub fn prefetch(&self, num: u64) -> Option<Vec<Song>> {
+    pub fn prefetch(&self, num: u64) -> Option<Vec<SongRequest>> {
         let num = if num > read_config!(music.autoplay_prefetch_max) {
             read_config!(music.autoplay_prefetch_max)
         } else {

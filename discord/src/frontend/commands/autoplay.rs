@@ -233,10 +233,8 @@ async fn dump(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         if num < uplen { num } else { uplen }
     };
 
-    for (i, song) in upcoming.iter().take(num).enumerate() {
+    for (i, song) in upcoming.into_iter().take(num).enumerate() {
         // TODO: This is gross. These models should really be unified so these extra allocations aren't needed
-        let req = song.requested_by.clone().into();
-        let song = music::Song::new(song.url.clone(), &req).unwrap();
         match mstate.enqueue(song).await {
             Ok(_) => (),
             Err(MusicError::QueueFull) => {

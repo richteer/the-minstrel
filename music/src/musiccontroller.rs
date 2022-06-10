@@ -6,18 +6,21 @@ use tokio::sync::{
 
 use crate::{
     MusicOk, MusicError,
-    Song,
     musicstate::{
         MusicControlCmd,
         MSCMD,
     },
-    Requester,
     autoplay::{
         AutoplayState,
         AutoplayOk,
         AutoplayError,
         AutoplayControlCmd,
     }, requester::MinstrelUserId
+};
+
+use model::{
+    SongRequest,
+    Requester,
 };
 
 use log::*;
@@ -56,7 +59,7 @@ impl MusicAdapter {
     }
 
     /// Start playing a song
-    pub async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
+    pub async fn play(&mut self, song: SongRequest) -> Result<MusicOk, MusicError> {
         self.invoke(MusicControlCmd::Play(song)).await
     }
 
@@ -75,12 +78,12 @@ impl MusicAdapter {
     }
 
     /// Only enqueue a track to be played, do not start playing
-    pub async fn enqueue(&mut self, song: Song) -> Result<MusicOk, MusicError> {
+    pub async fn enqueue(&mut self, song: SongRequest) -> Result<MusicOk, MusicError> {
         self.invoke(MusicControlCmd::Enqueue(song)).await
     }
 
     /// Enqueue a track, and start playing music if not already playing
-    pub async fn enqueue_and_play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
+    pub async fn enqueue_and_play(&mut self, song: SongRequest) -> Result<MusicOk, MusicError> {
         self.invoke(MusicControlCmd::EnqueueAndPlay(song)).await
     }
 

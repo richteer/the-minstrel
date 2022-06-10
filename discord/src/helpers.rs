@@ -263,6 +263,7 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &model::MinstrelWebData) -
     };
 
     let user = get_user_from_muid(ctx, &song.requested_by.id).await.unwrap();
+    let song = song.song;
 
     //let md = song.metadata;
     let thumb = song.thumbnail.clone();

@@ -4,7 +4,6 @@ use super::autoplay::{
     AutoplayOk,
     AutoplayError,
 };
-use super::song::Song;
 
 use std::{
     collections::VecDeque,
@@ -35,6 +34,7 @@ use crate::musiccontroller::{
 
 use minstrel_config::read_config;
 use model::{
+    SongRequest,
     MinstrelBroadcast,
     MusicStateStatus,
 };
@@ -91,12 +91,12 @@ pub enum MusicError {
 
 #[derive(Clone, Debug)]
 pub enum MusicControlCmd {
-    Play(Song),
+    Play(SongRequest),
     Skip,
     Stop,
     Start,
-    Enqueue(Song),
-    EnqueueAndPlay(Song),
+    Enqueue(SongRequest),
+    EnqueueAndPlay(SongRequest),
     ClearQueue,
     ClearHistory,
     Previous,
@@ -117,11 +117,11 @@ pub struct MusicState {
     bcast: broadcast::Sender<model::MinstrelBroadcast>,
     cmd_channel: (mpsc::Sender<MSCMD>, mpsc::Receiver<MSCMD>),
 
-    current_track: Option<Song>,
+    current_track: Option<SongRequest>,
     songstarted: Option<std::time::Instant>,
     status: MusicStateStatus,
-    queue: VecDeque<Song>,
-    history: VecDeque<Song>,
+    queue: VecDeque<SongRequest>,
+    history: VecDeque<SongRequest>,
     pub autoplay: AutoplayState,
 }
 
@@ -155,8 +155,8 @@ impl MusicState {
 
             current_track: None,
             songstarted: None,
-            queue: VecDeque::<Song>::new(),
-            history: VecDeque::<Song>::new(),
+            queue: VecDeque::<SongRequest>::new(),
+            history: VecDeque::<SongRequest>::new(),
             status: MusicStateStatus::Idle,
             autoplay: AutoplayState::new(),
         }
@@ -204,14 +204,14 @@ impl MusicState {
     }
 
     /// Start playing a song
-    async fn play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
+    async fn play(&mut self, song: SongRequest) -> Result<MusicOk, MusicError> {
         debug!("play called on song = {}", song);
 
         if self.current_track.is_some() {
             return Err(MusicError::AlreadyPlaying);
         }
 
-        let ret = self.player_invoke(MusicPlayerCommand::Play(song.clone())).await;
+        let ret = self.player_invoke(MusicPlayerCommand::Play(song.song.clone())).await;
 
         if let Err(e) = ret {
             if self.bcast.receiver_count() > 0 {
@@ -261,10 +261,10 @@ impl MusicState {
         }
     }
 
-    fn get_next_song(&mut self) -> Option<Song> {
+    fn get_next_song(&mut self) -> Option<SongRequest> {
         if let Some(song) = self.queue.pop_front() {
             if self.autoplay.is_enabled() && read_config!(music.queue_adds_usertime) {
-                self.autoplay.add_time_to_user(&song.requested_by.id, song.duration);
+                self.autoplay.add_time_to_user(&song.requested_by.id, song.song.duration);
             }
 
             return Some(song);
@@ -319,7 +319,7 @@ impl MusicState {
     }
 
     /// Only enqueue a track to be played, do not start playing
-    pub fn enqueue(&mut self, song: Song) -> Result<MusicOk, MusicError> {
+    pub fn enqueue(&mut self, song: SongRequest) -> Result<MusicOk, MusicError> {
         if self.queue.len() > read_config!(music.queue_length) {
             return Err(MusicError::QueueFull)
         }
@@ -332,7 +332,7 @@ impl MusicState {
     }
 
     /// Enqueue a track, and start playing music if not already playing
-    pub async fn enqueue_and_play(&mut self, song: Song) -> Result<MusicOk, MusicError> {
+    pub async fn enqueue_and_play(&mut self, song: SongRequest) -> Result<MusicOk, MusicError> {
         self.enqueue(song)?;
 
         match self.start().await {
@@ -353,7 +353,7 @@ impl MusicState {
         ret
     }
 
-    pub fn get_history(&self) -> VecDeque<Song> {
+    pub fn get_history(&self) -> VecDeque<SongRequest> {
         self.history.clone()
     }
 
@@ -369,7 +369,7 @@ impl MusicState {
     }
 
 
-    pub fn current_song(&self) -> Option<Song> {
+    pub fn current_song(&self) -> Option<SongRequest> {
         self.current_track.clone()
     }
 
@@ -474,7 +474,7 @@ impl From<&MusicState> for model::MinstrelWebData {
 }
 
 // Helper to write out song played to a CSV in theory
-fn log_song(song: &Song) {
+fn log_song(song: &SongRequest) {
     let path = &read_config!(songlog.path);
 
     let file = OpenOptions::new()
@@ -491,16 +491,14 @@ fn log_song(song: &Song) {
             }
     };
 
-    let song = model::Song::from(song.clone());
-
     // TODO: consider using a real serializer or CSV library
     let ret = file.write(
         format!("{time}{s}{title}{s}{artist}{s}{url}{s}{requester}\n",
             s = read_config!(songlog.seperator),
             time = Local::now().to_rfc3339(),
-            title = song.title,
-            artist = song.artist,
-            url = song.url,
+            title = song.song.title,
+            artist = song.song.artist,
+            url = song.song.url,
             requester = song.requested_by.username,
         ).as_bytes());
 

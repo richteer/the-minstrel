@@ -21,9 +21,12 @@ use crate::{
 use crate::helpers::*;
 use crate::requester::*;
 use music::{
-    Song,
     MusicOk,
     MusicError,
+    song::fetch_song_from_yt,
+};
+use model::{
+    SongRequest,
 };
 
 #[group]
@@ -40,17 +43,18 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let requester = requester_from_user(ctx, &msg.guild_id, &msg.author).await;
 
-    let url = match Song::new(url, &requester) {
+    let song = match fetch_song_from_yt(url) {
         Ok(u) => u,
         Err(_) => {
             check_msg(msg.channel_id.say(&ctx.http, "Must provide a URL to a video or audio").await);
             return Ok(())
         }
     };
+    let song = SongRequest::new(song, requester);
 
     join_voice!(ctx, msg);
     get_mstate!(mut, mstate, ctx);
-    let ret = mstate.enqueue_and_play(url).await;
+    let ret = mstate.enqueue_and_play(song).await;
 
     // TODO: maybe factor this out into a generic reply handler?
     match ret {

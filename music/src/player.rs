@@ -9,6 +9,10 @@ use tokio::sync::{
     mpsc,
 };
 
+use model::{
+    Song,
+};
+
 use log::*;
 
 /// Interface for whatever is playing the music

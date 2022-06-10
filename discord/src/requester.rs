@@ -1,4 +1,7 @@
-use music::requester::*;
+use model::{
+    Requester,
+    MinstrelUserId,
+};
 use serenity::model::user::User;
 use serenity::model::id::{
     UserId,

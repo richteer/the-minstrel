@@ -2,8 +2,11 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use music::{
     musiccontroller::MusicAdapter,
-    Song,
-    requester::*,
+    song::fetch_song_from_yt,
+};
+use model::{
+    SongRequest,
+    Requester,
 };
 use std::convert::Infallible;
 use serde::{
@@ -25,12 +28,12 @@ use log::*;
 type AutoplayControlCmd = String;
 
 pub enum MusicControlCmd {
-    Play(Song),
+    Play(SongRequest),
     Skip,
     Stop,
     Start,
-    Enqueue(Song),
-    EnqueueAndPlay(Song),
+    Enqueue(SongRequest),
+    EnqueueAndPlay(SongRequest),
     ClearQueue,
     Previous,
     SongEnded,
@@ -74,8 +77,8 @@ async fn handle_body_api(
         id: "0".to_string(),
     };
 
-    let song = match Song::new(body.song.clone(), &requester) {
-        Ok(s) => s,
+    let song = match fetch_song_from_yt(body.song.clone()) {
+        Ok(s) => SongRequest::new(s, requester),
         Err(e) =>
             return Ok(warp::reply::json(&ReplyStatus::new(400, &format!("error fetching song: {:?}", e))).into_response())
     };
