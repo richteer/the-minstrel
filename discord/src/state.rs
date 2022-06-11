@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use serenity::model::channel::Message;
-use music::musiccontroller::MusicAdapter;
+use music::adapters::MusicAdapter;
 use log::*;
 use crate::player::DiscordPlayer;
 

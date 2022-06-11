@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use music::{
-    musiccontroller::MusicAdapter,
+    adapters::MusicAdapter,
     song::fetch_song_from_yt,
 };
 use model::{

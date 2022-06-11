@@ -18,7 +18,7 @@ use std::{
     sync::Arc,
 };
 
-use music::musiccontroller::MusicAdapter;
+use music::adapters::MusicAdapter;
 
 use crate::client::{
     MusicStateKey,

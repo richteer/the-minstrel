@@ -27,7 +27,7 @@ use crate::player::{
     MPCMD,
 };
 
-use crate::musiccontroller::{
+use crate::adapters::{
     MusicAdapter,
     AutoplayAdapter,
 };

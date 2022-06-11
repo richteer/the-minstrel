@@ -3,7 +3,7 @@ use model::{
     Requester,
     MinstrelUserId,
 };
-use music::musiccontroller::MusicAdapter;
+use music::adapters::MusicAdapter;
 use serenity::model::user::User;
 use serenity::model::id::{
     UserId,

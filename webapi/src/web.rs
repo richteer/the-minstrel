@@ -7,7 +7,7 @@ use tokio::sync::Mutex;
 use log::*;
 
 use music::{
-    musiccontroller::MusicAdapter,
+    adapters::MusicAdapter,
 };
 
 use futures_util::{

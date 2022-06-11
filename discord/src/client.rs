@@ -4,7 +4,7 @@ use std::{
 };
 use songbird::SerenityInit;
 
-use music::musiccontroller::MusicAdapter;
+use music::adapters::MusicAdapter;
 use crate::player::*;
 use crate::helpers::*;
 use crate::{

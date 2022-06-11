@@ -2,7 +2,7 @@ pub mod autoplay;
 pub mod musicstate;
 pub mod song;
 pub mod player;
-pub mod musiccontroller;
+pub mod adapters;
 
 // Re-exports for the sake of making the imports prettier in main.rs
 //  Probably not necessary, can be changed in the next big rework
