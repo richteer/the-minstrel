@@ -6,5 +6,10 @@ config.toml
 *workspace
 songlog*
 
+# database files
+*.db
+*-shm
+*-wal
+
 # TODO: eventually consider checking some of these in
 Cargo.lock

@@ -13,6 +13,7 @@ log = "0.4"
 
 music = { path = "../music" }
 minstrel-config = { path = "../minstrel-config" }
+db = { path = "../db" }
 
 # Used to provide a web server for dashboards, APIs, etc
 webapi = { path = "../webapi", optional = true }

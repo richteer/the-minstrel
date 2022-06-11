@@ -38,6 +38,7 @@ use model::{
     MinstrelBroadcast,
     MusicStateStatus,
 };
+use db::DbAdapter;
 
 #[allow(dead_code)]
 #[non_exhaustive]
@@ -123,6 +124,7 @@ pub struct MusicState {
     queue: VecDeque<SongRequest>,
     history: VecDeque<SongRequest>,
     pub autoplay: AutoplayState,
+    db: DbAdapter, // TODO: probably just make this static? or have a better controller that wraps all adapters?
 }
 
 impl fmt::Debug for MusicState {
@@ -146,7 +148,7 @@ impl fmt::Debug for MusicState {
 
 impl MusicState {
 
-    pub fn new(player: mpsc::Sender<MPCMD>) -> MusicState {
+    pub async fn new(player: mpsc::Sender<MPCMD>, db: DbAdapter) -> MusicState {
         MusicState {
             // TODO: use a proper channel buffer sizes here
             player,
@@ -158,7 +160,8 @@ impl MusicState {
             queue: VecDeque::<SongRequest>::new(),
             history: VecDeque::<SongRequest>::new(),
             status: MusicStateStatus::Idle,
-            autoplay: AutoplayState::new(),
+            autoplay: AutoplayState::new(db.clone()).await,
+            db,
         }
     }
 
@@ -173,7 +176,7 @@ impl MusicState {
     }
 
     pub fn get_adapter(&self) -> MusicAdapter {
-        MusicAdapter::new(self.cmd_channel.0.clone(), self.bcast.clone())
+        MusicAdapter::new(self.cmd_channel.0.clone(), self.bcast.clone(), self.db.clone())
     }
 
     pub async fn run(&mut self) {

@@ -1,22 +1,20 @@
 use minstrel_config::read_config;
-use crate::song::song_request_from_video;
+use crate::song::*;
 
 use model::{
     Requester,
     SongRequest,
-    MinstrelUserId,
+    MinstrelUserId, Source,
 };
 
+use db::DbAdapter;
+
 use std::fmt;
-use std::sync::{RwLock, Arc};
 use std::collections::HashMap;
 use priority_queue::PriorityQueue;
 use std::cmp::Reverse;
 use rand::seq::SliceRandom;
 use log::*;
-
-use pickledb::{PickleDb, PickleDbDumpPolicy};
-use youtube_dl::YoutubeDlOutput;
 
 
 #[allow(dead_code)]
@@ -61,7 +59,7 @@ pub enum AutoplayControlCmd {
     Enable,
     Disable,
     Status,
-    Register((Requester, String)),
+    Register((Requester, Source)),
     EnableUser(MinstrelUserId),
     DisableUser(MinstrelUserId),
     DisableAllUsers,
@@ -73,18 +71,19 @@ pub enum AutoplayControlCmd {
 
 
 #[derive(Clone, Debug)]
+// TODO: consider maybe Song here, and appened to a Request later
 struct UserPlaylist {
     index: usize, // For non-destructive randomization, keeping consistent
     list: Vec<SongRequest>,
-    url: String, // For refetching purposes
+    source: Source, // For refetching purposes
 }
 
 impl UserPlaylist {
-    pub fn new(list: Vec<SongRequest>, url: String) -> UserPlaylist {
+    pub fn new(list: Vec<SongRequest>, source: Source) -> UserPlaylist {
         UserPlaylist {
             index: 0,
             list,
-            url,
+            source,
         }
     }
 
@@ -123,38 +122,32 @@ pub struct AutoplayState {
     usertimecache: HashMap<MinstrelUserId, i64>,
     enabled: bool,
     // TODO: make this a global db that all things can access. this is fine for now though.
-    storage: Arc<RwLock<PickleDb>>,
+    db: DbAdapter,
 }
 
 // TODO: reconsider the new() constructor here, Default doesn't feel like the right place to load the autoplay.json cache
+// TODO: optimize this entire thing to only request data when actually needed. take advantage of everything being cached.
 #[allow(clippy::new_without_default)]
 impl AutoplayState {
-    pub fn new() -> AutoplayState {
-        // TODO: lock all this storage behind a feature
-        let db = match PickleDb::load_json("autoplay.json", PickleDbDumpPolicy::AutoDump) {
-            Err(_) => {
-                info!("creating new autoplay db");
-                PickleDb::new_json("autoplay.json", PickleDbDumpPolicy::AutoDump)
-            },
-            Ok(d) => d,
-        };
+    pub async fn new(db: DbAdapter) -> AutoplayState {
 
-        let users: Vec<(Requester, String)> = db.iter().map(|e|
-                e.get_value::<(Requester, String)>().unwrap()
-            ).collect();
+        let users = db.get_active_sources().await.unwrap();
 
         let mut ret = AutoplayState {
             userlists: HashMap::new(),
             usertime: PriorityQueue::new(),
             usertimecache: HashMap::new(),
             enabled: false,
-            storage: Arc::new(RwLock::new(db)),
+            db,
         };
 
         for (req, url) in users {
             // Panicking here is fine for now, if there's bad data in the json, let that be caught
+            let req = ret.db.get_requester(req).await.unwrap();
+
             info!("loading setlist for user {} from storage", &req.displayname);
-            ret.register(req, &url).unwrap();
+            // TODO: just take the first source, support multiple sources later
+            ret.register(req, &url[0]).unwrap();
         }
 
         ret
@@ -195,41 +188,12 @@ impl AutoplayState {
         Some(song)
     }
 
-    pub fn register(&mut self, requester: Requester, url: &str) -> Result<AutoplayOk, AutoplayError> {
-        {
-            if let Ok(mut lock) = self.storage.write() {
-                match lock.set(&requester.id, &(&requester, url)) {
-                    Ok(_) => (),
-                    Err(e) => error!("Error writing to autoplay storage: {:?}", e),
-                    // Continue on failure, storage isn't important
-                }
-            }
-            else {
-                error!("Failed to obtain lock on autoplay storage");
-            }
-        }
+    pub fn register(&mut self, requester: Requester, source: &Source) -> Result<AutoplayOk, AutoplayError> {
 
-        let data = youtube_dl::YoutubeDl::new(url)
-            .flat_playlist(true)
-            .run();
+        let tmpdata = fetch_songs_from_source(&source)
+            .iter().map(|e| SongRequest::new(e.clone(), requester.clone())).collect();
 
-        let data = match data {
-            Ok(YoutubeDlOutput::Playlist(p)) => p,
-            Ok(YoutubeDlOutput::SingleVideo(_)) => return Err(AutoplayError::UrlNotPlaylist),
-            Err(e) => panic!("something broke: {:?}", e),
-        };
-
-        if data.entries.is_none() {
-            error!("user playlist is none");
-            return Err(AutoplayError::UnknownError);
-        }
-
-        let tmpdata = data.entries.unwrap();
-        let tmpdata = tmpdata.iter()
-                        .map(|e| song_request_from_video(e.clone(), &requester))
-                        .collect();
-
-        let mut tmpdata = UserPlaylist::new(tmpdata, url.to_string());
+        let mut tmpdata = UserPlaylist::new(tmpdata, source.clone());
         tmpdata.shuffle();
 
         // TODO: probably definitely just use UserId here, this is a lot of clones
@@ -368,7 +332,7 @@ impl AutoplayState {
     pub fn update_userplaylist(&mut self, requester: &Requester) -> Result<AutoplayOk, AutoplayError> {
 
         let url = if let Some(ul) = &self.userlists.get(&requester.id) {
-            ul.url.clone()
+            ul.source.clone()
         }
         else {
             return Err(AutoplayError::UserNotRegistered);

@@ -6,8 +6,8 @@ use model::{
     Requester,
     Song,
     SongRequest,
+    Source,
 };
-
 
 macro_rules! get_duration {
     ($video:ident) => {
@@ -64,6 +64,31 @@ pub fn song_request_from_video(video: SingleVideo, requester: &Requester) -> Son
     SongRequest {
         song,
         requested_by: requester.clone(),
+    }
+}
+
+pub fn fetch_songs_from_source(source: &Source) -> Vec<Song> {
+    match source {
+        Source::YoutubePlaylist(url) => {
+            let data = youtube_dl::YoutubeDl::new(url)
+                .flat_playlist(true)
+                .run();
+
+            let data = match data {
+                Ok(YoutubeDlOutput::Playlist(p)) => p,
+                Ok(YoutubeDlOutput::SingleVideo(_)) => todo!("handle incorrect source mapping somehow"),
+                Err(e) => panic!("something broke: {:?}", e),
+            };
+
+            if data.entries.is_none() {
+                panic!("playlist entries is none, this shouldn't happen");
+            }
+
+            let tmpdata = data.entries.unwrap();
+            tmpdata.iter()
+                            .map(|e| song_from_video(e.clone()))
+                            .collect()
+        },
     }
 }
 

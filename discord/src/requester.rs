@@ -2,6 +2,7 @@ use model::{
     Requester,
     MinstrelUserId,
 };
+use music::musiccontroller::MusicAdapter;
 use serenity::model::user::User;
 use serenity::model::id::{
     UserId,
@@ -11,8 +12,8 @@ use serenity::client::Context;
 use log::*;
 
 
-pub async fn requester_from_user(ctx: &Context, gid: &Option<GuildId>, user: &User) -> Requester {
-    let id = muid_from_userid(&user.id);
+pub async fn requester_from_user(ctx: &Context, mstate: &MusicAdapter, gid: &Option<GuildId>, user: &User) -> Requester {
+    let id = muid_from_userid(mstate, &user.id).await;
     let displayname = if let Some(gid) = gid {
         user.nick_in(&ctx.http, gid).await.unwrap_or_else(|| user.name.clone())
     } else {
@@ -29,13 +30,21 @@ pub async fn requester_from_user(ctx: &Context, gid: &Option<GuildId>, user: &Us
     }
 }
 
-pub fn muid_from_userid(userid: &UserId) -> MinstrelUserId {
-    userid.to_string()
+pub async fn muid_from_userid(mstate: &MusicAdapter, userid: &UserId) -> MinstrelUserId {
+    // TODO: error handle this
+    mstate.db.get_userid_from_discordid(userid.0).await.unwrap()
 }
 
-pub async fn get_user_from_muid(ctx: &Context, muid: &MinstrelUserId) -> Option<User> {
-    let uid = muid.parse::<u64>().unwrap();
-    let uid = UserId(uid);
+pub async fn get_user_from_muid(ctx: &Context, mstate: &MusicAdapter, muid: &MinstrelUserId) -> Option<User> {
+    let discordid = mstate.db.get_discordid_from_userid(*muid).await.unwrap();
+    let discordid = if let Some(d) = discordid {
+        d
+    } else {
+        return None
+    };
+
+    let uid = UserId(discordid);
+
 
     match uid.to_user(&ctx.http).await {
         Ok(o) => Some(o),

@@ -13,6 +13,8 @@ use serenity::{
     },
 };
 
+use model::Source;
+
 use crate::{get_mstate, join_voice};
 use crate::requester::*;
 use crate::helpers::check_msg;
@@ -76,10 +78,11 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
 #[num_args(1)]
 async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
-    let requester = requester_from_user(ctx, &msg.guild_id, &msg.author).await;
 
     {
         get_mstate!(mut, mstate, ctx);
+
+        let requester = requester_from_user(ctx, &mstate, &msg.guild_id, &msg.author).await;
 
         match url.as_str() {
             "refetch"|"refresh"|"update" => {
@@ -93,7 +96,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
             _ => (),
         };
 
-        mstate.autoplay.register(requester, &url).await.ok();
+        mstate.autoplay.register(requester, &Source::YoutubePlaylist(url.clone())).await.ok();
     }
 
     check_msg(msg.channel_id.say(&ctx.http, "Setlist Registered!").await);
@@ -136,7 +139,7 @@ async fn upcoming(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    let ret = match mstate.autoplay.enable_user(&muid_from_userid(&msg.author.id)).await {
+    let ret = match mstate.autoplay.enable_user(&muid_from_userid(&mstate, &msg.author.id).await).await {
         Ok(m) => m.to_string(),
         Err(e) => format!("Error enabling user: {:?}", e),
     };
@@ -152,7 +155,7 @@ async fn enrolluser(ctx: &Context, msg: &Message) -> CommandResult {
 async fn removeuser(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    let ret = match mstate.autoplay.disable_user(&muid_from_userid(&msg.author.id)).await {
+    let ret = match mstate.autoplay.disable_user(&muid_from_userid(&mstate, &msg.author.id).await).await {
         Ok(m) => m.to_string(),
         Err(e) => format!("Error disabling user: {:?}", e),
     };
@@ -185,7 +188,7 @@ async fn rebalance(ctx: &Context, msg: &Message) -> CommandResult {
 async fn shuffle(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mut, mstate, ctx);
 
-    mstate.autoplay.shuffle_user(&muid_from_userid(&msg.author.id)).await.unwrap();
+    mstate.autoplay.shuffle_user(&muid_from_userid(&mstate, &msg.author.id).await).await.unwrap();
 
     check_msg(msg.channel_id.say(&ctx.http, "Shuffled your playlist.").await);
 
@@ -263,7 +266,7 @@ async fn advance(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     get_mstate!(mut, mstate, ctx);
 
-    let out = match mstate.autoplay.advance_userplaylist(&muid_from_userid(&msg.author.id), num).await {
+    let out = match mstate.autoplay.advance_userplaylist(&muid_from_userid(&mstate, &msg.author.id).await, num).await {
         Ok(_)  => format!("Advanced your playlist ahead {} song(s)", num),
         Err(e) => format!("Could not advance playlist: {:?}", e),
     };

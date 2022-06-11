@@ -20,7 +20,6 @@ use std::{
 
 use music::musiccontroller::MusicAdapter;
 
-use crate::requester::*;
 use crate::client::{
     MusicStateKey,
     DiscordPlayerKey,
@@ -251,7 +250,8 @@ pub fn get_queuestate_embed(mdata: &model::MinstrelWebData, ap_enabled: bool) ->
     ret
 }
 
-pub async fn get_nowplay_embed(ctx: &Context, mstate: &model::MinstrelWebData) -> CreateEmbed {
+// TODO: remove ctx and async from here, not needed anymore
+pub async fn get_nowplay_embed(_ctx: &Context, mstate: &model::MinstrelWebData) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     let song = match mstate.current_song() {
@@ -262,7 +262,7 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &model::MinstrelWebData) -
         }
     };
 
-    let user = get_user_from_muid(ctx, &song.requested_by.id).await.unwrap();
+    let requester = song.requested_by;
     let song = song.song;
 
     //let md = song.metadata;
@@ -276,8 +276,8 @@ pub async fn get_nowplay_embed(ctx: &Context, mstate: &model::MinstrelWebData) -
         .url(song.url)
         .description(format!("Uploaded by: {}", song.artist))
         .footer(|f| { f
-            .icon_url(user.face())
-            .text(format!("Requested by: {}", user.name))
+            .icon_url(requester.icon)
+            .text(format!("Requested by: {}", requester.displayname))
         });
 
     ret

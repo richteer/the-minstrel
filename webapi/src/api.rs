@@ -74,7 +74,7 @@ async fn handle_body_api(
         username: "webuser".to_string(),
         displayname: "webuser".to_string(),
         icon: "".to_string(),
-        id: "0".to_string(),
+        id: 0,
     };
 
     let song = match fetch_song_from_yt(body.song.clone()) {

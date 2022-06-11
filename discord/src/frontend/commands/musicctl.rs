@@ -41,7 +41,9 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     // TODO: confirm if this is actually needed
     let url = args.single::<String>()?;
 
-    let requester = requester_from_user(ctx, &msg.guild_id, &msg.author).await;
+    get_mstate!(mut, mstate, ctx);
+
+    let requester = requester_from_user(ctx, &mstate, &msg.guild_id, &msg.author).await;
 
     let song = match fetch_song_from_yt(url) {
         Ok(u) => u,
@@ -53,7 +55,6 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let song = SongRequest::new(song, requester);
 
     join_voice!(ctx, msg);
-    get_mstate!(mut, mstate, ctx);
     let ret = mstate.enqueue_and_play(song).await;
 
     // TODO: maybe factor this out into a generic reply handler?

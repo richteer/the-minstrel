@@ -19,10 +19,13 @@ use crate::{
 };
 
 use model::{
+    Source,
     SongRequest,
     Requester,
     MinstrelUserId,
 };
+
+use db::DbAdapter;
 
 use log::*;
 
@@ -32,14 +35,16 @@ use log::*;
 #[derive(Debug, Clone)]
 pub struct MusicAdapter {
     pub autoplay: AutoplayAdapter,
+    pub db: DbAdapter,
     bcast: broadcast::Sender<model::MinstrelBroadcast>,
     tx: mpsc::Sender<MSCMD>,
 }
 
 impl MusicAdapter {
-    pub fn new(tx: mpsc::Sender<MSCMD>, bcast: broadcast::Sender<model::MinstrelBroadcast>) -> Self {
+    pub fn new(tx: mpsc::Sender<MSCMD>, bcast: broadcast::Sender<model::MinstrelBroadcast>, db: DbAdapter) -> Self {
         Self {
             autoplay: AutoplayAdapter::new(tx.clone()),
+            db,
             tx,
             bcast,
         }
@@ -132,7 +137,7 @@ impl AutoplayAdapter {
             AutoplayControlCmd::Enable => { ap.enable(); Ok(AutoplayOk::Status(true)) },
             AutoplayControlCmd::Disable => { ap.disable(); Ok(AutoplayOk::Status(false)) },
             AutoplayControlCmd::Status => { Ok(AutoplayOk::Status(ap.is_enabled())) },
-            AutoplayControlCmd::Register((req, url)) => ap.register(req, url.as_str()),
+            AutoplayControlCmd::Register((req, source)) => ap.register(req, &source),
             AutoplayControlCmd::EnableUser(uid) => ap.enable_user(&uid),
             AutoplayControlCmd::DisableUser(uid) => ap.disable_user(&uid),
             AutoplayControlCmd::DisableAllUsers => { ap.disable_all_users(); Ok(AutoplayOk::RemovedUser) },
@@ -189,8 +194,8 @@ impl AutoplayAdapter {
         }
     }
 
-    pub async fn register(&mut self, requester: Requester, url: &str) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::Register((requester, String::from(url)))).await
+    pub async fn register(&mut self, requester: Requester, source: &Source) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::Register((requester, source.clone()))).await
     }
 
     pub async fn enable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {

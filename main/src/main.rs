@@ -32,8 +32,10 @@ async fn main() {
 
     debug!("config = {:?}", *CONFIG);
 
+    let db = db::init_db().await;
+
     let (tx, rx) = tokio::sync::mpsc::channel(3);
-    let mut mstate = MusicState::new(tx);
+    let mut mstate = MusicState::new(tx, db.clone()).await;
 
     // TODO: I really don't like this flow, it needs to be handled by some higher level controller probably.
 

@@ -15,10 +15,10 @@ pub struct Requester {
     pub username: String,
     pub displayname: String,
     pub icon: String, // url
-    pub id: String, // same as MinstrelId probably
+    pub id: MinstrelUserId, // same as MinstrelId probably
 }
 
-pub type MinstrelUserId = String;
+pub type MinstrelUserId = i64;
 
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
 pub struct Song {
@@ -43,6 +43,14 @@ impl SongRequest {
             requested_by,
         }
     }
+}
+
+#[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
+/// Path to a source of music, to be used in autoplay.
+/// May be a playlist, or just a single song.
+/// TODO: Support other Source types
+pub enum Source {
+    YoutubePlaylist(String),
 }
 
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]

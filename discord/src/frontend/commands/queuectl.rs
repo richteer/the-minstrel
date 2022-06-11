@@ -52,7 +52,9 @@ async fn queue(ctx: &Context, msg: &Message) -> CommandResult {
 async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = args.single::<String>()?;
 
-    let requester = requester_from_user(ctx, &msg.guild_id, &msg.author).await;
+    get_mstate!(mut, mstate, ctx);
+
+    let requester = requester_from_user(ctx, &mstate, &msg.guild_id, &msg.author).await;
 
     let song = match fetch_song_from_yt(url) {
         Ok(u) => u,
@@ -64,7 +66,6 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     let song = SongRequest::new(song, requester);
 
-    get_mstate!(mut, mstate, ctx);
 
 
     let ret = mstate.enqueue(song).await;
