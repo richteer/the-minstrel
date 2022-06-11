@@ -15,12 +15,13 @@ use crate::{
         AutoplayOk,
         AutoplayError,
         AutoplayControlCmd,
-    }, requester::MinstrelUserId
+    },
 };
 
 use model::{
     SongRequest,
     Requester,
+    MinstrelUserId,
 };
 
 use log::*;

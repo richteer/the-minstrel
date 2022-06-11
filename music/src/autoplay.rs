@@ -1,13 +1,10 @@
 use minstrel_config::read_config;
 use crate::song::song_request_from_video;
 
-use super::{
-    requester::MinstrelUserId,
-};
-
 use model::{
     Requester,
     SongRequest,
+    MinstrelUserId,
 };
 
 use std::fmt;

@@ -1,7 +1,6 @@
 pub mod autoplay;
 pub mod musicstate;
 pub mod song;
-pub mod requester;
 pub mod player;
 pub mod musiccontroller;
 
@@ -10,6 +9,5 @@ pub mod musiccontroller;
 pub use musicstate::MusicState as MusicState;
 pub use musicstate::MusicOk as MusicOk;
 pub use musicstate::MusicError as MusicError;
-pub use requester::Requester as Requester;
 
 pub use player::MusicPlayer as MusicPlayer;
