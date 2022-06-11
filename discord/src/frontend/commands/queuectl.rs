@@ -16,7 +16,7 @@ use serenity::{
 
 use crate::get_mstate;
 use crate::helpers::*;
-use crate::requester::*;
+use crate::userconv::*;
 
 use model::{
     SongRequest
@@ -54,7 +54,7 @@ async fn enqueue(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
 
     get_mstate!(mut, mstate, ctx);
 
-    let requester = requester_from_user(ctx, &mstate, &msg.guild_id, &msg.author).await;
+    let requester = mstate.requester_from_user(ctx, &msg.guild_id, &msg.author).await;
 
     let song = match fetch_song_from_yt(url) {
         Ok(u) => u,

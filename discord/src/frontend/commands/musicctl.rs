@@ -19,7 +19,7 @@ use crate::{
     join_voice,
 };
 use crate::helpers::*;
-use crate::requester::*;
+use crate::userconv::*;
 use music::{
     MusicOk,
     MusicError,
@@ -43,7 +43,7 @@ async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     get_mstate!(mut, mstate, ctx);
 
-    let requester = requester_from_user(ctx, &mstate, &msg.guild_id, &msg.author).await;
+    let requester = mstate.requester_from_user(ctx, &msg.guild_id, &msg.author).await;
 
     let song = match fetch_song_from_yt(url) {
         Ok(u) => u,
