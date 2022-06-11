@@ -82,7 +82,7 @@ async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult 
     {
         get_mstate!(mut, mstate, ctx);
 
-        let requester = mstate.requester_from_user(ctx, &msg.guild_id, &msg.author).await;
+        let requester = mstate.requester_from_user(&msg.author).await;
 
         match url.as_str() {
             "refetch"|"refresh"|"update" => {
