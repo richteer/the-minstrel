@@ -14,7 +14,7 @@ log = "0.4"
 priority-queue = "1.2.1"
 async-trait = "0.1"
 chrono = "0.4"
-password-hash = "0.4.1"
+pbkdf2 = "0.11"
 
 minstrel-config = { path = "../minstrel-config" }
 model = { path = "../model" }

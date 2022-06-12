@@ -10,6 +10,15 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+use pbkdf2::{
+    password_hash::{
+        rand_core::OsRng,
+        PasswordHash, PasswordHasher, PasswordVerifier, SaltString,
+        Error as PwError,
+    },
+    Pbkdf2
+};
+
 #[derive(Clone, Debug)]
 pub enum AuthType {
     UserAuth(String, String),
@@ -21,6 +30,45 @@ pub struct UserInfo {
     pub icon: Option<String>,
 }
 
+fn hash_password(password: &String) -> Result<String, UserMgmtError> {
+    let salt = SaltString::generate(&mut OsRng);
+
+    let pw_hash = Pbkdf2.hash_password(password.as_bytes(), &salt);
+    let pw_hash = match pw_hash {
+        Ok(h) => h.to_string(),
+        Err(e) => {
+            log::error!("Failed to hash password, this should probably never happen: {:?}", e);
+            return Err(UserMgmtError::UnknownError)
+        },
+    };
+
+    // Sanity check
+    if !verify_password(password, &pw_hash)? {
+        log::error!("new password failed to verify against itself, probably a bug!");
+        Err(UserMgmtError::UnknownError)
+    } else {
+        Ok(pw_hash)
+    }
+}
+
+fn verify_password(input: &String, hash: &String) -> Result<bool, UserMgmtError> {
+    let parsed = match PasswordHash::new(&hash) {
+        Ok(p) => p,
+        Err(e) => {
+            log::error!("Failed to verify password, this also should probably never happen: {:?}", e);
+            return Err(UserMgmtError::UnknownError)
+        }
+    };
+
+    match Pbkdf2.verify_password(input.as_bytes(), &parsed) {
+        Ok(_) => Ok(true),
+        Err(PwError::Password) => Ok(false),
+        Err(e) => {
+            log::error!("failed to verify password: {:?}", e);
+            Err(UserMgmtError::UnknownError)
+        }
+    }
+}
 
 
 /// Higher level functions for user management.
@@ -42,9 +90,6 @@ impl UserMgmt {
 
     /// Create a new User and Auth from the specified information
     pub async fn user_create(&self, auth: AuthType, info: UserInfo) -> Result<MinstrelUserId, UserMgmtError> {
-
-        // TODO: probably fail gracefully here, clean up after failures
-
         // Check if the user has already registered, error if so
         let exists = match &auth {
             AuthType::UserAuth(username, _) =>
@@ -61,7 +106,9 @@ impl UserMgmt {
         let resp = match &auth {
             AuthType::UserAuth(username, password) => {
                 // TODO: Encode password here
-                self.db.create_user_auth(uid, username, password).await
+                let hashed_password = hash_password(password)?;
+
+                self.db.create_user_auth(uid, username, &hashed_password).await
             },
             AuthType::Discord(did) => {
                 self.db.create_discord_user(uid, *did).await
