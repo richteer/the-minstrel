@@ -71,7 +71,6 @@ async fn handle_body_api(
     debug!("body = '{:?}'", &body);
 
     let requester = Requester {
-        username: "webuser".to_string(),
         displayname: "webuser".to_string(),
         icon: "".to_string(),
         id: 0,

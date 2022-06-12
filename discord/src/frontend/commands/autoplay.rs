@@ -13,8 +13,6 @@ use serenity::{
     },
 };
 
-use model::Source;
-
 use crate::{get_mstate, join_voice};
 use crate::userconv::*;
 use crate::helpers::check_msg;
@@ -25,7 +23,7 @@ use crate::helpers::*;
 #[group]
 #[description = "Commands to manage autoplay state"]
 #[prefixes("autoplay", "ap")]
-#[commands(toggle, setlist, upcoming, enrolluser, removeuser, rebalance, shuffle, dump, advance)]
+#[commands(toggle, upcoming, enrolluser, removeuser, rebalance, shuffle, dump, advance)]
 struct AutoplayCmd;
 
 
@@ -68,38 +66,6 @@ async fn toggle(ctx: &Context, msg: &Message) -> CommandResult {
         Err(e) => check_msg(msg.channel_id.say(&ctx.http, format!("Error starting autoplay: {:?}", e)).await),
         _ => (),
     };
-
-    Ok(())
-}
-
-
-#[command]
-#[only_in(guilds)]
-#[num_args(1)]
-async fn setlist(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    let url = args.single::<String>()?;
-
-    {
-        get_mstate!(mut, mstate, ctx);
-
-        let requester = mstate.requester_from_user(&msg.author).await;
-
-        match url.as_str() {
-            "refetch"|"refresh"|"update" => {
-                match mstate.autoplay.update_userplaylist(&requester).await {
-                    Ok(m)  => check_msg(msg.channel_id.say(&ctx.http, m).await),
-                    Err(e) => check_msg(msg.channel_id.say(&ctx.http, format!("{:?}", e)).await),
-                };
-
-                return Ok(());
-            },
-            _ => (),
-        };
-
-        mstate.autoplay.register(requester, &Source::YoutubePlaylist(url.clone())).await.ok();
-    }
-
-    check_msg(msg.channel_id.say(&ctx.http, "Setlist Registered!").await);
 
     Ok(())
 }

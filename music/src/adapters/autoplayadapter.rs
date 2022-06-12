@@ -18,7 +18,6 @@ use crate::{
 };
 
 use model::{
-    Source,
     Requester,
     MinstrelUserId,
 };
@@ -38,18 +37,17 @@ impl AutoplayAdapter {
         }
     }
 
-    pub fn handle_cmd(cmd: AutoplayControlCmd, ap: &mut AutoplayState) -> Result<MusicOk, MusicError> {
+    pub async fn handle_cmd(cmd: AutoplayControlCmd, ap: &mut AutoplayState) -> Result<MusicOk, MusicError> {
         let ret = match cmd {
             AutoplayControlCmd::Enable => { ap.enable(); Ok(AutoplayOk::Status(true)) },
             AutoplayControlCmd::Disable => { ap.disable(); Ok(AutoplayOk::Status(false)) },
             AutoplayControlCmd::Status => { Ok(AutoplayOk::Status(ap.is_enabled())) },
-            AutoplayControlCmd::Register((req, source)) => ap.register(req, &source),
             AutoplayControlCmd::EnableUser(uid) => ap.enable_user(&uid),
             AutoplayControlCmd::DisableUser(uid) => ap.disable_user(&uid),
             AutoplayControlCmd::DisableAllUsers => { ap.disable_all_users(); Ok(AutoplayOk::RemovedUser) },
             AutoplayControlCmd::ShuffleUser(uid) => ap.shuffle_user(&uid),
             AutoplayControlCmd::Rebalance => { ap.reset_usertime(); Ok(AutoplayOk::Status(true)) }, // bs Ok, ignored anyway
-            AutoplayControlCmd::UpdatePlaylist(req) => ap.update_userplaylist(&req),
+            AutoplayControlCmd::UpdatePlaylist(req) => ap.update_userplaylist(&req).await,
             AutoplayControlCmd::AdvancePlaylist((uid, num)) => ap.advance_userplaylist(&uid, num),
         };
 
@@ -98,10 +96,6 @@ impl AutoplayAdapter {
             Ok(AutoplayOk::Status(s)) => s,
             Ok(_) | Err(_) => panic!("unexpected return from Autoplay Status command"),
         }
-    }
-
-    pub async fn register(&mut self, requester: Requester, source: &Source) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::Register((requester, source.clone()))).await
     }
 
     pub async fn enable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {

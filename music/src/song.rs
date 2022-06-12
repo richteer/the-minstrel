@@ -6,7 +6,7 @@ use model::{
     Requester,
     Song,
     SongRequest,
-    Source,
+    SourceType,
 };
 
 macro_rules! get_duration {
@@ -67,9 +67,9 @@ pub fn song_request_from_video(video: SingleVideo, requester: &Requester) -> Son
     }
 }
 
-pub fn fetch_songs_from_source(source: &Source) -> Vec<Song> {
+pub fn fetch_songs_from_source(source: &SourceType) -> Vec<Song> {
     match source {
-        Source::YoutubePlaylist(url) => {
+        SourceType::YoutubePlaylist(url) => {
             let data = youtube_dl::YoutubeDl::new(url)
                 .flat_playlist(true)
                 .run();

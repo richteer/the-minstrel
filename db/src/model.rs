@@ -36,7 +36,10 @@ pub struct Source {
 impl From<Source> for minstrelmodel::Source {
     fn from(src: Source) -> Self {
         // TODO: match on row.source_type
-        minstrelmodel::Source::YoutubePlaylist(src.path)
+        minstrelmodel::Source {
+            id: src.id,
+            path: minstrelmodel::SourceType::YoutubePlaylist(src.path)
+        }
     }
 }
 

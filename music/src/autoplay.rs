@@ -59,7 +59,7 @@ pub enum AutoplayControlCmd {
     Enable,
     Disable,
     Status,
-    Register((Requester, Source)),
+    //Register((Requester, Source)),
     EnableUser(MinstrelUserId),
     DisableUser(MinstrelUserId),
     DisableAllUsers,
@@ -75,15 +75,15 @@ pub enum AutoplayControlCmd {
 struct UserPlaylist {
     index: usize, // For non-destructive randomization, keeping consistent
     list: Vec<SongRequest>,
-    source: Source, // For refetching purposes
+    //source: Source, // For refetching purposes
 }
 
 impl UserPlaylist {
-    pub fn new(list: Vec<SongRequest>, source: Source) -> UserPlaylist {
+    pub fn new(list: Vec<SongRequest>) -> UserPlaylist {
         UserPlaylist {
             index: 0,
             list,
-            source,
+            //source,
         }
     }
 
@@ -141,13 +141,14 @@ impl AutoplayState {
             db,
         };
 
-        for (req, url) in users {
+        for (reqid, srcs) in users {
             // Panicking here is fine for now, if there's bad data in the json, let that be caught
-            let req = ret.db.get_requester(req).await.unwrap();
+            let req = ret.db.get_requester(reqid).await.unwrap();
 
-            info!("loading setlist for user {} from storage", &req.displayname);
-            // TODO: just take the first source, support multiple sources later
-            ret.register(req, &url[0]).unwrap();
+            debug!("loading setlists for user {} from storage", &req.displayname);
+            ret.load_sources_for_requester(&req, &srcs).unwrap();
+
+            ret.usertimecache.insert(reqid, 0);
         }
 
         ret
@@ -188,23 +189,27 @@ impl AutoplayState {
         Some(song)
     }
 
-    pub fn register(&mut self, requester: Requester, source: &Source) -> Result<AutoplayOk, AutoplayError> {
-
-        let tmpdata = fetch_songs_from_source(&source)
-            .iter().map(|e| SongRequest::new(e.clone(), requester.clone())).collect();
-
-        let mut tmpdata = UserPlaylist::new(tmpdata, source.clone());
-        tmpdata.shuffle();
-
-        // TODO: probably definitely just use UserId here, this is a lot of clones
-        self.userlists.insert(requester.id.clone(), tmpdata);
-        self.usertimecache.insert(requester.id.clone(), 0);
-
-        if self.enabled {
-            self.enable_user(&requester.id)?;
+    pub fn load_sources_for_requester(&mut self, requester: &Requester, sources: &Vec<Source>) -> Result<AutoplayOk, AutoplayError> {
+        let mut tmpdata = Vec::new();
+        for src in sources {
+            let mut tmp = fetch_songs_from_source(&src.path)
+                .iter().map(|e| SongRequest::new(e.clone(), requester.clone())).collect();
+            tmpdata.append(&mut tmp);
         }
 
-        Ok(AutoplayOk::RegisteredUser)
+        // If a user has no sources to load (possibly deleted the last one), remove them from the userlists
+        if tmpdata.is_empty(){
+            self.userlists.remove(&requester.id);
+
+            return Ok(AutoplayOk::RemovedUser)
+        }
+
+        let mut tmpdata = UserPlaylist::new(tmpdata);
+        tmpdata.shuffle();
+
+        self.userlists.insert(requester.id, tmpdata);
+
+        Ok(AutoplayOk::UpdatedPlaylist)
     }
 
     pub fn prefetch(&self, num: u64) -> Option<Vec<SongRequest>> {
@@ -329,20 +334,10 @@ impl AutoplayState {
         *us += delta;
     }
 
-    pub fn update_userplaylist(&mut self, requester: &Requester) -> Result<AutoplayOk, AutoplayError> {
+    pub async fn update_userplaylist(&mut self, requester: &Requester) -> Result<AutoplayOk, AutoplayError> {
+        let sources = self.db.get_sources_from_userid(requester.id, true).await.unwrap();
 
-        let url = if let Some(ul) = &self.userlists.get(&requester.id) {
-            ul.source.clone()
-        }
-        else {
-            return Err(AutoplayError::UserNotRegistered);
-        };
-
-        match self.register(requester.clone(), &url) {
-            Ok(AutoplayOk::RegisteredUser) => Ok(AutoplayOk::UpdatedPlaylist),
-            Ok(o) => panic!("unknown ok response from register trying to update: {:?}", o),
-            Err(e) => Err(e)
-        }
+        self.load_sources_for_requester(requester, &sources)
     }
 
     pub fn advance_userplaylist(&mut self, userid: &MinstrelUserId, num: u64) -> Result<AutoplayOk, AutoplayError> {

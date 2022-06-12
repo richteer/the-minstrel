@@ -44,7 +44,7 @@ impl DbAdapter {
     /// Get all userids and their associated sources
     /// TODO: eventually probably don't use this, this is mostly for autoplay refactoring
     pub async fn get_active_sources(&self) -> Result<HashMap<MinstrelUserId, Vec<minstrelmodel::Source>>, ()> {
-        let resp = sqlx::query_as!(Source, r#"SELECT * FROM source WHERE active = "true""#)
+        let resp = sqlx::query_as!(Source, r#"SELECT * FROM source WHERE active = TRUE"#)
             .fetch_all(&self.db).await;
 
         let resp = resp.unwrap();
@@ -61,16 +61,54 @@ impl DbAdapter {
         Ok(ret)
     }
 
+    pub async fn get_sources_from_userid(&self, user_id: MinstrelUserId, active: bool) -> Result<Vec<minstrelmodel::Source>, ()> {
+        let resp = match active {
+            true => sqlx::query_as!(Source, r#"SELECT * FROM source WHERE active = TRUE AND user_id = ?"#, user_id)
+                .fetch_all(&self.db).await,
+            false => sqlx::query_as!(Source, "SELECT * FROM source WHERE user_id = ?", user_id)
+                .fetch_all(&self.db).await,
+        };
+
+        let mut resp = resp.unwrap();
+        let resp = resp.drain(..).map(|e| e.into()).collect();
+
+        Ok(resp)
+    }
+
+    pub async fn create_source(&self, user_id: MinstrelUserId, srctype: &minstrelmodel::SourceType, active: bool) -> Result<(),()> {
+        let (path, srctype) = match srctype {
+            minstrelmodel::SourceType::YoutubePlaylist(path) => (path, 1), // TODO: actually implement a source enum
+        };
+
+        let resp = sqlx::query!("INSERT INTO source (path, active, source_type, user_id) VALUES (?, ?, ?, ?)",
+            path, active, srctype, user_id).execute(&self.db).await;
+
+        match resp {
+            Ok(_) => Ok(()),
+            Err(_) => Err(()),
+        }
+    }
+
+    pub async fn delete_source(&self, source_id: SourceId) -> Result<bool, ()> {
+        let resp = sqlx::query!("DELETE FROM source WHERE id = ? RETURNING id", source_id)
+            .fetch_optional(&self.db).await;
+
+        match resp {
+            Ok(Some(_)) => Ok(true),
+            Ok(None) => Ok(false),
+            Err(_) => Err(()),
+        }
+    }
+
     /// Get a model::Requester struct from a MinstrelUserId
     pub async fn get_requester(&self, muid: MinstrelUserId) -> Result<minstrelmodel::Requester, ()> {
-        let resp = sqlx::query!("SELECT user_auth.username, user.displayname, user.icon, user.id  FROM user INNER JOIN user_auth ON user.id=user_auth.user_id AND user.id = ?", muid)
+        let resp = sqlx::query!("SELECT * FROM user WHERE user.id = ?", muid)
             .fetch_one(&self.db).await;
 
         let resp = resp.unwrap();
 
         Ok(minstrelmodel::Requester {
-            displayname: resp.displayname.unwrap_or_else(|| resp.username.clone()),
-            username: resp.username,
+            displayname: resp.displayname.unwrap(), // TODO: make displayname mandatory
             icon: resp.icon.unwrap_or_else(|| "".into()),
             id: resp.id,
         })

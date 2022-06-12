@@ -12,7 +12,6 @@ pub mod web;
 //  Subject to deletion if/when all the structs in music:: become "web compatible"
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
 pub struct Requester {
-    pub username: String,
     pub displayname: String,
     pub icon: String, // url
     pub id: MinstrelUserId, // same as MinstrelId probably
@@ -46,11 +45,17 @@ impl SongRequest {
 }
 
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]
+
 /// Path to a source of music, to be used in autoplay.
 /// May be a playlist, or just a single song.
 /// TODO: Support other Source types
-pub enum Source {
+pub enum SourceType {
     YoutubePlaylist(String),
+}
+
+pub struct Source {
+    pub id: i64,
+    pub path: SourceType,
 }
 
 #[derive(Clone, Serialize, Eq, PartialEq, Deserialize, Debug)]

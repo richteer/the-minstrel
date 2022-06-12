@@ -194,7 +194,7 @@ impl MusicState {
                     MusicControlCmd::Previous => self.previous().await,
                     MusicControlCmd::SongEnded => { self.song_ended().await; Ok(MusicOk::Unimplemented) },
                     MusicControlCmd::GetData => Ok(MusicOk::Data(Box::new(self.get_webdata()))),
-                    MusicControlCmd::AutoplayCmd(cmd) => AutoplayAdapter::handle_cmd(cmd, &mut self.autoplay),
+                    MusicControlCmd::AutoplayCmd(cmd) => AutoplayAdapter::handle_cmd(cmd, &mut self.autoplay).await,
                 };
 
                 if let Err(e) = rettx.send(ret) {
@@ -502,7 +502,7 @@ fn log_song(song: &SongRequest) {
             title = song.song.title,
             artist = song.song.artist,
             url = song.song.url,
-            requester = song.requested_by.username,
+            requester = song.requested_by.displayname,
         ).as_bytes());
 
     if let Err(e) = ret {
