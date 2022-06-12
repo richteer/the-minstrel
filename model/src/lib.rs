@@ -123,3 +123,13 @@ pub enum MinstrelBroadcast {
     // TODO: This should probably be an enum, so that frontends can display errors as they choose
     Error(String),
 }
+
+#[derive(Copy, Clone, Debug)]
+// TODO: maybe impl display
+pub enum UserMgmtError {
+    UserExists,
+    UserDoesNotExist,
+    InvalidLink,
+    DbError,
+    UnknownError,
+}

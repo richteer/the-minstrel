@@ -11,8 +11,9 @@ use configs::*;
 pub struct Configuration {
     pub music: MusicConfig,
     pub discord: DiscordConfig,
-    pub web: WebConfig,
     pub songlog: SongLogConfig,
+    pub user: UserConfig,
+    pub web: WebConfig,
 }
 
 lazy_static! {

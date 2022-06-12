@@ -18,7 +18,8 @@ use model::{
 
 use db::DbAdapter;
 
-use crate::adapters::AutoplayAdapter;
+use super::AutoplayAdapter;
+use super::UserMgmt;
 
 /// Ergonomic adapter for communicating with the MusicState/Controller without needing
 /// to manually do the message passing or wrapping it.
@@ -26,6 +27,7 @@ use crate::adapters::AutoplayAdapter;
 pub struct MusicAdapter {
     pub autoplay: AutoplayAdapter,
     pub db: DbAdapter,
+    pub user: UserMgmt,
     bcast: broadcast::Sender<model::MinstrelBroadcast>,
     tx: mpsc::Sender<MSCMD>,
 }
@@ -34,6 +36,7 @@ impl MusicAdapter {
     pub fn new(tx: mpsc::Sender<MSCMD>, bcast: broadcast::Sender<model::MinstrelBroadcast>, db: DbAdapter) -> Self {
         Self {
             autoplay: AutoplayAdapter::new(tx.clone()),
+            user: UserMgmt::new(db.clone()),
             db,
             tx,
             bcast,

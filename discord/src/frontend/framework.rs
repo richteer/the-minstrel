@@ -27,6 +27,7 @@ use crate::frontend::commands::{
     queuectl::*,
     autoplay::*,
     config::*,
+    user::*,
     //debug::*,
 };
 
@@ -99,6 +100,7 @@ pub fn init_framework() -> StandardFramework {
     .group(&QUEUECONTROLCMD_GROUP)
     .group(&AUTOPLAYCMD_GROUP)
     .group(&CONFIGCMD_GROUP)
+    .group(&USERCMD_GROUP)
     //.group(&DEBUGCMD_GROUP)
     .help(&HELPME)
 }

@@ -26,7 +26,9 @@ impl UserConv for MusicAdapter {
     }
 
     async fn muid_from_userid(&self, userid: &UserId) -> MinstrelUserId {
-        self.db.get_userid_from_discordid(userid.0).await.unwrap()
+        // TODO: These will probably blow up later on, should definitely have a
+        // better check for if a user is registered
+        self.db.get_userid_from_discordid(userid.0).await.unwrap().unwrap()
     }
 
     async fn get_user_from_muid(&self, ctx: &Context, muid: &MinstrelUserId) -> Option<User> {
