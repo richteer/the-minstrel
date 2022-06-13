@@ -46,3 +46,19 @@ pub struct UserInfo {
     pub userinfo: Option<Requester>,
     pub error: String,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct RegisterRequest {
+    pub username: String,
+    pub password: String,
+    pub displayname: String,
+    pub link: Option<u64>,
+    pub icon: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LinkInfo {
+    pub status: u16,
+    pub link: Option<u64>,
+    pub error: String,
+}

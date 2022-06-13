@@ -44,7 +44,7 @@ pub enum MusicControlCmd {
 
 use model::web::ReplyStatus;
 
-use crate::user::handle_login;
+use crate::user::*;
 
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -164,11 +164,26 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
     let api_no_body = api_func_base.clone()
         .and_then(handle_simple_api);
 
-    let login = api_base
+    let login = api_base.clone()
         .and(warp::path("login"))
         .and(warp::path::end())
         .and(warp::body::json())
         .and_then(handle_login);
 
-    login.or(api_no_body).or(api_body)
+    let register = api_base.clone()
+        .and(warp::path("register"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and_then(handle_register);
+
+    let logout = api_base.clone()
+        .and(warp::path("logout"))
+        .and(warp::path::end())
+        .and_then(handle_logout);
+
+    login
+        .or(logout)
+        .or(register)
+        .or(api_no_body)
+        .or(api_body)
 }

@@ -127,7 +127,8 @@ impl UserMgmt {
     }
 
     /// Create a new auth struct that points to an existing User
-    pub async fn user_link(&self, link: u64, newauth: AuthType) -> Result<(), UserMgmtError> {
+    ///  Returns the id of the User that has been linked
+    pub async fn user_link(&self, link: u64, newauth: AuthType) -> Result<MinstrelUserId, UserMgmtError> {
         let user = {
             let mut links = self.linktable.lock().await;
 
@@ -159,8 +160,8 @@ impl UserMgmt {
                     return Err(UserMgmtError::UserExists)
                 }
 
-                // TODO: encode password here
-                self.db.create_user_auth(user, username, password).await.map_err(|_| UserMgmtError::DbError)?;
+                let hashed_password = hash_password(&password)?;
+                self.db.create_user_auth(user, username, &hashed_password).await.map_err(|_| UserMgmtError::DbError)?;
             },
             AuthType::Discord(did) => {
                 if self.db.exists_discord_user_by_user_id(user).await.map_err(|_| UserMgmtError::DbError)? {
@@ -171,7 +172,7 @@ impl UserMgmt {
             },
         };
 
-        Ok(())
+        Ok(user)
     }
 
     /// Create a unique link code for different auth methods to refer to the same User
