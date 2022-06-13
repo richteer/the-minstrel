@@ -6,19 +6,12 @@ use yew_feather::log_in;
 use model::web::LoginRequest;
 
 #[derive(Properties, PartialEq)]
-pub struct LoginCardProps {
+pub struct LoginFormProps {
     pub open_handle: UseToggleHandle<bool>
 }
 
-#[function_component(LoginCard)]
-pub fn login_card(props: &LoginCardProps) -> Html {
-    let toggle_modal = {
-        let open = props.open_handle.clone();
-        Callback::from(move |_| {
-            open.toggle();
-        })
-    };
-
+#[function_component(LoginForm)]
+pub fn login_form(props: &LoginFormProps) -> Html {
     let username_noderef = use_node_ref();
     let password_noderef = use_node_ref();
 
@@ -71,22 +64,44 @@ pub fn login_card(props: &LoginCardProps) -> Html {
 
 
     html! {
+        <>
+        <div class="field">
+            <input class="input" ref={username_noderef} type="text" name="username" maxlength="64" autocomplete="off" placeholder="Username"/>
+        </div>
+        <div class="field">
+            <input class="input" ref={password_noderef} type="password" name="password" maxlength="1024" placeholder="Password"/>
+        </div>
+        <div class="field">
+            <button onclick={click_login} class="button is-link">{"Log In"}</button>
+        </div>
+        </>
+    }
+}
+
+#[derive(Properties, PartialEq)]
+pub struct LoginCardProps {
+    pub open_handle: UseToggleHandle<bool>
+}
+
+
+#[function_component(LoginCard)]
+pub fn login_card(props: &LoginCardProps) -> Html {
+    let toggle_modal = {
+        let open = props.open_handle.clone();
+        Callback::from(move |_| {
+            open.toggle();
+        })
+    };
+
+    html! {
         <div class="modal is-active">
             <div class="modal-background" onclick={toggle_modal.clone()} />
             <div class="modal-card">
                 <header class="modal-card-head">
                     <p class="modal-card-title">{"Log In"}</p>
                 </header>
-                <div class="modal-card-body" >
-                    <div class="field">
-                        <input class="input" ref={username_noderef} type="text" name="username" maxlength="64" autocomplete="off" placeholder="Username"/>
-                    </div>
-                    <div class="field">
-                        <input class="input" ref={password_noderef} type="password" name="password" maxlength="1024" placeholder="Password"/>
-                    </div>
-                    <div class="field">
-                        <button onclick={click_login} class="button is-link">{"Log In"}</button>
-                    </div>
+                <div class="modal-card-body">
+                    <LoginForm open_handle={props.open_handle.clone()}/>
                 </div>
             </div>
             <button class="modal-close" aria-label="close" onclick={toggle_modal}/>
