@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use bimap::BiHashMap;
 use tokio::sync::Mutex;
 use music::{
     adapters::MusicAdapter,
@@ -6,7 +7,7 @@ use music::{
 };
 use model::{
     SongRequest,
-    Requester,
+    Requester, MinstrelUserId,
 };
 use std::convert::Infallible;
 use serde::{
@@ -43,6 +44,8 @@ pub enum MusicControlCmd {
 
 use model::web::ReplyStatus;
 
+use crate::user::handle_login;
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct SongBody {
@@ -64,7 +67,9 @@ pub async fn show_state(
 
 // TODO: Unify these, or implement handlers for each unique endpoint
 async fn handle_body_api(
+    _cookie: Option<String>,
     mut mstate: MusicAdapter,
+    _tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
     func: String,
     body: SongBody,
 ) -> Result<impl warp::Reply, Infallible> {
@@ -104,7 +109,9 @@ async fn handle_body_api(
 }
 
 async fn handle_simple_api(
+    _cookie: Option<String>,
     mut mstate: MusicAdapter,
+    _tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
     func: String,
 ) -> Result<impl warp::Reply, Rejection> {
 
@@ -133,23 +140,35 @@ async fn handle_simple_api(
 }
 
 pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+    let auths = Arc::new(Mutex::new(BiHashMap::<MinstrelUserId, String>::new()));
     let mstate = warp::any().map(move || { mstate.clone() });
+    let authtable = warp::any().map(move || { auths.clone() });
 
     let body = warp::body::json()
         .and(warp::body::content_length_limit(256)); // Arbitrary length limit, we should not be expecting big data
 
     let api_base = warp::post()
+        .and(warp::cookie::optional::<String>("auth_token"))
         .and(warp::path("api"))
         .and(mstate)
+        .and(authtable);
+
+    let api_func_base = api_base.clone()
         .and(warp::path::param::<String>()
         .and(warp::path::end()));
 
-    let api_body = api_base.clone()
-        .and(body)
+    let api_body = api_func_base.clone()
+        .and(body.clone())
         .and_then(handle_body_api);
 
-    let api_no_body = api_base
+    let api_no_body = api_func_base.clone()
         .and_then(handle_simple_api);
 
-    api_no_body.or(api_body)
+    let login = api_base
+        .and(warp::path("login"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and_then(handle_login);
+
+    login.or(api_no_body).or(api_body)
 }

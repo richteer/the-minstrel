@@ -6,6 +6,8 @@ use serde::{
     Serialize,
 };
 
+use crate::Requester;
+
 // TODO: Definitely make this way more robust, consider enuming and consider allowing
 //   payload returns
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -36,4 +38,11 @@ impl ReplyStatus {
 pub struct LoginRequest {
     pub username: String,
     pub password: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UserInfo {
+    pub status: u16,
+    pub userinfo: Option<Requester>,
+    pub error: String,
 }
