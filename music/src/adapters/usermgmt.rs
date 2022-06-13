@@ -218,6 +218,33 @@ impl UserMgmt {
         Err(UserMgmtError::UnknownError)
     }
 
+    /// "Authenticate" a user by username and password.
+    ///  Returns Some(user_id) if valid, None if either doesn't exist or bad password.
+    ///   Failure reason is intentionally obfuscated
+    ///  Takes in a borrowed username, but takes ownership of password to ensure it is dropped.
+    ///   password should not be cloned, so it should be dropped from memory.
+    ///  TODO: consider making password a special struct that doesn't implement clone or something
+    pub async fn user_authenticate(&self, username: &String, password: String) -> Result<Option<MinstrelUserId>, UserMgmtError> {
+        let auth = self.db.get_user_auth_by_username(username).await;
+
+        let auth = match auth {
+            Ok(a) => a,
+            Err(e) => {
+                log::error!("Database threw an error: {:?}", e);
+                return Err(UserMgmtError::DbError)
+            }
+        };
+
+        if let Some((id, phash)) = auth {
+            match verify_password(&password, &phash)? {
+                true => Ok(Some(id)), // Success
+                false => Ok(None),    // Bad Password
+            }
+        } else {
+            Ok(None) // Username not found
+        }
+    }
+
     // TODO
     /// Merge two User entries with different auth methods into a single User
     ///  Metadata from auth1's user takes precedence over auth2

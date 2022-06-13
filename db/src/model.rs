@@ -4,13 +4,13 @@ use serde::{Serialize, Deserialize};
 pub struct User {
     pub id: i64,
     pub displayname: String,
-    pub icon: String, // Url for now
+    pub icon: Option<String>, // Url for now
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UserAuth {
     pub id: i64,
-    pub userid: i64, // Points to User
+    pub user_id: i64, // Points to User
     pub username: String,
     pub password: String,
     // TODO: auth token?
@@ -19,9 +19,8 @@ pub struct UserAuth {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DiscordUser {
     pub id: i64,
-    pub userid: i64, // Points to User
-    // TODO: determine good (de)serialization of discordid
-    pub discordid: i64,
+    pub user_id: i64, // Points to User
+    pub discord_id: i64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -68,3 +67,25 @@ impl From<Song> for minstrelmodel::Song {
 }
 
 // TODO: PlaylistCache, ThumbnailCache
+
+
+#[cfg(test)]
+mod tests {
+    use tokio::test;
+
+    use crate::init_db;
+    use crate::model::*;
+
+    // Not really a test, just here to make sure the models actually match the schema
+    #[test]
+    async fn test_models() {
+        let db = &init_db().await.db;
+
+        // These will all probably succeed if it compiles.
+        sqlx::query_as!(User, "SELECT * FROM user").fetch_optional(db).await.unwrap();
+        sqlx::query_as!(UserAuth, "SELECT * FROM user_auth").fetch_optional(db).await.unwrap();
+        sqlx::query_as!(DiscordUser, "SELECT * FROM discord_user").fetch_optional(db).await.unwrap();
+        sqlx::query_as!(Source, "SELECT * FROM source").fetch_optional(db).await.unwrap();
+
+    }
+}

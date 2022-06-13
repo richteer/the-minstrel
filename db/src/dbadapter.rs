@@ -108,7 +108,7 @@ impl DbAdapter {
         let resp = resp.unwrap();
 
         Ok(minstrelmodel::Requester {
-            displayname: resp.displayname.unwrap(), // TODO: make displayname mandatory
+            displayname: resp.displayname,
             icon: resp.icon.unwrap_or_else(|| "".into()),
             id: resp.id,
         })
@@ -167,6 +167,19 @@ impl DbAdapter {
             .execute(&self.db).await.unwrap();
 
         Ok(())
+    }
+
+    pub async fn get_user_auth_by_username(&self, username: &String) -> Result<Option<(MinstrelUserId, String)>, ()> {
+        let resp = sqlx::query_as!(UserAuth, "SELECT * FROM user_auth WHERE username = ?", username)
+            .fetch_optional(&self.db).await;
+
+        let resp = resp.unwrap();
+
+        if let Some(resp) = resp {
+            Ok(Some((resp.user_id, resp.password)))
+        } else {
+            Ok(None)
+        }
     }
 
     pub async fn create_discord_user(&self, user_id: MinstrelUserId, discord_id: u64) -> Result<(), ()> {
@@ -233,12 +246,3 @@ impl DbAdapter {
         }
     }
  }
-
-#[cfg(test)]
-mod tests {
-
-    #[tokio::test]
-    async fn test_models() {
-        todo!()
-    }
-}
