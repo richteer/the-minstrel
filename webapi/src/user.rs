@@ -212,3 +212,46 @@ pub async fn handle_create_link(
         .status(reply.status)
         .body(serde_json::to_string(&reply).unwrap()).unwrap())
 }
+
+pub async fn handle_userinfo(
+    user_auth: Option<String>,
+    mstate: MusicAdapter,
+    tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
+) -> Result<impl warp::Reply, Infallible> {
+
+    // TODO: just make the cookie required here, return 401 otherwise
+    let user_auth = user_auth.unwrap();
+
+    let tokens = tokens.lock().await;
+
+    // TODO: Strongly consider writing a filter to make this conversion automatic
+    let user_id = tokens.get_by_right(&user_auth);
+    let (status, userinfo, error) = if let Some(uid) = user_id {
+        let req = mstate.db.get_requester(*uid).await;
+        match req {
+            Ok(req) => (StatusCode::OK, Some(req), "UserInfo Retrieved".into()),
+            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, None, format!("Something went really wrong internally: {e:?}")),
+        }
+    } else {
+        (StatusCode::UNAUTHORIZED, None, "Invalid session ID".into())
+    };
+
+
+    let reply = UserInfo {
+        status: status.as_u16(),
+        userinfo,
+        error,
+    };
+
+    let resp = warp::http::Response::builder()
+        .status(reply.status);
+
+    // Clear bogus cookie if it wasn't accepted
+    let resp = if !status.is_success() {
+        resp.header("Set-Cookie", r#"auth_token=""; httponly; Secure; SameSite=Strict;"#)
+    } else { resp };
+
+    let resp = resp.body(serde_json::to_string(&reply).unwrap()).unwrap();
+
+    Ok(resp)
+}

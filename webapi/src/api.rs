@@ -181,9 +181,16 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
         .and(warp::path::end())
         .and_then(handle_logout);
 
+    // TODO: this should probably just be a GET?
+    let userinfo = api_base.clone()
+        .and(warp::path("userinfo"))
+        .and(warp::path::end())
+        .and_then(handle_userinfo);
+
     login
         .or(logout)
         .or(register)
+        .or(userinfo)
         .or(api_no_body)
         .or(api_body)
 }
