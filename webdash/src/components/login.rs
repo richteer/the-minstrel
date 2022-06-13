@@ -3,7 +3,7 @@ use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_hooks::prelude::*;
 use yew_feather::log_in;
-use model::web::LoginRequest;
+use model::web::{LoginRequest, RegisterRequest};
 
 #[derive(Properties, PartialEq)]
 pub struct LoginFormProps {
@@ -79,6 +79,103 @@ pub fn login_form(props: &LoginFormProps) -> Html {
 }
 
 #[derive(Properties, PartialEq)]
+pub struct RegisterFormProps {
+    pub open_handle: UseToggleHandle<bool>
+}
+
+#[function_component(RegisterForm)]
+pub fn register_form(props: &RegisterFormProps) -> Html {
+    let username_noderef = use_node_ref();
+    let password_noderef = use_node_ref();
+    let password2_noderef = use_node_ref();
+    let displayname_noderef = use_node_ref();
+    let icon_noderef = use_node_ref();
+
+    // Callback to actually attempt the login
+    //   Needs references to the modal open state, and noderefs for the inputs
+    let post_register = {
+        let open = props.open_handle.clone();
+        let username_noderef = username_noderef.clone();
+        let password_noderef = password_noderef.clone();
+        let password2_noderef = password2_noderef.clone();
+        let displayname_noderef = displayname_noderef.clone();
+        let icon_noderef = icon_noderef.clone();
+
+        use_async(async move {
+            let username = username_noderef.cast::<HtmlInputElement>().unwrap().value();
+            let password = password_noderef.cast::<HtmlInputElement>().unwrap().value();
+            let password2 = password2_noderef.cast::<HtmlInputElement>().unwrap().value();
+            let displayname = displayname_noderef.cast::<HtmlInputElement>().unwrap().value();
+            let icon: String = icon_noderef.cast::<HtmlInputElement>().unwrap().value();
+
+            if password != password2 {
+                // TODO: actually report validation errors to the user
+                return Err(())
+            }
+
+            // TODO: consider validating client-side if icon actually points somewhere?
+            //  or maybe validate server side?
+            let icon = if icon.is_empty() {
+                Some(icon)
+            } else {
+                None
+            };
+
+            let resp = Request::post("/api/register")
+                .json(&RegisterRequest { username, password, displayname, icon, link: None }).unwrap()
+                .send().await.unwrap();
+
+            if resp.ok() {
+                open.toggle();
+                // TODO: set UserInfo context
+                Ok(())
+            } else {
+                Err(())
+            }
+        })
+    };
+
+    // Callback for clicking the login button
+    let click_register = {
+        let post_register = post_register.clone();
+        Callback::from(move |_| {
+            post_register.run();
+        })
+    };
+
+
+    html! {
+        <form method="dialog" onsubmit={click_register}>
+            <div class="field">
+                <label class="label">{"Username"}</label>
+                <input class="input" ref={username_noderef} type="text" name="username" placeholder="Username" maxlength="64" />
+            </div>
+            <div class="field">
+                <label class="label">{"Password"}</label>
+                // TODO: validate password requirements, length, etc
+                <input class="input" ref={password_noderef} type="password" name="password" placeholder="Password" maxlength="1024" />
+            </div>
+            <div class="field">
+                <label class="label">{"Password (again)"}</label>
+                <input class="input" ref={password2_noderef} type="password" name="password" placeholder="Password" maxlength="1024" />
+            </div>
+            <div class="field">
+                <label class="label">{"Display Name"}</label>
+                <input class="input" ref={displayname_noderef} type="text" name="displayname" placeholder="Display Name (e.g. Steve)" maxlength="64" />
+            </div>
+            <div class="field">
+                <label class="label">{"Icon URL (optional)"}</label>
+                <input class="input" ref={icon_noderef} type="text" name="icon" placeholder="URL to icon" maxlength="64" />
+            </div>
+            <div class="field">
+                <input type="submit" class="button is-link" name="register" value="Register"/>
+            </div>
+        </form>
+    }
+}
+
+
+#[derive(Properties, PartialEq)]
 pub struct LoginCardProps {
     pub open_handle: UseToggleHandle<bool>
 }
@@ -134,7 +231,7 @@ pub fn login_card(props: &LoginCardProps) -> Html {
                         <LoginForm open_handle={props.open_handle.clone()}/>
                     </div>
                     <div class={get_class(*active_tab, ActiveTab::Register, true)}>
-                        {"TODO!"}
+                        <RegisterForm open_handle={props.open_handle.clone()}/>
                     </div>
                 </div>
             </div>
