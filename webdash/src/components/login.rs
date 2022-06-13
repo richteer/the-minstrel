@@ -83,6 +83,11 @@ pub struct LoginCardProps {
     pub open_handle: UseToggleHandle<bool>
 }
 
+#[derive(PartialEq, Copy, Clone)]
+enum ActiveTab {
+    Login,
+    Register,
+}
 
 #[function_component(LoginCard)]
 pub fn login_card(props: &LoginCardProps) -> Html {
@@ -93,15 +98,44 @@ pub fn login_card(props: &LoginCardProps) -> Html {
         })
     };
 
+    let active_tab = use_state(|| ActiveTab::Login);
+    let login_onclick = {
+        let active_tab = active_tab.clone();
+        Callback::from(move |_| { active_tab.set(ActiveTab::Login) })
+    };
+
+    let register_onclick = {
+        let active_tab = active_tab.clone();
+        Callback::from(move |_| active_tab.set(ActiveTab::Register))
+    };
+
+
+    fn get_class(active: ActiveTab, target: ActiveTab, content: bool) -> String {
+        match (content, active == target) {
+            (false, true)  => String::from("is-active"),
+            (false, false) => String::from(""),
+            (true,  true)  => String::from(""),
+            (true,  false) => String::from("is-hidden"),
+        }
+    }
+
     html! {
         <div class="modal is-active">
             <div class="modal-background" onclick={toggle_modal.clone()} />
             <div class="modal-card">
-                <header class="modal-card-head">
-                    <p class="modal-card-title">{"Log In"}</p>
-                </header>
                 <div class="modal-card-body">
-                    <LoginForm open_handle={props.open_handle.clone()}/>
+                    <div class="tabs is-fullwidth is-centered">
+                        <ul>
+                            <li class={get_class(*active_tab, ActiveTab::Login, false)} onclick={login_onclick}><a>{"Log In"}</a></li>
+                            <li class={get_class(*active_tab, ActiveTab::Register, false)} onclick={register_onclick}><a>{"Register"}</a></li>
+                        </ul>
+                    </div>
+                    <div class={get_class(*active_tab, ActiveTab::Login, true)}>
+                        <LoginForm open_handle={props.open_handle.clone()}/>
+                    </div>
+                    <div class={get_class(*active_tab, ActiveTab::Register, true)}>
+                        {"TODO!"}
+                    </div>
                 </div>
             </div>
             <button class="modal-close" aria-label="close" onclick={toggle_modal}/>
