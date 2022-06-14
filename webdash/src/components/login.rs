@@ -11,7 +11,7 @@ use yew_feather::{
 use model::{
     web::{
         LoginRequest,
-        RegisterRequest, UserInfo,
+        RegisterRequest, UserInfo, LinkRequest,
     },
     Requester
 };
@@ -229,6 +229,105 @@ pub fn register_form(props: &RegisterFormProps) -> Html {
 
 
 #[derive(Properties, PartialEq)]
+pub struct LinkFormProps {
+    pub open_handle: UseToggleHandle<bool>
+}
+
+#[function_component(LinkForm)]
+pub fn link_form(props: &LinkFormProps) -> Html {
+    let toastcontext = use_context::<ToastContext>().unwrap();
+    let usercontext = use_context::<UserContext>().unwrap();
+
+    let username_noderef = use_node_ref();
+    let password_noderef = use_node_ref();
+    let password2_noderef = use_node_ref();
+    let link_noderef = use_node_ref();
+
+    // Callback to actually attempt the login
+    //   Needs references to the modal open state, and noderefs for the inputs
+    let post_register = {
+        let open = props.open_handle.clone();
+        let username_noderef = username_noderef.clone();
+        let password_noderef = password_noderef.clone();
+        let password2_noderef = password2_noderef.clone();
+        let link_noderef = link_noderef.clone();
+
+        use_async(async move {
+            let username = username_noderef.cast::<HtmlInputElement>().unwrap().value();
+            let password = password_noderef.cast::<HtmlInputElement>().unwrap().value();
+            let password2 = password2_noderef.cast::<HtmlInputElement>().unwrap().value();
+            let link = link_noderef.cast::<HtmlInputElement>().unwrap().value();
+
+            // TODO: validate link is actually a number, etc etc
+            let link = link.parse::<u64>().map_err(|_| ())?;
+
+            if password != password2 {
+                // TODO: actually report validation errors to the user
+                return Err(())
+            }
+
+            let resp = Request::post("/api/link")
+                .json(&LinkRequest { username, password, link }).unwrap()
+                .send().await.unwrap();
+
+            if resp.ok() {
+                open.toggle();
+
+                login_update_usercontext(&resp, &usercontext, &toastcontext).await;
+
+                Ok(())
+            } else {
+                match resp.json::<UserInfo>().await {
+                    Ok(ui) => {
+                        log::error!("Error returned from server: {:?}", ui);
+                        toastcontext.dispatch(toast_error!(format!("Error: {:?}", ui.error)));
+                    },
+                    Err(e) => {
+                        log::error!("Error {e:?}, server sent back garbage: {resp:?}");
+                        toastcontext.dispatch(toast_error!("Server sent back some garbage, check console".into()));
+                    },
+                };
+
+                Err(())
+            }
+        })
+    };
+
+    // Callback for clicking the login button
+    let click_register = {
+        let post_register = post_register.clone();
+        Callback::from(move |_| {
+            post_register.run();
+        })
+    };
+
+    html! {
+        <form method="dialog" onsubmit={click_register}>
+            <div class="field">
+                <label class="label">{"Username"}</label>
+                <input class="input" ref={username_noderef} type="text" name="username" placeholder="Username" maxlength="64" />
+            </div>
+            <div class="field">
+                <label class="label">{"Password"}</label>
+                // TODO: validate password requirements, length, etc
+                <input class="input" ref={password_noderef} type="password" name="password" placeholder="Password" maxlength="1024" />
+            </div>
+            <div class="field">
+                <label class="label">{"Password (again)"}</label>
+                <input class="input" ref={password2_noderef} type="password" name="password" placeholder="Password" maxlength="1024" />
+            </div>
+            <div class="field">
+                <label class="label">{"Link"}</label>
+                <input class="input" ref={link_noderef} type="text" name="link" placeholder="Link number" maxlength="64" />
+            </div>
+            <div class="field">
+                <input type="submit" class="button is-link" name="register" value="Register"/>
+            </div>
+        </form>
+    }
+}
+
+#[derive(Properties, PartialEq)]
 pub struct LoginCardProps {
     pub open_handle: UseToggleHandle<bool>
 }
@@ -237,6 +336,7 @@ pub struct LoginCardProps {
 enum ActiveTab {
     Login,
     Register,
+    Link,
 }
 
 #[function_component(LoginCard)]
@@ -259,6 +359,11 @@ pub fn login_card(props: &LoginCardProps) -> Html {
         Callback::from(move |_| active_tab.set(ActiveTab::Register))
     };
 
+    let link_onclick = {
+        let active_tab = active_tab.clone();
+        Callback::from(move |_| active_tab.set(ActiveTab::Link))
+    };
+
 
     fn get_class(active: ActiveTab, target: ActiveTab, content: bool) -> String {
         match (content, active == target) {
@@ -278,6 +383,7 @@ pub fn login_card(props: &LoginCardProps) -> Html {
                         <ul>
                             <li class={get_class(*active_tab, ActiveTab::Login, false)} onclick={login_onclick}><a>{"Log In"}</a></li>
                             <li class={get_class(*active_tab, ActiveTab::Register, false)} onclick={register_onclick}><a>{"Register"}</a></li>
+                            <li class={get_class(*active_tab, ActiveTab::Link, false)} onclick={link_onclick}><a>{"Link"}</a></li>
                         </ul>
                     </div>
                     <div class={get_class(*active_tab, ActiveTab::Login, true)}>
@@ -285,6 +391,9 @@ pub fn login_card(props: &LoginCardProps) -> Html {
                     </div>
                     <div class={get_class(*active_tab, ActiveTab::Register, true)}>
                         <RegisterForm open_handle={props.open_handle.clone()}/>
+                    </div>
+                    <div class={get_class(*active_tab, ActiveTab::Link, true)}>
+                        <LinkForm open_handle={props.open_handle.clone()}/>
                     </div>
                 </div>
             </div>
