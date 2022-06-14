@@ -68,3 +68,8 @@ pub struct LinkInfo {
     pub link: Option<u64>,
     pub error: String,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ApBumpRequest {
+    pub index: usize,
+}

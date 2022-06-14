@@ -8,6 +8,7 @@ use music::{
 use model::{
     SongRequest,
     Requester, MinstrelUserId,
+    web::ApBumpRequest,
 };
 use std::convert::Infallible;
 use serde::{
@@ -137,6 +138,17 @@ async fn handle_simple_api(
     }
 }
 
+async fn handle_ap_bump(
+    muid: MinstrelUserId,
+    mut mstate: MusicAdapter,
+    body: ApBumpRequest,
+) -> Result<impl warp::Reply, Rejection> {
+    match mstate.autoplay.bump_userplaylist(&muid, body.index).await {
+        Ok(_) => Ok(warp::reply::json(&ReplyStatus::_ok())),
+        Err(e) => Ok(warp::reply::json(&ReplyStatus::new(StatusCode::BAD_REQUEST.as_u16() as u64, format!("Error: {e:?}").as_str())))
+    }
+}
+
 pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let auths = Arc::new(Mutex::new(BiHashMap::<MinstrelUserId, String>::new()));
     let mstate = warp::any().map(move || { mstate.clone() });
@@ -211,11 +223,20 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
         .and(warp::path::end())
         .and_then(handle_userinfo);
 
+    let autoplay_ap_bump = api_base.clone()
+        .and(warp::path("autoplay"))
+        .and(warp::path("bump"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and_then(handle_ap_bump);
+
+    // TODO: seriously clean up this filter building, this is getting out of hand
     login
         .or(logout)
         .or(register)
         .or(link)
         .or(userinfo)
+        .or(autoplay_ap_bump)
         .or(api_no_body)
         .or(api_body)
 }
