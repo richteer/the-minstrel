@@ -1,9 +1,51 @@
-use gloo_net::http::Request;
+use std::rc::Rc;
+
+use gloo_net::http::{Request, Response};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_hooks::prelude::*;
-use yew_feather::log_in;
-use model::web::{LoginRequest, RegisterRequest};
+use yew_feather::{
+    log_in,
+    log_out,
+};
+use model::{
+    web::{
+        LoginRequest,
+        RegisterRequest, UserInfo,
+    },
+    Requester
+};
+use yew_toast::{
+    ToastContext,
+    ToastList,
+    toast_error,
+    toast_info,
+};
+
+use crate::components::requester::*;
+
+async fn login_update_usercontext(
+    resp: &Response,
+    usercontext: &UseReducerHandle<LoginStatus>,
+    toastcontext: &UseReducerHandle<ToastList>
+) {
+    match resp.json::<UserInfo>().await {
+        Ok(userinfo) => {
+            if let Some(ui) = userinfo.userinfo {
+                usercontext.dispatch(UserContextAction::UpdateInfo(ui));
+                toastcontext.dispatch(toast_info!("Successfully logged in!".into()));
+            } else {
+                log::error!("Server sent back an empty requester field? {userinfo:?}");
+                toastcontext.dispatch(toast_error!("Server sent back some garbage, check console".into()));
+            };
+        },
+        Err(_) => {
+            log::error!("Could not parse response from server: {resp:?}");
+            toastcontext.dispatch(toast_error!("Server sent back some garbage, check console".into()));
+        }
+    };
+}
+
 
 #[derive(Properties, PartialEq)]
 pub struct LoginFormProps {
@@ -14,6 +56,9 @@ pub struct LoginFormProps {
 pub fn login_form(props: &LoginFormProps) -> Html {
     let username_noderef = use_node_ref();
     let password_noderef = use_node_ref();
+
+    let toastcontext = use_context::<ToastContext>().unwrap();
+    let usercontext = use_context::<UserContext>().unwrap();
 
     // Callback to actually attempt the login
     //   Needs references to the modal open state, and noderefs for the inputs
@@ -32,6 +77,9 @@ pub fn login_form(props: &LoginFormProps) -> Html {
 
             if resp.ok() {
                 open.toggle();
+
+                login_update_usercontext(&resp, &usercontext, &toastcontext).await;
+
                 Ok(())
             } else {
                 Err(())
@@ -85,6 +133,9 @@ pub struct RegisterFormProps {
 
 #[function_component(RegisterForm)]
 pub fn register_form(props: &RegisterFormProps) -> Html {
+    let toastcontext = use_context::<ToastContext>().unwrap();
+    let usercontext = use_context::<UserContext>().unwrap();
+
     let username_noderef = use_node_ref();
     let password_noderef = use_node_ref();
     let password2_noderef = use_node_ref();
@@ -127,7 +178,9 @@ pub fn register_form(props: &RegisterFormProps) -> Html {
 
             if resp.ok() {
                 open.toggle();
-                // TODO: set UserInfo context
+
+                login_update_usercontext(&resp, &usercontext, &toastcontext).await;
+
                 Ok(())
             } else {
                 Err(())
@@ -241,8 +294,36 @@ pub fn login_card(props: &LoginCardProps) -> Html {
 }
 
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct LoginStatus {
+    pub current_user: Option<Requester>,
+}
+
+pub enum UserContextAction {
+    UpdateInfo(Requester),
+    RemoveInfo,
+}
+
+impl Reducible for LoginStatus {
+    type Action = UserContextAction;
+
+    fn reduce(self: Rc<Self>, action: Self::Action) -> Rc<Self> {
+        match action {
+            UserContextAction::UpdateInfo(req) => Self { current_user: Some(req) },
+            UserContextAction::RemoveInfo => Self { current_user: None },
+        }.into()
+    }
+}
+
+pub type UserContext = UseReducerHandle<LoginStatus>;
+
 #[function_component(Login)]
 pub fn login() -> Html {
+    let usercontext = use_context::<UserContext>().unwrap();
+    let toastcontext = use_context::<ToastContext>().unwrap();
+
+    let user = (*usercontext).current_user.clone();
+
     let open = use_bool_toggle(false);
 
     let toggle_modal = {
@@ -251,14 +332,68 @@ pub fn login() -> Html {
             open.toggle();
         })
     };
+    let logout_onclick = {
+        let usercontext = usercontext.clone();
+        let toastcontext = toastcontext.clone();
+
+        let logout = use_async(async move {
+            let resp = Request::post("/api/logout")
+                .send().await.unwrap();
+
+            if resp.ok() {
+                Ok(())
+            } else {
+                Err(())
+            }
+        });
+
+        Callback::from(move |_| {
+            logout.run();
+
+            usercontext.dispatch(UserContextAction::RemoveInfo);
+            toastcontext.dispatch(toast_info!("Successfully logged out".into()));
+        })
+    };
+
+    if use_is_first_mount() {
+        use_async_with_options(async move {
+            let resp = Request::post("/api/userinfo")
+            .send().await.unwrap();
+
+            if resp.ok() {
+                login_update_usercontext(&resp, &usercontext, &toastcontext).await;
+
+                Ok(())
+            } else {
+                Err(())
+            }
+        },
+        UseAsyncOptions::enable_auto());
+    }
 
 
     html! {
         <>
         <div class="logintray">
-            <div class="controlicon" onclick={toggle_modal.clone()}>
-                <log_in::LogIn />
-            </div>
+            {
+                if let Some(user) = user {
+                    html! {
+                        <div class="is-flex is-flex-direction-row">
+                            <RequesterTag requester={user.clone()} size={RequesterSize::Tiny} />
+                            <div class="controlicon ml-2" onclick={logout_onclick}>
+                                <log_out::LogOut />
+                            </div>
+                        </div>
+                    }
+                } else {
+                    html! {
+                        <div class="controlicon" onclick={toggle_modal.clone()}>
+                            <log_in::LogIn />
+                        </div>
+                    }
+                }
+            }
+
         </div>
         {
             if *open {

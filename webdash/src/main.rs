@@ -14,9 +14,11 @@ use yew_toast::*;
 
 #[function_component(FDash)]
 pub fn fdash() -> Html {
+    // TODO: fetch info on page load
     let data: UseStateHandle<Option<MinstrelWebData>> = use_state(|| None);
 
     let toastlist = use_reducer(|| ToastList::new());
+    let userinfo = use_reducer(|| LoginStatus { current_user: None });
 
     let _ws = {
         let data = data.clone();
@@ -76,6 +78,7 @@ pub fn fdash() -> Html {
 
     html! {
         <div class="container">
+        <ContextProvider<UserContext> context={userinfo}>
         <ContextProvider<ToastContext> context={toastlist}>
         <ToastTray />
 
@@ -118,6 +121,7 @@ pub fn fdash() -> Html {
             </div>
         }
         </ContextProvider<ToastContext>>
+        </ContextProvider<UserContext>>
         </div>
     }
 }
