@@ -124,7 +124,7 @@ pub struct MusicState {
     queue: VecDeque<SongRequest>,
     history: VecDeque<SongRequest>,
     pub autoplay: AutoplayState,
-    db: DbAdapter, // TODO: probably just make this static? or have a better controller that wraps all adapters?
+    adapter: MusicAdapter, // To work around adapters possibly having unique state due to chained constructors
 }
 
 impl fmt::Debug for MusicState {
@@ -149,19 +149,22 @@ impl fmt::Debug for MusicState {
 impl MusicState {
 
     pub async fn new(player: mpsc::Sender<MPCMD>, db: DbAdapter) -> MusicState {
+        let bcast = broadcast::channel(2).0;
+        let cmd_channel = mpsc::channel(10);
+
         MusicState {
+            adapter: MusicAdapter::new(cmd_channel.0.clone(), bcast.clone(), db.clone()),
             // TODO: use a proper channel buffer sizes here
             player,
-            bcast: broadcast::channel(2).0,
-            cmd_channel: mpsc::channel(10),
+            bcast,
+            cmd_channel,
 
             current_track: None,
             songstarted: None,
             queue: VecDeque::<SongRequest>::new(),
             history: VecDeque::<SongRequest>::new(),
             status: MusicStateStatus::Idle,
-            autoplay: AutoplayState::new(db.clone()).await,
-            db,
+            autoplay: AutoplayState::new(db).await,
         }
     }
 
@@ -176,7 +179,7 @@ impl MusicState {
     }
 
     pub fn get_adapter(&self) -> MusicAdapter {
-        MusicAdapter::new(self.cmd_channel.0.clone(), self.bcast.clone(), self.db.clone())
+        self.adapter.clone()
     }
 
     pub async fn run(&mut self) {
