@@ -32,6 +32,13 @@ fn gen_auth_token() -> String {
         .collect()
 }
 
+#[cfg(not(debug_assertions))]
+// Require HTTPS for cookie support in-release mode, permit it in debug.
+// TODO: figure out a way to require an https reverse proxy, fail login otherwise
+const COOKIEOPTS: &str = "httponly; Secure; SameSite=Strict";
+#[cfg(debug_assertions)]
+const COOKIEOPTS: &str = "httponly; SameSite=Strict";
+
 
 pub async fn handle_login(
     mstate: MusicAdapter,
@@ -65,7 +72,7 @@ pub async fn handle_login(
     if let Some(token) = auth_token {
         Ok(warp::http::Response::builder()
             // TODO: probably set an expiry for these
-            .header("Set-Cookie", format!("auth_token={}; httponly; Secure; SameSite=Strict;", token))
+            .header("Set-Cookie", format!("auth_token={token}; {COOKIEOPTS}"))
             .status(reply.status)
             .body(serde_json::to_string(&reply).unwrap()).unwrap())
     } else {
@@ -115,7 +122,7 @@ pub async fn handle_register(
     if let Some(token) = auth_token {
         Ok(warp::http::Response::builder()
             // TODO: probably set an expiry for these
-            .header("Set-Cookie", format!("auth_token={}; httponly; Secure; SameSite=Strict;", token))
+            .header("Set-Cookie", format!("auth_token={token}; {COOKIEOPTS}"))
             .status(reply.status)
             .body(serde_json::to_string(&reply).unwrap()).unwrap())
     } else {
@@ -164,7 +171,7 @@ pub async fn handle_link(
     if let Some(token) = auth_token {
         Ok(warp::http::Response::builder()
             // TODO: probably set an expiry for these
-            .header("Set-Cookie", format!("auth_token={}; httponly; Secure; SameSite=Strict;", token))
+            .header("Set-Cookie", format!("auth_token={token}; {COOKIEOPTS}"))
             .status(reply.status)
             .body(serde_json::to_string(&reply).unwrap()).unwrap())
     } else {
@@ -184,12 +191,12 @@ pub async fn handle_logout(
         let mut tokens = tokens.lock().await;
         if let Some(_) = tokens.remove_by_right(&tok) {
             Ok(warp::http::Response::builder()
-                .header("Set-Cookie", r#"auth_token=""; httponly; Secure; SameSite=Strict;"#)
+                .header("Set-Cookie", format!(r#"auth_token=""; {COOKIEOPTS}"#))
                 .status(StatusCode::OK)
                 .body(serde_json::to_string(&ReplyStatus::_ok()).unwrap()).unwrap())
         } else {
             Ok(warp::http::Response::builder()
-                .header("Set-Cookie", r#"auth_token=""; httponly; Secure; SameSite=Strict;"#)
+                .header("Set-Cookie", format!(r#"auth_token=""; {COOKIEOPTS}"#))
                 .status(StatusCode::UNAUTHORIZED)
                 .body(serde_json::to_string(&ReplyStatus::new(StatusCode::UNAUTHORIZED.as_u16().into(), "User not logged in, or invalid session ID")).unwrap()).unwrap())
         }
@@ -266,7 +273,7 @@ pub async fn handle_userinfo(
 
     // Clear bogus cookie if it wasn't accepted
     let resp = if !status.is_success() {
-        resp.header("Set-Cookie", r#"auth_token=""; httponly; Secure; SameSite=Strict;"#)
+        resp.header("Set-Cookie", format!(r#"auth_token=""; {COOKIEOPTS}"#))
     } else { resp };
 
     let resp = resp.body(serde_json::to_string(&reply).unwrap()).unwrap();
