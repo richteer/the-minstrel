@@ -145,3 +145,20 @@ html {
     top: 1rem;
     right: 1rem;
 }
+
+.songrow:hover .bumpicon, .songrow:active .bumpicon {
+    opacity: 80%;
+}
+
+
+.bumpicon {
+    opacity: 0%;
+    cursor: pointer;
+
+    &:hover, &:active {
+        filter: drop-shadow(0 0 5px #fff);
+        transition: filter 200ms ease;
+    }
+
+    transition: opacity 200ms ease;
+}

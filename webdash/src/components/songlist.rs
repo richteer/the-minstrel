@@ -7,7 +7,7 @@ use model::{
     MinstrelWebData,
 };
 
-use crate::components::songrow::*;
+use crate::components::{songrow::*, UserContext};
 
 
 #[derive(Properties, PartialEq)]
@@ -43,6 +43,9 @@ pub fn songlisttabs(props: &SongListTabsProps) -> Html {
         }
     }
 
+    let usercontext = use_context::<UserContext>().unwrap();
+    let muid = usercontext.current_user.as_ref().map(|ui| ui.id);
+
     html! {
         <div class="tabview">
         <div class="tabs">
@@ -70,9 +73,14 @@ pub fn songlisttabs(props: &SongListTabsProps) -> Html {
                         </>
                         <>
                         {
-                            for props.data.upcoming.iter().map(|e| {
-                                html! {
-                                <SongRow song={e.clone()} />
+                            for props.data.upcoming.iter().enumerate().map(|(i,e)| {
+                                match muid.map(|muid| muid == e.requested_by.id) {
+                                    Some(true) => html! {
+                                        <SongRow song={e.clone()} index={i}/>
+                                    },
+                                    _ => html! {
+                                        <SongRow song={e.clone()}/>
+                                    }
                                 }
                             })
                         }
