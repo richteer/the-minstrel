@@ -95,34 +95,20 @@ pub fn login_form(props: &LoginFormProps) -> Html {
         })
     };
 
-
-    // Handlers for allowing users to press "Enter" to login. Probably could be better
-    {
-        let post_login = post_login.clone();
-        let handler = move |e: KeyboardEvent| {
-            // TODO: probably use keycode for cheaper check
-            if e.key() == "Enter" {
-                post_login.run();
-            }
-        };
-
-        use_event(username_noderef.clone(), "keypress", handler.clone());
-        use_event(password_noderef.clone(), "keypress", handler);
-    }
-
-
     html! {
-        <>
-        <div class="field">
-            <input class="input" ref={username_noderef} type="text" name="username" maxlength="64" autocomplete="off" placeholder="Username"/>
-        </div>
-        <div class="field">
-            <input class="input" ref={password_noderef} type="password" name="password" maxlength="1024" placeholder="Password"/>
-        </div>
-        <div class="field">
-            <button onclick={click_login} class="button is-link">{"Log In"}</button>
-        </div>
-        </>
+        <form method="dialog" onsubmit={click_login}>
+            <div class="field">
+                <label class="label">{"Username"}</label>
+                <input class="input" ref={username_noderef} type="text" name="username" placeholder="Username" maxlength="64" />
+            </div>
+            <div class="field">
+                <label class="label">{"Password"}</label>
+                <input class="input" ref={password_noderef} type="password" name="password" placeholder="Password" maxlength="1024" />
+            </div>
+            <div class="field">
+                <input type="submit" class="button is-link" name="login" value="Log In"/>
+            </div>
+        </form>
     }
 }
 
