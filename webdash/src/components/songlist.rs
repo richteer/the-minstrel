@@ -36,9 +36,9 @@ pub fn songlisttabs(props: &SongListTabsProps) -> Html {
 
     fn get_class(active: ActiveTab, target: ActiveTab, content: bool) -> String {
         match (content, active == target) {
-            (false, true)  => String::from("is-active has-text-weight-bold"),
+            (false, true)  => String::from("is-active"),
             (false, false) => String::from(""),
-            (true,  true)  => String::from("is-active"),
+            (true,  true)  => String::from(""),
             (true,  false) => String::from("is-hidden"),
         }
     }
@@ -47,8 +47,8 @@ pub fn songlisttabs(props: &SongListTabsProps) -> Html {
         <div class="tabview">
         <div class="tabs">
             <ul>
-                <li><a class={get_class(*active, ActiveTab::ComingUp, false)} onclick={comingup_onclick}>{"Coming up"}</a></li>
-                <li><a class={get_class(*active, ActiveTab::History, false)} onclick={history_onclick}>{"History"}</a></li>
+                <li class={get_class(*active, ActiveTab::ComingUp, false)} onclick={comingup_onclick}><a>{"Coming up"}</a></li>
+                <li class={get_class(*active, ActiveTab::History, false)} onclick={history_onclick}><a>{"History"}</a></li>
             </ul>
         </div>
         <div class="songlist">
