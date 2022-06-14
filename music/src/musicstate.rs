@@ -197,7 +197,18 @@ impl MusicState {
                     MusicControlCmd::Previous => self.previous().await,
                     MusicControlCmd::SongEnded => { self.song_ended().await; Ok(MusicOk::Unimplemented) },
                     MusicControlCmd::GetData => Ok(MusicOk::Data(Box::new(self.get_webdata()))),
-                    MusicControlCmd::AutoplayCmd(cmd) => AutoplayAdapter::handle_cmd(cmd, &mut self.autoplay).await,
+                    MusicControlCmd::AutoplayCmd(cmd) => {
+                        // TODO: this is really excessive, but broadcast after every successful autoplay command
+                        //  Autoplay has no way of broadcasting on its own, so just do it every time for now
+                        //  A change in the broadcasts with the partial broadcast system might be nice, to allow
+                        //  different components to have control over certain aspects.
+                        //  e.g. autoplay sends "Upcoming" broadcasts, MusicState only queue/history/nowplaying, etc
+                        let ret = AutoplayAdapter::handle_cmd(cmd, &mut self.autoplay).await;
+                        if ret.is_ok() {
+                            self.broadcast_update();
+                        }
+                        ret
+                    },
                 };
 
                 if let Err(e) = rettx.send(ret) {
@@ -404,6 +415,10 @@ impl MusicState {
     //   MusicState is mutated, rather than having to manually call
     fn broadcast_update(&self) {
         let out: model::MinstrelWebData = self.into();
+
+        // TODO: keep an eye on how often this appears now that this is called on
+        //  every single autoplay command
+        debug!("sending broadcast");
 
         if self.bcast.receiver_count() > 0 {
             if let Err(e) = self.bcast.send(MinstrelBroadcast::MusicState(out)) {
