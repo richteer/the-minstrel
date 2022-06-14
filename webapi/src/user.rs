@@ -10,7 +10,7 @@ use music::{
 use model::{
     web::{
         LoginRequest,
-        UserInfo, RegisterRequest, ReplyStatus, LinkInfo,
+        UserInfo, RegisterRequest, ReplyStatus, LinkInfo, LinkRequest,
     }, MinstrelUserId, UserMgmtError,
 };
 use std::convert::Infallible;
@@ -88,25 +88,7 @@ pub async fn handle_register(
     let auth = usermgmt::AuthType::UserAuth(body.username, body.password);
     let info = usermgmt::UserInfo { displayname: body.displayname, icon: body.icon };
 
-    let (status, error, userinfo , auth_token) = if let Some(link) = body.link {
-        let resp = mstate.user.user_link(link, auth).await;
-        match resp {
-            Ok(id) => {
-                let req = mstate.db.get_requester(id).await.unwrap();
-                let token = gen_auth_token();
-
-                {
-                    tokens.lock().await.insert(id, token.clone());
-                }
-
-                (StatusCode::OK, "User linked successfully.".into(), Some(req), Some(token))
-            },
-            Err(UserMgmtError::InvalidLink) => (StatusCode::UNAUTHORIZED, "Invalid or expired link, please regenerate and try again.".into(), None, None),
-            Err(UserMgmtError::DbError) => (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong with the database".into(), None, None),
-            Err(UserMgmtError::UserExists) => (StatusCode::UNAUTHORIZED, "You appear to have an account already, please recreate this link and reuse with a different auth method (e.g. discord).".into(), None, None),
-            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Something really went wrong internally: {:?}", e), None, None),
-        }
-    } else {
+    let (status, error, userinfo , auth_token) = {
         let resp = mstate.user.user_create(auth, info).await;
         match resp {
             Ok(id) => {
@@ -144,6 +126,56 @@ pub async fn handle_register(
             .body(serde_json::to_string(&reply).unwrap()).unwrap())
     }
 }
+
+pub async fn handle_link(
+    _user_auth: Option<String>, // TODO: consider writing a filter that converts this to Option<MinstrelUserId>?
+    mstate: MusicAdapter,
+    tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
+    body: LinkRequest,
+) -> Result<impl warp::Reply, Infallible> {
+
+    // TODO: validate username/password
+    let link = body.link;
+    let auth = usermgmt::AuthType::UserAuth(body.username, body.password);
+
+    let resp = mstate.user.user_link(link, auth).await;
+    let (status, error, userinfo , auth_token) = {
+            match resp {
+            Ok(id) => {
+                let req = mstate.db.get_requester(id).await.unwrap();
+                let token = gen_auth_token();
+
+                {
+                    tokens.lock().await.insert(id, token.clone());
+                }
+
+                (StatusCode::OK, "User linked successfully.".into(), Some(req), Some(token))
+            },
+            Err(UserMgmtError::InvalidLink) => (StatusCode::UNAUTHORIZED, "Invalid or expired link, please regenerate and try again.".into(), None, None),
+            Err(UserMgmtError::DbError) => (StatusCode::INTERNAL_SERVER_ERROR, "Something went wrong with the database".into(), None, None),
+            Err(UserMgmtError::UserExists) => (StatusCode::UNAUTHORIZED, "You appear to have an account already, please recreate this link and reuse with a different auth method (e.g. discord).".into(), None, None),
+            Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Something really went wrong internally: {:?}", e), None, None),
+        }
+    };
+
+    let reply = UserInfo {
+        status: status.as_u16(),
+        error,
+        userinfo,
+    };
+
+    if let Some(token) = auth_token {
+        Ok(warp::http::Response::builder()
+            // TODO: probably set an expiry for these
+            .header("Set-Cookie", format!("auth_token={}; httponly; Secure; SameSite=Strict;", token))
+            .status(reply.status)
+            .body(serde_json::to_string(&reply).unwrap()).unwrap())
+    } else {
+        Ok(warp::http::Response::builder()
+            .status(reply.status)
+            .body(serde_json::to_string(&reply).unwrap()).unwrap())
+    }}
+
 
 pub async fn handle_logout(
     user_auth: Option<String>,

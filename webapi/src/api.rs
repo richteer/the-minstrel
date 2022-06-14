@@ -176,6 +176,12 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
         .and(warp::body::json())
         .and_then(handle_register);
 
+    let link = api_base.clone()
+        .and(warp::path("link"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and_then(handle_link);
+
     let logout = api_base.clone()
         .and(warp::path("logout"))
         .and(warp::path::end())
@@ -190,6 +196,7 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
     login
         .or(logout)
         .or(register)
+        .or(link)
         .or(userinfo)
         .or(api_no_body)
         .or(api_body)

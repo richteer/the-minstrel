@@ -52,8 +52,14 @@ pub struct RegisterRequest {
     pub username: String,
     pub password: String,
     pub displayname: String,
-    pub link: Option<u64>,
     pub icon: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct LinkRequest {
+    pub username: String,
+    pub password: String,
+    pub link: u64,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

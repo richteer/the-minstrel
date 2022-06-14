@@ -173,7 +173,7 @@ pub fn register_form(props: &RegisterFormProps) -> Html {
             };
 
             let resp = Request::post("/api/register")
-                .json(&RegisterRequest { username, password, displayname, icon, link: None }).unwrap()
+                .json(&RegisterRequest { username, password, displayname, icon }).unwrap()
                 .send().await.unwrap();
 
             if resp.ok() {
