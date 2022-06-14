@@ -96,9 +96,11 @@ pub fn fdash() -> Html {
                                 <div class="column is-full">
                                     <NowPlaying song={np.clone()} progress={data.song_progress}/>
                                 </div>
-                                <div class="column is-full">
-                                    <PlayControls/>
-                                </div>
+                                <IsLoggedIn>
+                                    <div class="column is-full">
+                                        <PlayControls/>
+                                    </div>
+                                </IsLoggedIn>
                             </div>
                             </>
                         }
