@@ -56,7 +56,7 @@ pub enum AutoplayError {
     UnknownError,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum AutoplayControlCmd {
     Enable,
     Disable,

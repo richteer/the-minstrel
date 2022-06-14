@@ -203,8 +203,9 @@ impl MusicState {
                         //  A change in the broadcasts with the partial broadcast system might be nice, to allow
                         //  different components to have control over certain aspects.
                         //  e.g. autoplay sends "Upcoming" broadcasts, MusicState only queue/history/nowplaying, etc
+                        let bcast = cmd != AutoplayControlCmd::Status;
                         let ret = AutoplayAdapter::handle_cmd(cmd, &mut self.autoplay).await;
-                        if ret.is_ok() {
+                        if ret.is_ok() && bcast {
                             self.broadcast_update();
                         }
                         ret
