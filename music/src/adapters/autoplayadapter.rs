@@ -49,6 +49,7 @@ impl AutoplayAdapter {
             AutoplayControlCmd::Rebalance => { ap.reset_usertime(); Ok(AutoplayOk::Status(true)) }, // bs Ok, ignored anyway
             AutoplayControlCmd::UpdatePlaylist(req) => ap.update_userplaylist(&req).await,
             AutoplayControlCmd::AdvancePlaylist((uid, num)) => ap.advance_userplaylist(&uid, num),
+            AutoplayControlCmd::BumpPlaylist((uid, ind)) => ap.bump_userplaylist(&uid, ind),
         };
 
         match ret {
@@ -126,5 +127,9 @@ impl AutoplayAdapter {
 
     pub async fn advance_userplaylist(&mut self, userid: &MinstrelUserId, num: u64) -> Result<AutoplayOk, AutoplayError> {
         self.invoke(AutoplayControlCmd::AdvancePlaylist((userid.clone(), num))).await
+    }
+
+    pub async fn bump_userplaylist(&mut self, userid: &MinstrelUserId, index: usize) -> Result<AutoplayOk, AutoplayError> {
+        self.invoke(AutoplayControlCmd::BumpPlaylist((userid.clone(), index))).await
     }
 }

@@ -26,6 +26,7 @@ pub enum AutoplayOk {
     UpdatedPlaylist,
     EnrolledUser,
     RemovedUser,
+    Ok,
 }
 
 impl fmt::Display for AutoplayOk {
@@ -51,6 +52,7 @@ pub enum AutoplayError {
     UserNotEnrolled,
     UrlNotPlaylist,
     UserNotRegistered,
+    ExcessiveSize,
     UnknownError,
 }
 
@@ -67,6 +69,7 @@ pub enum AutoplayControlCmd {
     Rebalance,
     UpdatePlaylist(Requester),
     AdvancePlaylist((MinstrelUserId, u64)),
+    BumpPlaylist((MinstrelUserId, usize)),
 }
 
 
@@ -75,7 +78,6 @@ pub enum AutoplayControlCmd {
 struct UserPlaylist {
     index: usize, // For non-destructive randomization, keeping consistent
     list: Vec<SongRequest>,
-    //source: Source, // For refetching purposes
 }
 
 impl UserPlaylist {
@@ -83,7 +85,6 @@ impl UserPlaylist {
         UserPlaylist {
             index: 0,
             list,
-            //source,
         }
     }
 
@@ -108,6 +109,20 @@ impl UserPlaylist {
 
         self.index = 0;
         self.list.shuffle(&mut rng);
+    }
+
+    pub fn push_to_end(&mut self, index: usize) -> Result<(), AutoplayError> {
+        // Adjust for the internal non-destructive sequencing
+        let index = self.index + index;
+
+        if index >= self.list.len() {
+            Err(AutoplayError::ExcessiveSize)
+        } else {
+            let elem = self.list.remove(index);
+            self.list.push(elem);
+
+            Ok(())
+        }
     }
 }
 
@@ -346,11 +361,24 @@ impl AutoplayState {
                 ul.next();
             }
 
-            // TODO: probably define a generic OK?
-            Ok(AutoplayOk::UpdatedPlaylist)
+            Ok(AutoplayOk::Ok)
         } else {
             Err(AutoplayError::UserNotRegistered)
         }
+    }
+
+    /// Remove a song from a user's upcoming songs
+    pub fn bump_userplaylist(&mut self, userid: &MinstrelUserId, index: usize) -> Result<AutoplayOk, AutoplayError> {
+        if index > read_config!(music.autoplay_prefetch_max) as usize {
+            // TODO: replace with a better error
+            return Err(AutoplayError::ExcessiveSize)
+        }
+
+        if let Some(ul) = self.userlists.get_mut(userid) {
+            ul.push_to_end(index).map_err(|_| AutoplayError::ExcessiveSize)?;
+        }
+
+        Ok(AutoplayOk::Ok)
     }
 }
 
