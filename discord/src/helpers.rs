@@ -251,7 +251,7 @@ pub fn get_queuestate_embed(mdata: &model::MinstrelWebData, ap_enabled: bool) ->
 }
 
 // TODO: remove ctx and async from here, not needed anymore
-pub async fn get_nowplay_embed(_ctx: &Context, mstate: &model::MinstrelWebData) -> CreateEmbed {
+pub fn get_nowplay_embed(mstate: &model::MinstrelWebData) -> CreateEmbed {
     let mut ret = CreateEmbed(HashMap::new());
 
     let song = match mstate.current_song() {

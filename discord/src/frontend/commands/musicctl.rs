@@ -73,7 +73,7 @@ async fn nowplaying(ctx: &Context, msg: &Message) -> CommandResult {
     get_mstate!(mstate, ctx);
     let mstate = mstate.get_webdata().await;
 
-    let embed = get_nowplay_embed(ctx, &mstate).await;
+    let embed = get_nowplay_embed(&mstate);
 
     check_msg(msg.channel_id.send_message(&ctx.http, |m| {
         m.set_embed(embed)

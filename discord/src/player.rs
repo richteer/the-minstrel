@@ -126,32 +126,16 @@ pub struct TrackEndNotifier {
 #[async_trait]
 impl VoiceEventHandler for TrackEndNotifier {
 
-    // TODO: somehow make this a signaling thing so we don't have to await here
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
         debug!("TrackEndNotifier fired");
 
-        let mut mstate = mstate_get(&self.ctx).await.unwrap();
-        let dstate = dstate_get(&self.ctx).await.unwrap();
-        let ctx = self.ctx.clone(); // UUUUGGGGHHHHHH
-
+        let ctx = self.ctx.clone();
         // Plopping this on another thread so that this VoiceEvent handler can be brief
         tokio::spawn(async move {
+            let mut mstate = mstate_get(&ctx).await.unwrap();
+
             mstate.song_ended().await;
-
-            // TODO: the following should all be handled by a mstate broadcast to a frontend
-            let dstate = dstate.lock().await;
-
-            if let Some(sticky) = &dstate.sticky {
-                let data = mstate.get_webdata().await;
-                let qs_embed = get_queuestate_embed(&data, mstate.autoplay.is_enabled().await);
-                let np_embed = get_nowplay_embed(&ctx, &data).await;
-
-                sticky.channel_id.edit_message(&ctx.http, sticky, |m| {
-                    m.set_embeds(vec![qs_embed, np_embed])
-                }).await.unwrap();
-            }
         });
-
 
         None
     }

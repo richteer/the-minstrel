@@ -2,6 +2,7 @@ use std::{
     env,
     sync::Arc,
 };
+use model::MinstrelBroadcast;
 use songbird::SerenityInit;
 
 use music::adapters::MusicAdapter;
@@ -61,7 +62,7 @@ async fn stickymessage_hook(ctx: &Context, _msg: &Message, _cmd_name: &str, _err
         let ap_enabled = mstate.autoplay.is_enabled().await;
 
         let qs_embed = get_queuestate_embed(&mdata, ap_enabled);
-        let np_embed = get_nowplay_embed(ctx, &mdata).await;
+        let np_embed = get_nowplay_embed(&mdata);
 
         let new = m.channel_id.send_message(&ctx.http, |m| {
             m.add_embeds(vec![qs_embed, np_embed])
@@ -246,10 +247,36 @@ pub async fn create_player(mstate: MusicAdapter, dplayer: Arc<Mutex<DiscordPlaye
             .register_songbird()
             // TODO: really consider unifying these maybe. DiscordState holds references to both
             //  DiscordPlayer and MusicAdapter, maybe only dstate should be used everywhere.
-            .register_musicstate(mstate)
+            .register_musicstate(mstate.clone())
             .register_player(dplayer)
-            .register_dstate(dstate)
+            .register_dstate(dstate.clone())
             .await.expect("Err creating client");
+
+    let http = client.cache_and_http.clone();
+    let mut rx = mstate.subscribe();
+    let mut mstate = mstate;
+    tokio::spawn(async move {
+        loop {
+            match rx.recv().await {
+                Ok(MinstrelBroadcast::MusicState(data)) => {
+                    let dstate = dstate.lock().await;
+
+                    if let Some(sticky) = &dstate.sticky {
+                        let qs_embed = get_queuestate_embed(&data, mstate.autoplay.is_enabled().await);
+                        let np_embed = get_nowplay_embed(&data);
+
+                        sticky.channel_id.edit_message(&http.http, sticky, |m| {
+                            m.set_embeds(vec![qs_embed, np_embed])
+                        }).await.unwrap();
+                    }
+                },
+                // TODO: ignore broadcasted errors for now, perhaps these should be reported to a default channel
+                Ok(MinstrelBroadcast::Error(_)) => (),
+                Err(e) => error!("Error in discord broadcast handler: {e:?}"),
+            }
+        }
+    });
+
 
     // Finally, start a single shard, and start listening to events.
     //
