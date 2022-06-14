@@ -375,7 +375,7 @@ pub fn login_card(props: &LoginCardProps) -> Html {
     }
 
     html! {
-        <div class="modal is-active">
+        <div class="modal is-active is-text-shadowless">
             <div class="modal-background" onclick={toggle_modal.clone()} />
             <div class="modal-card">
                 <div class="modal-card-body">

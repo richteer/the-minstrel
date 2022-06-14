@@ -74,9 +74,14 @@ $icon-ar: math.div(4,3);
 // I have no idea why this fixed a width overflow.
 html {
     height: 100vh;
+}
 
-    // TODO: Consider putting this somewhere more targeted
+.is-text-shadowed {
     text-shadow: 0 0 5px black;
+}
+
+.is-text-shadowless {
+    text-shadow: none !important;
 }
 
 .queuedicon {
