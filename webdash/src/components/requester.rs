@@ -9,7 +9,8 @@ use model::Requester;
 #[allow(dead_code)]
 #[derive(PartialEq)]
 pub enum RequesterSize {
-    Small,
+    Tiny,
+    Regular,
     Large,
 }
 
@@ -22,13 +23,15 @@ pub struct RequesterTagProps {
 #[function_component(RequesterTag)]
 pub fn requester_tag(props: &RequesterTagProps) -> Html {
     let iconsize = match props.size {
-        None | Some(RequesterSize::Small) => "is-32x32",
+        None | Some(RequesterSize::Regular) => "is-32x32",
         Some(RequesterSize::Large) => "is-48x48",
+        Some(RequesterSize::Tiny) => "is-24x24",
     };
 
     let namesize = match props.size {
-        None | Some(RequesterSize::Small) => "is-size-6",
+        None | Some(RequesterSize::Regular) => "is-size-6",
         Some(RequesterSize::Large) => "is-size-5",
+        Some(RequesterSize::Tiny) => "is-size-7",
     };
 
     html! {
