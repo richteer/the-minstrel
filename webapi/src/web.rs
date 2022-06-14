@@ -57,13 +57,7 @@ pub fn get_web_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
     let mstate_mutex = Arc::new(Mutex::new(mstate.clone()));
     let mstate_filter = warp::any().map(move || { mstate_mutex.clone() });
 
-    let api = warp::get()
-        .and(warp::path("api"))
-        .and(warp::path::end())
-        .and(mstate_filter.clone())
-        .and_then(crate::api::show_state);
-
-    let api2 = crate::api::get_api_filter(mstate);
+    let api = crate::api::get_api_filter(mstate);
 
     let ws = warp::path("ws")
         .and(warp::ws())
@@ -72,5 +66,5 @@ pub fn get_web_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
 
     let files = crate::embed::get_embedded_file_filter();
 
-    api.or(api2).or(ws).or(files)
+    api.or(ws).or(files)
 }

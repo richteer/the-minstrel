@@ -67,9 +67,8 @@ pub async fn show_state(
 
 // TODO: Unify these, or implement handlers for each unique endpoint
 async fn handle_body_api(
-    _cookie: Option<String>,
+    _muid: MinstrelUserId,
     mut mstate: MusicAdapter,
-    _tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
     func: String,
     body: SongBody,
 ) -> Result<impl warp::Reply, Infallible> {
@@ -109,9 +108,8 @@ async fn handle_body_api(
 }
 
 async fn handle_simple_api(
-    _cookie: Option<String>,
+    _muid: MinstrelUserId,
     mut mstate: MusicAdapter,
-    _tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
     func: String,
 ) -> Result<impl warp::Reply, Rejection> {
 
@@ -144,14 +142,28 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
     let mstate = warp::any().map(move || { mstate.clone() });
     let authtable = warp::any().map(move || { auths.clone() });
 
+     // TODO: probably make a custom rejection and handle that as a 401 Unauthorized
+    let cookie_to_muid = warp::any()
+        .and(authtable.clone())
+        .and(warp::cookie::cookie::<String>("auth_token"))
+        .and_then(|authtable: Arc<Mutex<BiHashMap<i64, String>>>, auth_token: String| async move {
+            let table = authtable.lock().await;
+            match table.get_by_right(&auth_token) {
+                Some(uid) => Ok(*uid),
+                None => {
+                    debug!("rejecting, token = {auth_token:?}, table = {authtable:?}");
+                    Err(warp::reject::reject())
+                }
+            }
+        });
+
     let body = warp::body::json()
         .and(warp::body::content_length_limit(256)); // Arbitrary length limit, we should not be expecting big data
 
     let api_base = warp::post()
-        .and(warp::cookie::optional::<String>("auth_token"))
         .and(warp::path("api"))
-        .and(mstate)
-        .and(authtable);
+        .and(cookie_to_muid.clone())
+        .and(mstate.clone());
 
     let api_func_base = api_base.clone()
         .and(warp::path::param::<String>()
@@ -164,25 +176,31 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
     let api_no_body = api_func_base.clone()
         .and_then(handle_simple_api);
 
-    let login = api_base.clone()
+    let api_user_base = warp::post()
+        .and(warp::path("api")
+        .and(mstate.clone())
+        .and(authtable.clone()));
+
+    let login = api_user_base.clone()
         .and(warp::path("login"))
         .and(warp::path::end())
         .and(warp::body::json())
         .and_then(handle_login);
 
-    let register = api_base.clone()
+    let register = api_user_base.clone()
         .and(warp::path("register"))
         .and(warp::path::end())
         .and(warp::body::json())
         .and_then(handle_register);
 
-    let link = api_base.clone()
+    let link = api_user_base.clone()
         .and(warp::path("link"))
         .and(warp::path::end())
         .and(warp::body::json())
         .and_then(handle_link);
 
-    let logout = api_base.clone()
+    let logout = api_user_base.clone()
+        .and(warp::cookie::optional::<String>("auth_token"))
         .and(warp::path("logout"))
         .and(warp::path::end())
         .and_then(handle_logout);

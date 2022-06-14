@@ -34,7 +34,6 @@ fn gen_auth_token() -> String {
 
 
 pub async fn handle_login(
-    _user_auth: Option<String>,
     mstate: MusicAdapter,
     tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
     body: LoginRequest,
@@ -77,7 +76,6 @@ pub async fn handle_login(
 }
 
 pub async fn handle_register(
-    _user_auth: Option<String>, // TODO: consider writing a filter that converts this to Option<MinstrelUserId>?
     mstate: MusicAdapter,
     tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
     body: RegisterRequest,
@@ -128,7 +126,6 @@ pub async fn handle_register(
 }
 
 pub async fn handle_link(
-    _user_auth: Option<String>, // TODO: consider writing a filter that converts this to Option<MinstrelUserId>?
     mstate: MusicAdapter,
     tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
     body: LinkRequest,
@@ -178,9 +175,9 @@ pub async fn handle_link(
 
 
 pub async fn handle_logout(
-    user_auth: Option<String>,
     _mstate: MusicAdapter,
     tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
+    user_auth: Option<String>,
 ) -> Result<impl warp::Reply, Infallible> {
 
     if let Some(tok) = user_auth {
@@ -246,28 +243,17 @@ pub async fn handle_create_link(
 }
 
 pub async fn handle_userinfo(
-    user_auth: Option<String>,
+    muid: MinstrelUserId,
     mstate: MusicAdapter,
-    tokens: Arc<Mutex<BiHashMap<MinstrelUserId, String>>>,
 ) -> Result<impl warp::Reply, Infallible> {
 
-    // TODO: just make the cookie required here, return 401 otherwise
-    let user_auth = user_auth.unwrap();
-
-    let tokens = tokens.lock().await;
-
-    // TODO: Strongly consider writing a filter to make this conversion automatic
-    let user_id = tokens.get_by_right(&user_auth);
-    let (status, userinfo, error) = if let Some(uid) = user_id {
-        let req = mstate.db.get_requester(*uid).await;
+    let (status, userinfo, error) = {
+        let req = mstate.db.get_requester(muid).await;
         match req {
             Ok(req) => (StatusCode::OK, Some(req), "UserInfo Retrieved".into()),
             Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, None, format!("Something went really wrong internally: {e:?}")),
         }
-    } else {
-        (StatusCode::UNAUTHORIZED, None, "Invalid session ID".into())
     };
-
 
     let reply = UserInfo {
         status: status.as_u16(),
