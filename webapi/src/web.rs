@@ -66,5 +66,11 @@ pub fn get_web_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
 
     let files = crate::embed::get_embedded_file_filter();
 
-    api.or(ws).or(files)
+    let root_redir = warp::get()
+        .and(warp::path::end())
+        .map(|| {
+            warp::redirect::redirect(warp::hyper::Uri::from_static("/index.html"))
+        });
+
+    api.or(ws).or(root_redir).or(files)
 }
