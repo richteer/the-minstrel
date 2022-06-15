@@ -107,7 +107,7 @@ pub fn fdash() -> Html {
                     }
                     <IsLoggedIn>
                         <div class="column is-full">
-                            <PlayControls/>
+                            <PlayControls status={data.status.clone()}/>
                         </div>
                     </IsLoggedIn>
                     </div>
