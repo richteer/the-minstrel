@@ -460,6 +460,7 @@ impl MusicState {
         let ret = self.next().await;
         if ret.is_ok() {
             debug!("Song End handler mstate.next() = {:?}", ret);
+            self.status = MusicStateStatus::Stopped;
         }
         else if let Err(e) = ret {
             error!("{:?}", e);
