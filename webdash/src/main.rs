@@ -87,29 +87,30 @@ pub fn fdash() -> Html {
         //  no idea why columns is like that, but centers the main div to the container->viewport
             <div class="columns is-vcentered m-0 is-text-shadowed">
                 <div class="column is-half">
-                {
-                    if let Some(np) = &data.current_track {
-                        html! {
-                            <>
-                            <BackgroundImage url={np.song.thumbnail.clone()} />
-                            <div class="columns is-multiline is-centered">
-                                <div class="column is-full">
-                                    <NowPlaying song={np.clone()} progress={data.song_progress}/>
-                                </div>
-                                <IsLoggedIn>
+                    <div class="columns is-multiline is-centered">
+                    {
+                        if let Some(np) = &data.current_track {
+                            html! {
+                                <>
+                                <BackgroundImage url={np.song.thumbnail.clone()} />
                                     <div class="column is-full">
-                                        <PlayControls/>
+                                        <NowPlaying song={np.clone()} progress={data.song_progress}/>
                                     </div>
-                                </IsLoggedIn>
-                            </div>
-                            </>
-                        }
-                    } else {
-                        html! {
-                        <span><i>{"Nothing currently playing"}</i></span>
+
+                                </>
+                            }
+                        } else {
+                            html! {
+                            <span><i>{"Nothing currently playing"}</i></span>
+                            }
                         }
                     }
-                }
+                    <IsLoggedIn>
+                        <div class="column is-full">
+                            <PlayControls/>
+                        </div>
+                    </IsLoggedIn>
+                    </div>
                 </div>
                 <div class="column container is-half fullheight">
                     <SongListTabs data={data.clone()} />
