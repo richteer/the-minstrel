@@ -2,7 +2,10 @@ use model::MinstrelBroadcast;
 use warp::Filter;
 
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{
+    Mutex,
+    broadcast::error::RecvError
+};
 
 use log::*;
 
@@ -40,12 +43,21 @@ async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicAdapter>>) -> impl 
                 };
             }
 
-            while let Ok(msg) = bc_rx.recv().await {
-                trace!("broadcast received, sending to websocket");
-                let msg = serde_json::to_string(&msg).unwrap();
-                if let Err(resp) = ws_tx.send(warp::ws::Message::text(msg)).await {
-                    debug!("websocket appears to have disconnected, dropping? {}", resp);
-                    break;
+            loop {
+                match bc_rx.recv().await {
+                    Ok(msg) => {
+                        trace!("broadcast received, sending to websocket");
+                        let msg = serde_json::to_string(&msg).unwrap();
+                        if let Err(resp) = ws_tx.send(warp::ws::Message::text(msg)).await {
+                            debug!("websocket appears to have disconnected, dropping? {}", resp);
+                            break;
+                        }
+                    },
+                    Err(RecvError::Lagged(c)) => error!("Lagging behind: {c:?}"),
+                    Err(RecvError::Closed) => {
+                        error!("broadcast appears closed, exiting loop");
+                        break;
+                    }
                 }
             }
             debug!("exiting websocket loop!");
