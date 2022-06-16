@@ -458,12 +458,15 @@ impl MusicState {
         };
 
         let ret = self.next().await;
-        if ret.is_ok() {
-            debug!("Song End handler mstate.next() = {:?}", ret);
-            self.status = MusicStateStatus::Stopped;
-        }
-        else if let Err(e) = ret {
-            error!("{:?}", e);
+        debug!("Song End handler mstate.next() = {:?}", ret);
+        match ret {
+            Ok(MusicOk::EmptyQueue) => {
+                self.status = MusicStateStatus::Stopped;
+                debug!("EmptyQueue returned by next(), stopping.")
+            },
+            Ok(MusicOk::StartedPlaying) => debug!("started the next track"),
+            Ok(o) => warn!("unexpect Ok response from next? {o}"),
+            Err(e) => error!("{:?}", e),
         }
 
     }
