@@ -73,13 +73,27 @@ pub fn playcontrols(props: &PlayControlsProps) -> Html {
 
     let iconclass = "column is-flex is-2 is-justify-content-center controlicon";
 
+    // State to keep track of when the toggle has been clicked...
+    let ap_clicked = use_state_eq(|| false);
+    let onenableap = {
+        let ap_clicked = ap_clicked.clone();
+        Callback::from(move |e| {
+            ap_clicked.set(true);
+            onenableap.emit(e);
+        })
+    };
+
+    // ...and set back to false when we get a broadcast where music is playing...
+    if props.ap_enabled && *ap_clicked && props.status == MusicStateStatus::Playing {
+        ap_clicked.set(false);
+    }
+
     html! {
             <div class="columns is-centered is-mobile">
                 <div class={iconclass} />
                 <div class={iconclass} onclick={onprev} title="Enqueue last played song">
                     <skip_back::SkipBack />
                 </div>
-                // TODO: probably have this switch back/forth between play/pause based on state
                 {
                     match props.status {
                         MusicStateStatus::Playing => html! {
@@ -102,13 +116,19 @@ pub fn playcontrols(props: &PlayControlsProps) -> Html {
                 </div>
 
                 {
-                    match props.ap_enabled {
-                        true => html! {
+                    // ...and we only render it spinning when AP has been enabled and just recently clicked.
+                    match (props.ap_enabled, *ap_clicked) {
+                        (true, false) => html! {
                             <div class={iconclass} onclick={ondisableap} title="Disable Autoplay">
                                 <refresh_cw::RefreshCw />
                             </div>
                         },
-                        false => html! {
+                        (true, true) => html! {
+                            <div class={format!("{iconclass} is-spinning")} onclick={ondisableap} title="Disable Autoplay">
+                                <refresh_cw::RefreshCw />
+                            </div>
+                        },
+                        (false, _) => html! {
                             <div class={iconclass} style={"filter: brightness(50%);"} onclick={onenableap} title="Enable Autoplay">
                                 <refresh_cw::RefreshCw />
                             </div>
