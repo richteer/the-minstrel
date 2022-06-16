@@ -495,6 +495,7 @@ impl From<&MusicState> for model::MinstrelWebData {
             queue: other.queue.iter().map(|e| e.clone().into()).collect(),
             upcoming,
             history: other.history.iter().map(|e| e.clone().into()).collect(),
+            ap_enabled: other.autoplay.is_enabled(),
         }
     }
 }

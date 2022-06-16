@@ -66,6 +66,7 @@ pub struct MinstrelWebData {
     pub queue: VecDeque<SongRequest>,
     pub upcoming: Vec<SongRequest>,
     pub history: VecDeque<SongRequest>,
+    pub ap_enabled: bool,
 }
 
 
