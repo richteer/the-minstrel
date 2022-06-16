@@ -4,11 +4,13 @@ use tokio::sync::Mutex;
 use music::{
     adapters::MusicAdapter,
     song::fetch_song_from_yt,
+    autoplay::AutoplayError,
+    MusicError,
 };
 use model::{
     SongRequest,
     Requester, MinstrelUserId,
-    web::ApBumpRequest,
+    web::*,
 };
 use std::convert::Infallible;
 use serde::{
@@ -149,6 +151,40 @@ async fn handle_ap_bump(
     }
 }
 
+async fn handle_ap_toggle(
+    muid: MinstrelUserId,
+    mut mstate: MusicAdapter,
+    body: ApToggleRequest,
+) -> Result<impl warp::Reply, Rejection> {
+
+    let ret = match body.enabled {
+        true => mstate.autoplay.enable().await,
+        false => mstate.autoplay.disable().await,
+    };
+    if let Err(e) = ret {
+        return Ok(warp::reply::json(&ReplyStatus::new(StatusCode::INTERNAL_SERVER_ERROR.as_u16() as u64, format!("error toggling autoplay: {e:?}").as_str())))
+    }
+
+    // TODO: consider reporting errors to the user here
+    if mstate.autoplay.is_enabled().await {
+        debug!("entered in the enabled section");
+        match mstate.autoplay.enable_user(&muid).await {
+            Ok(_) => (),
+            Err(AutoplayError::AlreadyEnrolled) => debug!("already enrolled"), // This is fine.
+            Err(e) => error!("Error enabling user after ap toggle: {:?}", e),
+        }
+
+        match mstate.start().await {
+            Ok(_) => (),
+            Err(MusicError::AlreadyPlaying) => debug!("already playing"), // This is also fine.
+            Err(e) => error!("Error starting playback after ap toggle: {:?}", e)
+        }
+    }
+
+    Ok(warp::reply::json(&ReplyStatus::_ok()))
+}
+
+
 pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     let auths = Arc::new(Mutex::new(BiHashMap::<MinstrelUserId, String>::new()));
     let mstate = warp::any().map(move || { mstate.clone() });
@@ -230,6 +266,13 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
         .and(warp::body::json())
         .and_then(handle_ap_bump);
 
+    let autoplay_toggle = api_base.clone()
+        .and(warp::path("autoplay"))
+        .and(warp::path("toggle"))
+        .and(warp::path::end())
+        .and(warp::body::json())
+        .and_then(handle_ap_toggle);
+
     // TODO: seriously clean up this filter building, this is getting out of hand
     login
         .or(logout)
@@ -237,6 +280,7 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::
         .or(link)
         .or(userinfo)
         .or(autoplay_ap_bump)
+        .or(autoplay_toggle)
         .or(api_no_body)
         .or(api_body)
 }

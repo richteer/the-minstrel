@@ -73,3 +73,8 @@ pub struct LinkInfo {
 pub struct ApBumpRequest {
     pub index: usize,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ApToggleRequest {
+    pub enabled: bool,
+}

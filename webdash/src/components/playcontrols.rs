@@ -10,6 +10,7 @@ use yew_feather::{
     skip_forward,
     play,
     square,
+    refresh_cw,
 };
 
 use gloo_net::http::Request;
@@ -17,7 +18,7 @@ use yew_hooks::prelude::*;
 
 use yew_toast::*;
 
-use model::{web::ReplyStatus, MusicStateStatus};
+use model::{web::{ReplyStatus, ApToggleRequest}, MusicStateStatus};
 
 #[derive(Serialize, Clone)]
 struct NoBody {}
@@ -55,6 +56,7 @@ fn gen_callback<T: Serialize + Clone + 'static>(path: &'static str, body: T, toa
 #[derive(Properties, PartialEq)]
 pub struct PlayControlsProps {
     pub status: MusicStateStatus,
+    pub ap_enabled: bool,
 }
 
 #[function_component(PlayControls)]
@@ -66,10 +68,14 @@ pub fn playcontrols(props: &PlayControlsProps) -> Html {
     let onstop = gen_callback("stop", NoBody{}, None, toast.dispatcher());
     let onplay = gen_callback("start", NoBody{}, None, toast.dispatcher());
 
+    let onenableap = gen_callback("autoplay/toggle", ApToggleRequest{ enabled: true }, None, toast.dispatcher());
+    let ondisableap = gen_callback("autoplay/toggle", ApToggleRequest{ enabled: false }, None, toast.dispatcher());
+
     let iconclass = "column is-flex is-2 is-justify-content-center controlicon";
 
     html! {
             <div class="columns is-centered is-mobile">
+                <div class={iconclass} />
                 <div class={iconclass} onclick={onprev} title="Enqueue last played song">
                     <skip_back::SkipBack />
                 </div>
@@ -94,6 +100,22 @@ pub fn playcontrols(props: &PlayControlsProps) -> Html {
                 <div class={iconclass} onclick={onskip} title="Skip to the next track">
                     <skip_forward::SkipForward />
                 </div>
+
+                {
+                    match props.ap_enabled {
+                        true => html! {
+                            <div class={iconclass} onclick={ondisableap} title="Disable Autoplay">
+                                <refresh_cw::RefreshCw />
+                            </div>
+                        },
+                        false => html! {
+                            <div class={iconclass} style={"filter: brightness(50%);"} onclick={onenableap} title="Enable Autoplay">
+                                <refresh_cw::RefreshCw />
+                            </div>
+                        },
+                    }
+                }
+
             </div>
     }
 }
