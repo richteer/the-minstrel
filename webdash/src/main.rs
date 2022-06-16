@@ -78,6 +78,7 @@ pub fn fdash() -> Html {
 
     html! {
         <div class="container">
+        <div class="background-noise" />
         <ContextProvider<UserContext> context={userinfo}>
         <ContextProvider<ToastContext> context={toastlist}>
         <ToastTray />
