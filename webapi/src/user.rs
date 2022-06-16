@@ -10,7 +10,7 @@ use music::{
 use model::{
     web::{
         LoginRequest,
-        UserInfo, RegisterRequest, ReplyStatus, LinkInfo, LinkRequest,
+        RegisterRequest, ReplyStatus, LinkRequest, ReplyData,
     }, MinstrelUserId, UserMgmtError,
 };
 use std::convert::Infallible;
@@ -31,6 +31,8 @@ fn gen_auth_token() -> String {
         .map(char::from)
         .collect()
 }
+
+use crate::ReplyStatusFuncs;
 
 #[cfg(not(debug_assertions))]
 // Require HTTPS for cookie support in-release mode, permit it in debug.
@@ -63,11 +65,8 @@ pub async fn handle_login(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Something really went wrong internally: {:?}", e), None, None),
     };
 
-    let reply = UserInfo {
-        status: status.as_u16(),
-        error,
-        userinfo,
-    };
+    let userinfo = userinfo.map(|ui| ReplyData::UserInfo(ui));
+    let reply = ReplyStatus::new(status, error, userinfo);
 
     if let Some(token) = auth_token {
         Ok(warp::http::Response::builder()
@@ -113,11 +112,8 @@ pub async fn handle_register(
         }
     };
 
-    let reply = UserInfo {
-        status: status.as_u16(),
-        error,
-        userinfo,
-    };
+    let userinfo = userinfo.map(|ui| ReplyData::UserInfo(ui));
+    let reply = ReplyStatus::new(status, error, userinfo);
 
     if let Some(token) = auth_token {
         Ok(warp::http::Response::builder()
@@ -162,11 +158,8 @@ pub async fn handle_link(
         }
     };
 
-    let reply = UserInfo {
-        status: status.as_u16(),
-        error,
-        userinfo,
-    };
+    let userinfo = userinfo.map(|ui| ReplyData::UserInfo(ui));
+    let reply = ReplyStatus::new(status, error, userinfo);
 
     if let Some(token) = auth_token {
         Ok(warp::http::Response::builder()
@@ -193,17 +186,17 @@ pub async fn handle_logout(
             Ok(warp::http::Response::builder()
                 .header("Set-Cookie", format!(r#"auth_token=""; {COOKIEOPTS}"#))
                 .status(StatusCode::OK)
-                .body(serde_json::to_string(&ReplyStatus::_ok()).unwrap()).unwrap())
+                .body(serde_json::to_string(&ReplyStatus::ok()).unwrap()).unwrap())
         } else {
             Ok(warp::http::Response::builder()
                 .header("Set-Cookie", format!(r#"auth_token=""; {COOKIEOPTS}"#))
                 .status(StatusCode::UNAUTHORIZED)
-                .body(serde_json::to_string(&ReplyStatus::new(StatusCode::UNAUTHORIZED.as_u16().into(), "User not logged in, or invalid session ID")).unwrap()).unwrap())
+                .body(serde_json::to_string(&ReplyStatus::new_nd(StatusCode::UNAUTHORIZED, "User not logged in, or invalid session ID")).unwrap()).unwrap())
         }
     } else {
         Ok(warp::http::Response::builder()
             .status(StatusCode::UNAUTHORIZED)
-            .body(serde_json::to_string(&ReplyStatus::new(StatusCode::UNAUTHORIZED.as_u16().into(), "User not logged in, or invalid session ID")).unwrap()).unwrap())
+            .body(serde_json::to_string(&ReplyStatus::new_nd(StatusCode::UNAUTHORIZED, "User not logged in, or invalid session ID")).unwrap()).unwrap())
     }
 
 }
@@ -218,7 +211,7 @@ pub async fn handle_create_link(
     } else {
         return Ok(warp::http::Response::builder()
             .status(StatusCode::UNAUTHORIZED)
-            .body(serde_json::to_string(&ReplyStatus::new(StatusCode::UNAUTHORIZED.as_u16().into(), "User not logged in, or invalid session ID")).unwrap()).unwrap())
+            .body(serde_json::to_string(&ReplyStatus::new_nd(StatusCode::UNAUTHORIZED, "User not logged in, or invalid session ID")).unwrap()).unwrap())
     };
 
     let tokens = tokens.lock().await;
@@ -227,7 +220,7 @@ pub async fn handle_create_link(
     } else {
         return Ok(warp::http::Response::builder()
             .status(StatusCode::UNAUTHORIZED)
-            .body(serde_json::to_string(&ReplyStatus::new(StatusCode::UNAUTHORIZED.as_u16().into(), "User not logged in, or invalid session ID")).unwrap()).unwrap())
+            .body(serde_json::to_string(&ReplyStatus::new_nd(StatusCode::UNAUTHORIZED, "User not logged in, or invalid session ID")).unwrap()).unwrap())
     };
     drop(tokens); // No longer need to hold lock here
 
@@ -237,11 +230,8 @@ pub async fn handle_create_link(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Something went really wrong internally: {e:?}"), None)
     };
 
-    let reply = LinkInfo {
-        status: status.as_u16(),
-        error,
-        link,
-    };
+    let link = link.map(|l| ReplyData::LinkInfo(l));
+    let reply = ReplyStatus::new(status, error, link);
 
     Ok(warp::http::Response::builder()
     // TODO: probably set an expiry for these
@@ -262,11 +252,8 @@ pub async fn handle_userinfo(
         }
     };
 
-    let reply = UserInfo {
-        status: status.as_u16(),
-        userinfo,
-        error,
-    };
+    let userinfo = userinfo.map(|ui| ReplyData::UserInfo(ui));
+    let reply = ReplyStatus::new(status, error, userinfo);
 
     let resp = warp::http::Response::builder()
         .status(reply.status);

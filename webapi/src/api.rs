@@ -48,6 +48,7 @@ pub enum MusicControlCmd {
 use model::web::ReplyStatus;
 
 use crate::user::*;
+use crate::ReplyStatusFuncs;
 
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -86,22 +87,22 @@ async fn handle_body_api(
     let song = match fetch_song_from_yt(body.song.clone()) {
         Ok(s) => SongRequest::new(s, requester),
         Err(e) =>
-            return Ok(warp::reply::json(&ReplyStatus::new(400, &format!("error fetching song: {:?}", e))).into_response())
+            return Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::BAD_REQUEST, format!("error fetching song: {e:?}"))).into_response())
     };
 
     let ret = match func.as_str() {
         "play" => mstate.play(song).await,
         "enqueue" => mstate.enqueue(song).await,
         "enqueueandplay" => mstate.enqueue_and_play(song).await,
-        _ => return Ok(warp::reply::json(&ReplyStatus::new(400, "no such function")).into_response())
+        _ => return Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::BAD_REQUEST, "no such function")).into_response())
     };
 
     match ret {
-        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new(200, &o.to_string())).into_response()),
+        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::OK, &o.to_string())).into_response()),
         Err(e) => {
             debug!("error from musicstatus: {:?}", e);
 
-            let resp = warp::reply::json(&ReplyStatus::new(StatusCode::BAD_REQUEST.as_u16() as u64, &format!("{:?}", e)));
+            let resp = warp::reply::json(&ReplyStatus::new_nd(StatusCode::BAD_REQUEST, format!("{e:?}")));
             let mut resp = resp.into_response();
             *resp.status_mut() = StatusCode::BAD_REQUEST;
 
@@ -127,11 +128,11 @@ async fn handle_simple_api(
     };
 
     match ret {
-        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new(200, &o.to_string())).into_response()),
+        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::OK, &o.to_string())).into_response()),
         Err(e) => {
             debug!("error from musicstatus: {:?}", e);
 
-            let resp = warp::reply::json(&ReplyStatus::new(StatusCode::BAD_REQUEST.as_u16() as u64, &format!("{:?}", e)));
+            let resp = warp::reply::json(&ReplyStatus::new_nd(StatusCode::BAD_REQUEST, format!("{e:?}")));
             let mut resp = resp.into_response();
             *resp.status_mut() = StatusCode::BAD_REQUEST;
 
@@ -146,8 +147,8 @@ async fn handle_ap_bump(
     body: ApBumpRequest,
 ) -> Result<impl warp::Reply, Rejection> {
     match mstate.autoplay.bump_userplaylist(&muid, body.index).await {
-        Ok(_) => Ok(warp::reply::json(&ReplyStatus::_ok())),
-        Err(e) => Ok(warp::reply::json(&ReplyStatus::new(StatusCode::BAD_REQUEST.as_u16() as u64, format!("Error: {e:?}").as_str())))
+        Ok(_) => Ok(warp::reply::json(&ReplyStatus::ok())),
+        Err(e) => Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::BAD_REQUEST, format!("Error: {e:?}"))))
     }
 }
 
@@ -162,7 +163,7 @@ async fn handle_ap_toggle(
         false => mstate.autoplay.disable().await,
     };
     if let Err(e) = ret {
-        return Ok(warp::reply::json(&ReplyStatus::new(StatusCode::INTERNAL_SERVER_ERROR.as_u16() as u64, format!("error toggling autoplay: {e:?}").as_str())))
+        return Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::INTERNAL_SERVER_ERROR, format!("error toggling autoplay: {e:?}"))))
     }
 
     // TODO: consider reporting errors to the user here
@@ -181,7 +182,7 @@ async fn handle_ap_toggle(
         }
     }
 
-    Ok(warp::reply::json(&ReplyStatus::_ok()))
+    Ok(warp::reply::json(&ReplyStatus::ok()))
 }
 
 

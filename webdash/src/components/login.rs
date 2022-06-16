@@ -11,7 +11,8 @@ use yew_feather::{
 use model::{
     web::{
         LoginRequest,
-        RegisterRequest, UserInfo, LinkRequest,
+        RegisterRequest, LinkRequest,
+        ReplyStatus, ReplyData,
     },
     Requester
 };
@@ -29,13 +30,13 @@ async fn login_update_usercontext(
     usercontext: &UseReducerHandle<LoginStatus>,
     toastcontext: &UseReducerHandle<ToastList>
 ) {
-    match resp.json::<UserInfo>().await {
-        Ok(userinfo) => {
-            if let Some(ui) = userinfo.userinfo {
+    match resp.json::<ReplyStatus>().await {
+        Ok(reply) => {
+            if let Some(ReplyData::UserInfo(ui)) = reply.data {
                 usercontext.dispatch(UserContextAction::UpdateInfo(ui));
                 toastcontext.dispatch(toast_info!("Successfully logged in!".into()));
             } else {
-                log::error!("Server sent back an empty requester field? {userinfo:?}");
+                log::error!("Server sent back an empty requester field? {reply:?}");
                 toastcontext.dispatch(toast_error!("Server sent back some garbage, check console".into()));
             };
         },
@@ -263,7 +264,7 @@ pub fn link_form(props: &LinkFormProps) -> Html {
 
                 Ok(())
             } else {
-                match resp.json::<UserInfo>().await {
+                match resp.json::<ReplyStatus>().await {
                     Ok(ui) => {
                         log::error!("Error returned from server: {:?}", ui);
                         toastcontext.dispatch(toast_error!(format!("Error: {:?}", ui.error)));
