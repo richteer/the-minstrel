@@ -1,4 +1,4 @@
-use warp::Filter;
+use warp::{Filter, path::FullPath};
 use rust_embed::RustEmbed;
 use log::*;
 
@@ -9,14 +9,15 @@ struct EmbeddedWebdash;
 
 pub fn get_embedded_file_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
     warp::get()
-    .and(warp::path::param())
-    .map(|filename: String| {
-        let file = EmbeddedWebdash::get(&filename);
+    .and(warp::path::full())
+    .map(|filename: FullPath| {
+        let filename = &filename.as_str()[1..];
+        let file = EmbeddedWebdash::get(filename);
         debug!("GET /{}", filename);
 
         if let Some(data) = file {
             let data = data.data;
-            let mime = mime_guess::from_path(filename.as_str()).first();
+            let mime = mime_guess::from_path(filename).first();
 
             if let Some(mime) = mime {
                 debug!("mime = {}", mime);
