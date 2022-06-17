@@ -241,6 +241,16 @@ impl MusicState {
                 }
             }
 
+            // TODO: probably rework this error handling here.
+            // That problem in the next comment paragraph happened:
+            //  By not making .play() panic, it now will fail and just glide on by failing every song.
+            // Instead, if the Player returns PlaybackFailed, we know there's probably something up with
+            //  the Player implementation, and we should not try to continue anymore.
+            match e {
+                MusicError::PlaybackFailed => return Err(e),
+                _ => (),
+            };
+
             // TODO: This is really gross. A song failed to play, so signal SongEnded so that the next song can play.
             // However, this can get explosively recursive if the next N songs all fail too, since directly calling
             //   .song_ended() will lead back here (via .next()).
