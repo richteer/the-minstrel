@@ -86,7 +86,14 @@ impl MusicPlayer for DiscordPlayer {
 
     async fn play(&mut self, song: &Song) -> Result<(), MusicError> {
 
-        let mut handler = self.songcall.as_ref().unwrap().lock().await;
+        // TODO: don't let this panic here
+        let mut handler = match &self.songcall {
+            Some(c) => c.lock().await,
+            None => {
+                error!("play called when song is none, probably don't let that happen");
+                return Err(MusicError::PlaybackFailed);
+            },
+        };
 
         let source = match songbird::ytdl_ffmpeg_args(&song.url, &[], &["-af", "loudnorm=I=-16:TP=-1.5:LRA=11"]).await {
             Ok(source) => source,
@@ -98,8 +105,6 @@ impl MusicPlayer for DiscordPlayer {
         };
 
         self.songhandler = Some(handler.play_source(source));
-
-
 
         Ok(())
     }

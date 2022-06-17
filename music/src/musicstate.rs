@@ -86,6 +86,7 @@ pub enum MusicError {
     InvalidUrl,
     FailedToRetrieve,
     EmptyHistory,
+    PlaybackFailed,
     AutoplayError(AutoplayError),
 }
 
