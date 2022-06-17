@@ -20,3 +20,11 @@ default-members = [
 	"main",
 	# Not webdash, so we don't build a useless webdash native bin
 ]
+
+[profile.release]
+lto = true
+
+# Try to make the generated webassembly just a tad smaller
+[profile.release.package.webdash]
+opt-level = 'z' # try 'z' or 's'
+strip = "symbols"
