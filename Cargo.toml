@@ -27,4 +27,5 @@ lto = true
 # Try to make the generated webassembly just a tad smaller
 [profile.release.package.webdash]
 opt-level = 'z' # try 'z' or 's'
-strip = "symbols"
+# Disabled, apparently breaks loading.
+#strip = "symbols"
