@@ -23,7 +23,7 @@ async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicAdapter>>) -> impl 
     ws.on_upgrade(|websocket| async move {
         let mstate = mstate.lock().await.clone();
 
-        let (mut ws_tx, _) = websocket.split();
+        let (mut ws_tx, mut ws_rx) = websocket.split();
 
         let mut bc_rx = mstate.subscribe();
 
@@ -44,7 +44,9 @@ async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicAdapter>>) -> impl 
             }
 
             loop {
-                match bc_rx.recv().await {
+                // TODO: fix the ridiculous amount of indentation in this file
+                tokio::select! {
+                recv = bc_rx.recv() => {match recv {
                     Ok(msg) => {
                         trace!("broadcast received, sending to websocket");
                         let msg = serde_json::to_string(&msg).unwrap();
@@ -58,8 +60,12 @@ async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicAdapter>>) -> impl 
                         error!("broadcast appears closed, exiting loop");
                         break;
                     }
-                }
-            }
+                }},
+                recv = ws_rx.next() => { match recv {
+                    Some(msg) => debug!("message from ws = {msg:?}"),
+                    None => { debug!("client appears to have disconnected, closing ws thread"); break; }
+                }}
+            }}
             debug!("exiting websocket loop!");
         });
     })
