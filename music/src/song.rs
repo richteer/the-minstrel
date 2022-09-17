@@ -22,7 +22,7 @@ pub fn song_from_video(video: SingleVideo) -> Song {
     let duration = get_duration!(video);
     let thumbnail = video.thumbnail
         .unwrap_or(format!("https://img.youtube.com/vi/{}/maxresdefault.jpg", video.id));
-    let url = format!("https://www.youtube.com/watch?v={}", video.url.as_ref().unwrap());
+    let url = format!("https://www.youtube.com/watch?v={}", video.id);
 
     Song {
         title: video.title,
