@@ -208,7 +208,7 @@ impl AutoplayState {
         let mut tmpdata = Vec::new();
         for src in sources {
             let mut tmp = fetch_songs_from_source(&src.path)
-                .iter().map(|e| SongRequest::new(e.clone(), requester.clone())).collect();
+                .into_iter().map(|e| SongRequest::new(e, requester.clone())).collect();
             tmpdata.append(&mut tmp);
         }
 
