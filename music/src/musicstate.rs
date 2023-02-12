@@ -246,6 +246,7 @@ impl MusicState {
             //  By not making .play() panic, it now will fail and just glide on by failing every song.
             // Instead, if the Player returns PlaybackFailed, we know there's probably something up with
             //  the Player implementation, and we should not try to continue anymore.
+            #[allow(clippy::single_match)]
             match e {
                 MusicError::PlaybackFailed => return Err(e),
                 _ => (),
@@ -495,17 +496,15 @@ impl From<&MusicState> for model::MinstrelWebData {
     fn from(other: &MusicState) -> Self {
         let upcoming = other.autoplay.prefetch(read_config!(music.upcoming_count))
         // TODO: Better handle when autoplay is not enabled, or no users are enrolled
-        .unwrap_or_default().iter()
-            .map(|e| e.clone().into())
-            .collect();
+        .unwrap_or_default().to_vec();
 
         Self {
-            current_track: other.current_track.clone().map(|ct| ct.into()),
+            current_track: other.current_track.clone(),
             song_progress: other.song_progress(),
             status: other.status.clone(),
-            queue: other.queue.iter().map(|e| e.clone().into()).collect(),
+            queue: other.queue.clone(),
             upcoming,
-            history: other.history.iter().map(|e| e.clone().into()).collect(),
+            history: other.history.clone(),
             ap_enabled: other.autoplay.is_enabled(),
         }
     }

@@ -100,11 +100,11 @@ impl AutoplayAdapter {
     }
 
     pub async fn enable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::EnableUser(userid.clone())).await
+        self.invoke(AutoplayControlCmd::EnableUser(*userid)).await
     }
 
     pub async fn disable_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::DisableUser(userid.clone())).await
+        self.invoke(AutoplayControlCmd::DisableUser(*userid)).await
     }
 
     // This function does not have a return, ignore result from invoke
@@ -113,7 +113,7 @@ impl AutoplayAdapter {
     }
 
     pub async fn shuffle_user(&mut self, userid: &MinstrelUserId) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::ShuffleUser(userid.clone())).await
+        self.invoke(AutoplayControlCmd::ShuffleUser(*userid)).await
     }
 
     // This function does not have a return, ignore result from invoke
@@ -126,10 +126,10 @@ impl AutoplayAdapter {
     }
 
     pub async fn advance_userplaylist(&mut self, userid: &MinstrelUserId, num: u64) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::AdvancePlaylist((userid.clone(), num))).await
+        self.invoke(AutoplayControlCmd::AdvancePlaylist((*userid, num))).await
     }
 
     pub async fn bump_userplaylist(&mut self, userid: &MinstrelUserId, index: usize) -> Result<AutoplayOk, AutoplayError> {
-        self.invoke(AutoplayControlCmd::BumpPlaylist((userid.clone(), index))).await
+        self.invoke(AutoplayControlCmd::BumpPlaylist((*userid, index))).await
     }
 }

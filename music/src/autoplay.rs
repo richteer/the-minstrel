@@ -198,7 +198,7 @@ impl AutoplayState {
         let song = up.next();
 
         time += song.song.duration;
-        self.usertime.push(user.clone(), Reverse(time));
+        self.usertime.push(user, Reverse(time));
         self.usertimecache.insert(user, time);
 
         Some(song)
@@ -285,8 +285,8 @@ impl AutoplayState {
         };
         debug!("user re-enabled with a score of {}", time);
 
-        self.usertime.push(userid.clone(), Reverse(time));
-        self.usertimecache.insert(userid.clone(), time);
+        self.usertime.push(*userid, Reverse(time));
+        self.usertimecache.insert(*userid, time);
 
         Ok(AutoplayOk::EnrolledUser)
     }
@@ -323,7 +323,7 @@ impl AutoplayState {
 
     pub fn debug_enable_all_users(&mut self) {
         self.disable_all_users();
-        let users: Vec<MinstrelUserId> = self.userlists.iter().map(|(u,_)| u.clone()).collect();
+        let users: Vec<MinstrelUserId> = self.userlists.keys().copied().collect();
 
         for u in users {
             self.enable_user(&u).unwrap();
@@ -345,7 +345,7 @@ impl AutoplayState {
 
     pub fn add_time_to_user(&mut self, userid: &MinstrelUserId, delta: i64) {
         self.usertime.change_priority_by(userid, |Reverse(v)| *v += delta);
-        let us = self.usertimecache.entry(userid.clone()).or_insert(0);
+        let us = self.usertimecache.entry(*userid).or_insert(0);
         *us += delta;
     }
 

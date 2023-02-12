@@ -6,7 +6,10 @@ use model::{
 };
 
 use std::time;
-use std::collections::HashMap;
+use std::collections::{
+    HashMap,
+    hash_map::Entry,
+};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -51,8 +54,8 @@ fn hash_password(password: &String) -> Result<String, UserMgmtError> {
     }
 }
 
-fn verify_password(input: &String, hash: &String) -> Result<bool, UserMgmtError> {
-    let parsed = match PasswordHash::new(&hash) {
+fn verify_password(input: &String, hash: &str) -> Result<bool, UserMgmtError> {
+    let parsed = match PasswordHash::new(hash) {
         Ok(p) => p,
         Err(e) => {
             log::error!("Failed to verify password, this also should probably never happen: {:?}", e);
@@ -160,7 +163,7 @@ impl UserMgmt {
                     return Err(UserMgmtError::UserExists)
                 }
 
-                let hashed_password = hash_password(&password)?;
+                let hashed_password = hash_password(password)?;
                 self.db.create_user_auth(user, username, &hashed_password).await.map_err(|_| UserMgmtError::DbError)?;
             },
             AuthType::Discord(did) => {
@@ -208,8 +211,8 @@ impl UserMgmt {
             link = rand::random::<u64>();
 
             // I fully acknowledge that due to the laws of randomness, this may never terminate.
-            if !links.contains_key(&link) {
-                links.insert(link, (user_id, time::Instant::now()));
+            if let Entry::Vacant(e) = links.entry(link) {
+                e.insert((user_id, time::Instant::now()));
 
                 return Ok(link)
             };
