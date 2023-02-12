@@ -7,7 +7,7 @@ use log::*;
 struct EmbeddedWebdash;
 
 
-pub fn get_embedded_file_filter() -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn get_embedded_file_filter() -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     warp::get()
     .and(warp::path::full())
     .map(|filename: FullPath| {

@@ -71,7 +71,7 @@ async fn ws_connect(ws: warp::ws::Ws, mstate: Arc<Mutex<MusicAdapter>>) -> impl 
     })
 }
 
-pub fn get_web_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn get_web_filter(mstate: MusicAdapter) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     let mstate_mutex = Arc::new(Mutex::new(mstate.clone()));
     let mstate_filter = warp::any().map(move || { mstate_mutex.clone() });
 

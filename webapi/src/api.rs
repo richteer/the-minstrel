@@ -186,7 +186,7 @@ async fn handle_ap_toggle(
 }
 
 
-pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = impl warp::Reply, Error = warp::Rejection> + Clone {
+pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = (impl warp::Reply,), Error = warp::Rejection> + Clone {
     let auths = Arc::new(Mutex::new(BiHashMap::<MinstrelUserId, String>::new()));
     let mstate = warp::any().map(move || { mstate.clone() });
     let authtable = warp::any().map(move || { auths.clone() });
