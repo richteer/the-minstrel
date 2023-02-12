@@ -150,7 +150,7 @@ impl fmt::Debug for MusicState {
 impl MusicState {
 
     pub async fn new(player: mpsc::Sender<MPCMD>, db: DbAdapter) -> MusicState {
-        let bcast = broadcast::channel(2).0;
+        let bcast = broadcast::channel(10).0;
         let cmd_channel = mpsc::channel(10);
 
         MusicState {
