@@ -105,9 +105,9 @@ pub fn check_msg(result: SerenityResult<Message>) {
 /// Join voice chat of the command caller
 /// TODO: this is still pretty messy, consider cleaning up
 pub async fn _join_voice(ctx: &Context, msg: &Message) -> Result<bool, String> {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).unwrap();
     let guild_id = guild.id;
-    let bot_id = ctx.cache.current_user_id().await;
+    let bot_id = ctx.cache.current_user_id();
 
     let caller_channel_id = guild
         .voice_states.get(&msg.author.id)
@@ -169,8 +169,8 @@ macro_rules! join_voice {
 #[check]
 #[name = "in_same_voice"]
 pub async fn in_same_voice(ctx: &Context, msg: &Message) -> Result<(), Reason> {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
-    let bot_id = ctx.cache.current_user_id().await;
+    let guild = msg.guild(&ctx.cache).unwrap();
+    let bot_id = ctx.cache.current_user_id();
 
     let caller_channel_id = guild
         .voice_states.get(&msg.author.id)

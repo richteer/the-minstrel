@@ -149,8 +149,8 @@ impl VoiceEventHandler for TrackEndNotifier {
 
 // Autoplay auto-rebalance userlists
 pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>, old: Option<VoiceState>, new: VoiceState) {
-    let bot = ctx.cache.current_user_id().await;
-    let guild = ctx.cache.guild(guildid.unwrap()).await.unwrap(); // TODO: don't unwrap here, play nice
+    let bot = ctx.cache.current_user_id();
+    let guild = ctx.cache.guild(guildid.unwrap()).unwrap(); // TODO: don't unwrap here, play nice
     let bot_voice = guild.voice_states.get(&bot);
 
     if bot_voice.is_none() {
@@ -189,7 +189,7 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
                     mem.user.clone()
                 } else {
                     // Use the cache lookup based on key, because voicestate.member may be None.
-                    if let Some(user) = ctx.cache.user(*uid).await {
+                    if let Some(user) = ctx.cache.user(*uid) {
                         debug!("obtained user from cache");
                         user
                     }

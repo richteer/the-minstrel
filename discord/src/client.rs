@@ -42,7 +42,7 @@ struct Handler;
 
 
 #[hook]
-async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError) {
+async fn dispatch_error(ctx: &Context, msg: &Message, error: DispatchError, _command_name: &str) {
     match error {
         DispatchError::CheckFailed(s, reason) =>
             msg.channel_id.say(&ctx.http, format!("Command failed: {:?} {:?}", s, reason)).await.unwrap(),
@@ -77,7 +77,7 @@ impl EventHandler for Handler {
     // TODO: probably not need this
     async fn message(&self, ctx: Context, msg: Message) {
         // Ignore self
-        if msg.author.id == ctx.cache.current_user().await.id {
+        if msg.author.id == ctx.cache.current_user().id {
             return
         }
 
@@ -93,11 +93,11 @@ impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
         info!("{} is connected!", ready.user.name);
 
-        info!("operating as {:?}", ctx.cache.current_user().await);
+        info!("operating as {:?}", ctx.cache.current_user());
 
     }
 
-    async fn voice_state_update(&self, ctx: Context, guildid: Option<GuildId>, old: Option<VoiceState>, new: VoiceState) {
+    async fn voice_state_update(&self, ctx: Context, old: Option<VoiceState>, new: VoiceState) {
         // TODO: maybe factor out common useful values like, botid, guild, etc
 
         // Common cases to ignore this voice state change
@@ -120,15 +120,17 @@ impl EventHandler for Handler {
             }
         }
 
-        last_one_in_checker(&ctx, &guildid, &old, &new).await;
-        autoplay_voice_state_update(ctx, guildid, old, new).await;
+        last_one_in_checker(&ctx, &new.guild_id, &old, &new).await;
+        autoplay_voice_state_update(ctx, new.guild_id, old, new).await;
     }
 }
 
 // TODO: perhaps move this elsewhere
 async fn last_one_in_checker(ctx: &Context, guildid: &Option<GuildId>, old: &Option<VoiceState>, new: &VoiceState) {
-    let bot = ctx.cache.current_user_id().await;
-    let guild = ctx.cache.guild(guildid.unwrap()).await.unwrap(); // TODO: don't unwrap here, play nice
+    let bot = ctx.cache.current_user_id();
+    // TODO: this is broken right now, for some reason cache is always returning empty here...
+    //let guild = ctx.cache.guild(guildid.expect("guildid is None")).expect("No matching guild in cache?"); // TODO: don't unwrap here, play nice
+    let guild = guildid.unwrap().to_guild_cached(&ctx.cache).expect("still none");
     let bot_voice = guild.voice_states.get(&bot);
 
     if bot_voice.is_none() {
@@ -191,7 +193,7 @@ pub trait MusicStateInit {
     fn register_musicstate(self, mstate: MusicAdapter) -> Self;
 }
 
-impl MusicStateInit for ClientBuilder<'_> {
+impl MusicStateInit for ClientBuilder {
     fn register_musicstate(self, mstate: MusicAdapter) -> Self {
         self.type_map_insert::<MusicStateKey>(mstate)
     }
@@ -207,7 +209,7 @@ pub trait DiscordPlayerInit {
     fn register_player(self, dplayer: Arc<Mutex<DiscordPlayer>>) -> Self;
 }
 
-impl DiscordPlayerInit for ClientBuilder<'_> {
+impl DiscordPlayerInit for ClientBuilder {
     fn register_player(self, dplayer: Arc<Mutex<DiscordPlayer>>) -> Self {
         self.type_map_insert::<DiscordPlayerKey>(dplayer)
     }
@@ -223,7 +225,7 @@ pub trait DiscordStateInit {
     fn register_dstate(self, dstate: Arc<Mutex<DiscordState>>) -> Self;
 }
 
-impl DiscordStateInit for ClientBuilder<'_> {
+impl DiscordStateInit for ClientBuilder {
     fn register_dstate(self, dstate: Arc<Mutex<DiscordState>>) -> Self {
         self.type_map_insert::<DiscordStateKey>(dstate)
     }
@@ -240,8 +242,14 @@ pub async fn create_player(mstate: MusicAdapter, dplayer: Arc<Mutex<DiscordPlaye
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement
     // by Discord for bot users.
+
+    let intents = GatewayIntents::default()
+        | GatewayIntents::GUILDS
+        | GatewayIntents::GUILD_VOICE_STATES
+        | GatewayIntents::GUILD_MESSAGES
+        | GatewayIntents::MESSAGE_CONTENT;
     let client =
-        Client::builder(&token)
+        Client::builder(&token, intents)
             .event_handler(Handler)
             .framework(framework)
             .register_songbird()
