@@ -5,9 +5,7 @@ use model::{
 };
 use music::adapters::MusicAdapter;
 use serenity::model::user::User;
-use serenity::model::id::{
-    UserId,
-};
+use serenity::model::id::UserId;
 use serenity::client::Context;
 use log::*;
 
@@ -32,13 +30,7 @@ impl UserConv for MusicAdapter {
     }
 
     async fn get_user_from_muid(&self, ctx: &Context, muid: &MinstrelUserId) -> Option<User> {
-        let discordid = self.db.get_discordid_from_userid(*muid).await.unwrap();
-        let discordid = if let Some(d) = discordid {
-            d
-        } else {
-            return None
-        };
-
+        let discordid = self.db.get_discordid_from_userid(*muid).await.unwrap()?;
         let uid = UserId(discordid);
 
         match uid.to_user(&ctx.http).await {
