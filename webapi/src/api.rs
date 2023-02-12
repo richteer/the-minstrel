@@ -98,7 +98,7 @@ async fn handle_body_api(
     };
 
     match ret {
-        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::OK, &o.to_string())).into_response()),
+        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::OK, o.to_string())).into_response()),
         Err(e) => {
             debug!("error from musicstatus: {:?}", e);
 
@@ -128,7 +128,7 @@ async fn handle_simple_api(
     };
 
     match ret {
-        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::OK, &o.to_string())).into_response()),
+        Ok(o) => Ok(warp::reply::json(&ReplyStatus::new_nd(StatusCode::OK, o.to_string())).into_response()),
         Err(e) => {
             debug!("error from musicstatus: {:?}", e);
 
@@ -219,7 +219,7 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = (impl warp:
         .and(warp::path::end()));
 
     let api_body = api_func_base.clone()
-        .and(body.clone())
+        .and(body)
         .and_then(handle_body_api);
 
     let api_no_body = api_func_base.clone()
@@ -227,8 +227,8 @@ pub fn get_api_filter(mstate: MusicAdapter) -> impl Filter<Extract = (impl warp:
 
     let api_user_base = warp::post()
         .and(warp::path("api")
-        .and(mstate.clone())
-        .and(authtable.clone()));
+        .and(mstate)
+        .and(authtable));
 
     let login = api_user_base.clone()
         .and(warp::path("login"))

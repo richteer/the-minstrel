@@ -65,7 +65,7 @@ pub async fn handle_login(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Something really went wrong internally: {:?}", e), None, None),
     };
 
-    let userinfo = userinfo.map(|ui| ReplyData::UserInfo(ui));
+    let userinfo = userinfo.map(ReplyData::UserInfo);
     let reply = ReplyStatus::new(status, error, userinfo);
 
     if let Some(token) = auth_token {
@@ -112,7 +112,7 @@ pub async fn handle_register(
         }
     };
 
-    let userinfo = userinfo.map(|ui| ReplyData::UserInfo(ui));
+    let userinfo = userinfo.map(ReplyData::UserInfo);
     let reply = ReplyStatus::new(status, error, userinfo);
 
     if let Some(token) = auth_token {
@@ -158,7 +158,7 @@ pub async fn handle_link(
         }
     };
 
-    let userinfo = userinfo.map(|ui| ReplyData::UserInfo(ui));
+    let userinfo = userinfo.map(ReplyData::UserInfo);
     let reply = ReplyStatus::new(status, error, userinfo);
 
     if let Some(token) = auth_token {
@@ -182,7 +182,7 @@ pub async fn handle_logout(
 
     if let Some(tok) = user_auth {
         let mut tokens = tokens.lock().await;
-        if let Some(_) = tokens.remove_by_right(&tok) {
+        if tokens.remove_by_right(&tok).is_some() {
             Ok(warp::http::Response::builder()
                 .header("Set-Cookie", format!(r#"auth_token=""; {COOKIEOPTS}"#))
                 .status(StatusCode::OK)
@@ -230,7 +230,7 @@ pub async fn handle_create_link(
         Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Something went really wrong internally: {e:?}"), None)
     };
 
-    let link = link.map(|l| ReplyData::LinkInfo(l));
+    let link = link.map(ReplyData::LinkInfo);
     let reply = ReplyStatus::new(status, error, link);
 
     Ok(warp::http::Response::builder()
@@ -252,7 +252,7 @@ pub async fn handle_userinfo(
         }
     };
 
-    let userinfo = userinfo.map(|ui| ReplyData::UserInfo(ui));
+    let userinfo = userinfo.map(ReplyData::UserInfo);
     let reply = ReplyStatus::new(status, error, userinfo);
 
     let resp = warp::http::Response::builder()
