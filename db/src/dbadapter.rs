@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::collections::{
+    HashMap,
+    hash_map::Entry,
+};
 
 use minstrelmodel::MinstrelUserId;
 use sqlx::SqlitePool;
@@ -51,10 +54,9 @@ impl DbAdapter {
 
         let mut ret: HashMap<i64, Vec<minstrelmodel::Source>> = HashMap::new();
         for row in resp {
-            if ret.contains_key(&row.user_id) {
-                ret.get_mut(&row.user_id).unwrap().push(row.into());
-            } else {
-                ret.insert(row.user_id, vec![row.into()]);
+            match ret.entry(row.user_id) {
+                Entry::Occupied(mut e) => { e.get_mut().push(row.into()); },
+                Entry::Vacant(e)   => { e.insert(vec![row.into()]); },
             }
         }
 
