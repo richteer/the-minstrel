@@ -175,8 +175,8 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
 
             // ...and enable only users in this new channel
             let mut vstates = guild.voice_states.iter()
-                .filter(|(uid,_)| **uid == bot)                  // Ignore self
-                .filter(|(_,vs)| vs.channel_id.unwrap() != chan) // Ignore states for other channels
+                .filter(|(uid,_)| **uid != bot)                  // Ignore self
+                .filter(|(_,vs)| vs.channel_id.unwrap() == chan) // Ignore states for other channels
                 .collect::<Vec<(&UserId, &VoiceState)>>();
 
             // Randomize the order that we enable users, so that the first user picked
