@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use serenity::{
-    prelude::{
-        Context,
-    },
+    prelude::Context,
     model::id::{
         GuildId,
         ChannelId,
+        UserId,
     },
     model::voice::VoiceState,
 };
@@ -19,6 +18,7 @@ use songbird::{
 };
 
 use async_trait::async_trait;
+use rand::seq::SliceRandom;
 
 use log::*;
 use music::player::MusicPlayer;
@@ -174,17 +174,22 @@ pub async fn autoplay_voice_state_update(ctx: Context, guildid: Option<GuildId>,
             mstate.autoplay.disable_all_users().await;
 
             // ...and enable only users in this new channel
-            for (uid, vs) in guild.voice_states.iter() {
-                if *uid == bot || vs.channel_id.unwrap() != chan {
-                    continue;
-                }
+            let mut vstates = guild.voice_states.iter()
+                .filter(|(uid,_)| **uid == bot)                  // Ignore self
+                .filter(|(_,vs)| vs.channel_id.unwrap() != chan) // Ignore states for other channels
+                .collect::<Vec<(&UserId, &VoiceState)>>();
 
+            // Randomize the order that we enable users, so that the first user picked
+            //  SHOULD be random and not alphabetical by whatever order the voice states are in
+            vstates.shuffle(&mut rand::thread_rng());
+
+            for (uid, vs) in vstates.iter() {
                 let user = if let &Some(mem) = &vs.member.as_ref() {
                     debug!("vs.member not None, using from there");
                     mem.user.clone()
                 } else {
                     // Use the cache lookup based on key, because voicestate.member may be None.
-                    if let Some(user) = ctx.cache.user(uid).await {
+                    if let Some(user) = ctx.cache.user(*uid).await {
                         debug!("obtained user from cache");
                         user
                     }
