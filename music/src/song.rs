@@ -86,8 +86,12 @@ pub fn fetch_songs_from_source(source: &SourceType) -> Vec<Song> {
 
             let tmpdata = data.entries.unwrap();
             tmpdata.iter()
-                            .map(|e| song_from_video(e.clone()))
-                            .collect()
+                // Filter out songs without a duration, since we will panic without that anyway
+                // TODO: figure out if there is a better way to filter out deleted videos in a
+                // playlist
+                .filter(|e| e.duration.is_some())
+                .map(|e| song_from_video(e.clone()))
+                .collect()
         },
     }
 }
