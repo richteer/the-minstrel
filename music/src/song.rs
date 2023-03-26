@@ -26,7 +26,7 @@ pub fn song_from_video(video: SingleVideo) -> Song {
 
     Song {
         title: video.title,
-        artist: video.uploader.unwrap_or_else(|| String::from("Unknown")),
+        artist: video.channel.unwrap_or_else(|| String::from("Unknown")),
         url,
         thumbnail,
         duration,
