@@ -9,17 +9,10 @@ use model::{
     Song, SongRequest,
 };
 
-use yew_feather::{
-    external_link,
-    plus_circle,
-};
 use yew_hooks::{
     use_async,
 };
 
-use yew_feather::{
-    trash,
-};
 use yew_toast::{ToastContext, toast_info, toast_error};
 
 use crate::components::helpers::duration_text;
@@ -44,6 +37,50 @@ pub fn song_text(props: &SongTextProps) -> Html {
 }
 
 
+#[derive(Properties, PartialEq)]
+pub struct BumpProps {
+    pub index: usize
+}
+
+#[function_component(BumpSongButton)]
+pub fn bump_song_button(props: &BumpProps) -> Html {
+    let toastcontext = use_context::<ToastContext>().unwrap();
+    let index = props.index;
+
+    let bump = use_async(async move {
+        let resp = Request::post("/api/autoplay/bump")
+            .json(&ApBumpRequest { index } ).unwrap()
+            .send().await.unwrap();
+
+        if resp.ok() {
+            toastcontext.dispatch(toast_info!("Bumped song from upcoming".into()));
+            Ok(())
+        } else {
+            let resp = resp.json::<ReplyStatus>().await;
+            if let Ok(resp) = resp {
+                toastcontext.dispatch(toast_error!(format!("Error bumping song: {} song from upcoming", resp.error)));
+            } else {
+                log::error!("Server returned garbage: {:?}", resp);
+                toastcontext.dispatch(toast_error!("Server returned some garbage, check console".into()));
+            }
+
+            Err(())
+        }
+    });
+
+    let bump_callback = {
+        Callback::from(move |_| {
+            bump.run();
+        })
+    };
+
+    html! {
+        <div onclick={bump_callback} class="is-flex bumpicon mr-2">
+            <yew_feather::Trash />
+        </div>
+    }
+}
+
 
 #[derive(Properties, PartialEq)]
 pub struct SongRowProps {
@@ -60,7 +97,7 @@ pub fn song_row(props: &SongRowProps) -> Html {
     let qicon = match props.enqueued {
         Some(true) => html! {
             <div class="queuedicon" title="In Queue">
-                <plus_circle::PlusCircle />
+                <yew_feather::PlusCircle />
             </div>
         },
         _ => html! {
@@ -68,36 +105,6 @@ pub fn song_row(props: &SongRowProps) -> Html {
         },
     };
 
-    let bump_callback = if let Some(index) = props.index {
-        let toastcontext = use_context::<ToastContext>().unwrap();
-
-        let bump = use_async(async move {
-            let resp = Request::post("/api/autoplay/bump")
-                .json(&ApBumpRequest { index } ).unwrap()
-                .send().await.unwrap();
-
-            if resp.ok() {
-                toastcontext.dispatch(toast_info!("Bumped song from upcoming".into()));
-                Ok(())
-            } else {
-                let resp = resp.json::<ReplyStatus>().await;
-                if let Ok(resp) = resp {
-                    toastcontext.dispatch(toast_error!(format!("Error bumping song: {} song from upcoming", resp.error)));
-                } else {
-                    log::error!("Server returned garbage: {:?}", resp);
-                    toastcontext.dispatch(toast_error!("Server returned some garbage, check console".into()));
-                }
-
-                Err(())
-            }
-        });
-
-        Callback::from(move |_| {
-            bump.run();
-        })
-    } else {
-        Callback::from(|_| ())
-    };
 
     html! {
         <div class="columns is-gapless is-mobile mb-0 is-vcentered songrow">
@@ -108,7 +115,7 @@ pub fn song_row(props: &SongRowProps) -> Html {
                     </figure>
                     <div class="is-overlay">
                         <div class="container songicon-overlay is-flex is-justify-content-center is-align-items-center">
-                            <external_link::ExternalLink color="white" size="28"/>
+                            <yew_feather::ExternalLink color="white" size="28"/>
                         </div>
                     </div>
                 </a>
@@ -118,12 +125,10 @@ pub fn song_row(props: &SongRowProps) -> Html {
                 <SongText song={song.clone()} />
             </div>
             {
-                if props.index.is_some() {
+                if let Some(index) = props.index {
                     html! {
                         // TODO: consider a pop-up menu if more controls are to be added
-                        <div onclick={bump_callback} class="is-flex bumpicon mr-2">
-                            <trash::Trash />
-                        </div>
+                        <BumpSongButton index={index} />
                     }
                 } else {
                     html! {}

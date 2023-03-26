@@ -5,14 +5,6 @@ use yew::{
     html,
 };
 
-use yew_feather::{
-    skip_back,
-    skip_forward,
-    play,
-    square,
-    refresh_cw,
-};
-
 use gloo_net::http::Request;
 use yew_hooks::prelude::*;
 
@@ -23,8 +15,8 @@ use model::{web::{ReplyStatus, ApToggleRequest}, MusicStateStatus};
 #[derive(Serialize, Clone)]
 struct NoBody {}
 
-fn gen_callback<T: Serialize + Clone + 'static>(path: &'static str, body: T, toast_string: Option<&'static str>, tdis: UseReducerDispatcher<ToastList>) -> Callback<MouseEvent> {
-    let body = body.clone();
+#[hook]
+fn use_gen_callback<T: Serialize + Clone + 'static>(path: &'static str, body: T, toast_string: Option<&'static str>, tdis: UseReducerDispatcher<ToastList>) -> Callback<MouseEvent> {
     let ahandle = use_async(async move {
         let resp = Request::post(format!("/api/{}", path).as_str())
             .json(&body).unwrap()
@@ -63,13 +55,13 @@ pub struct PlayControlsProps {
 pub fn playcontrols(props: &PlayControlsProps) -> Html {
     let toast = use_context::<ToastContext>().unwrap();
 
-    let onprev = gen_callback("previous", NoBody{}, Some("Enqueued previous track"), toast.dispatcher());
-    let onskip = gen_callback("skip", NoBody{}, None, toast.dispatcher());
-    let onstop = gen_callback("stop", NoBody{}, None, toast.dispatcher());
-    let onplay = gen_callback("start", NoBody{}, None, toast.dispatcher());
+    let onprev = use_gen_callback("previous", NoBody{}, Some("Enqueued previous track"), toast.dispatcher());
+    let onskip = use_gen_callback("skip", NoBody{}, None, toast.dispatcher());
+    let onstop = use_gen_callback("stop", NoBody{}, None, toast.dispatcher());
+    let onplay = use_gen_callback("start", NoBody{}, None, toast.dispatcher());
 
-    let onenableap = gen_callback("autoplay/toggle", ApToggleRequest{ enabled: true }, None, toast.dispatcher());
-    let ondisableap = gen_callback("autoplay/toggle", ApToggleRequest{ enabled: false }, None, toast.dispatcher());
+    let onenableap = use_gen_callback("autoplay/toggle", ApToggleRequest{ enabled: true }, None, toast.dispatcher());
+    let ondisableap = use_gen_callback("autoplay/toggle", ApToggleRequest{ enabled: false }, None, toast.dispatcher());
 
     let iconclass = "column is-flex is-2 is-justify-content-center controlicon";
 
@@ -92,19 +84,19 @@ pub fn playcontrols(props: &PlayControlsProps) -> Html {
             <div class="columns is-centered is-mobile">
                 <div class={iconclass} />
                 <div class={iconclass} onclick={onprev} title="Enqueue last played song">
-                    <skip_back::SkipBack />
+                    <yew_feather::SkipBack />
                 </div>
                 {
                     match props.status {
                         MusicStateStatus::Playing => html! {
                             <div class={iconclass} onclick={onstop} title="Stop Playback">
-                                <square::Square />
+                                <yew_feather::Square />
                             </div>
                         },
                         MusicStateStatus::Stopping | MusicStateStatus::Idle |
                         MusicStateStatus::Stopped => html! {
                                 <div class={iconclass} onclick={onplay} title="Start Playback">
-                                    <play::Play />
+                                    <yew_feather::Play />
                                 </div>
                             },
                         _ => html! {}
@@ -112,7 +104,7 @@ pub fn playcontrols(props: &PlayControlsProps) -> Html {
                 }
 
                 <div class={iconclass} onclick={onskip} title="Skip to the next track">
-                    <skip_forward::SkipForward />
+                    <yew_feather::SkipForward />
                 </div>
 
                 {
@@ -120,17 +112,17 @@ pub fn playcontrols(props: &PlayControlsProps) -> Html {
                     match (props.ap_enabled, *ap_clicked) {
                         (true, false) => html! {
                             <div class={iconclass} onclick={ondisableap} title="Disable Autoplay">
-                                <refresh_cw::RefreshCw />
+                                <yew_feather::RefreshCw />
                             </div>
                         },
                         (true, true) => html! {
                             <div class={format!("{iconclass} is-spinning")} onclick={ondisableap} title="Disable Autoplay">
-                                <refresh_cw::RefreshCw />
+                                <yew_feather::RefreshCw />
                             </div>
                         },
                         (false, _) => html! {
                             <div class={iconclass} style={"filter: brightness(50%);"} onclick={onenableap} title="Enable Autoplay">
-                                <refresh_cw::RefreshCw />
+                                <yew_feather::RefreshCw />
                             </div>
                         },
                     }

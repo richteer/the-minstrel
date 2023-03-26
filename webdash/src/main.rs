@@ -8,7 +8,7 @@ use model::{MinstrelWebData, MinstrelBroadcast};
 mod components;
 use components::*;
 
-use yew_hooks::use_web_socket_with_options;
+use yew_hooks::use_websocket_with_options;
 use yew_toast::*;
 
 
@@ -46,7 +46,7 @@ pub fn fdash() -> Html {
         let tb_mess = toastlist.dispatcher();
         let tb_err = toastlist.dispatcher();
 
-        use_web_socket_with_options(wsurl, yew_hooks::UseWebSocketOptions {
+        use_websocket_with_options(wsurl, yew_hooks::UseWebSocketOptions {
             //onopen:(),
             onmessage: Some(Box::new(move |message| {
                 match serde_json::from_str::<MinstrelBroadcast>(&message).unwrap() {
@@ -132,5 +132,6 @@ pub fn fdash() -> Html {
 
 fn main() {
     wasm_logger::init(wasm_logger::Config::default());
-    yew::start_app::<FDash>();
+    // yew::start_app::<FDash>();
+    yew::Renderer::<FDash>::new().render();
 }

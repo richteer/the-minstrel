@@ -57,7 +57,7 @@ impl Component for NowPlayingProgress {
         }
     }
 
-    fn changed(&mut self, ctx: &Context<Self>) -> bool {
+    fn changed(&mut self, ctx: &Context<Self>, _props: &NowPlayingProgressProps) -> bool {
         let link = ctx.link().clone();
 
         if let Some(interval) = self.interval.take() {

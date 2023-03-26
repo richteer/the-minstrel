@@ -4,10 +4,6 @@ use gloo_net::http::{Request, Response};
 use web_sys::HtmlInputElement;
 use yew::prelude::*;
 use yew_hooks::prelude::*;
-use yew_feather::{
-    log_in,
-    log_out,
-};
 use model::{
     web::{
         LoginRequest,
@@ -461,8 +457,7 @@ pub fn login() -> Html {
         })
     };
 
-    if use_is_first_mount() {
-        use_async_with_options(async move {
+    let ahandle = use_async(async move {
             let resp = Request::post("/api/userinfo")
             .send().await.unwrap();
 
@@ -473,10 +468,11 @@ pub fn login() -> Html {
             } else {
                 Err(())
             }
-        },
-        UseAsyncOptions::enable_auto());
-    }
+    });
 
+    if use_is_first_mount() {
+        ahandle.run();
+    }
 
     html! {
         <>
@@ -487,14 +483,14 @@ pub fn login() -> Html {
                         <div class="is-flex is-flex-direction-row">
                             <RequesterTag requester={user.clone()} size={RequesterSize::Tiny} />
                             <div class="controlicon ml-2" onclick={logout_onclick}>
-                                <log_out::LogOut />
+                                <yew_feather::LogOut />
                             </div>
                         </div>
                     }
                 } else {
                     html! {
                         <div class="controlicon" onclick={toggle_modal.clone()}>
-                            <log_in::LogIn />
+                            <yew_feather::LogIn />
                         </div>
                     }
                 }
