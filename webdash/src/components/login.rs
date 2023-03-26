@@ -76,14 +76,24 @@ pub fn login_form(props: &LoginFormProps) -> Html {
                 .json(&LoginRequest { username, password }).unwrap()
                 .send().await.unwrap();
 
-            if resp.ok() {
-                open.toggle();
+            match resp.status() {
+                200 => {
+                    open.toggle();
 
-                login_update_usercontext(&resp, &usercontext, &toastcontext).await;
+                    login_update_usercontext(&resp, &usercontext, &toastcontext).await;
 
-                Ok(())
-            } else {
-                Err(())
+                    Ok(())
+                },
+                401 => {
+                    // TODO: change the style of the form to indicate error
+                    toastcontext.dispatch(toast_error!("Invalid username or password!".into()));
+                    Err(())
+                },
+                _ => {
+                    toastcontext.dispatch(toast_error!("An unknown error occurred...".into()));
+                    log::error!("unhandled response code {} from login, fix me!", resp.status());
+                    Err(())
+                },
             }
         })
     };
