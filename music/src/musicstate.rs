@@ -252,6 +252,12 @@ impl MusicState {
                 _ => (),
             };
 
+            // TODO: don't charge a user until the song ends. probably will depend on the song-buffer
+            //  method, but will clean up a lot of this error handling magic probably maybe.
+            // Refund the requester the time from an errored song
+            self.autoplay.add_time_to_user(&song.requested_by.id, -song.song.duration);
+            debug!("Refunding {} seconds to {}", song.song.duration, &song.requested_by.displayname);
+
             // TODO: This is really gross. A song failed to play, so signal SongEnded so that the next song can play.
             // However, this can get explosively recursive if the next N songs all fail too, since directly calling
             //   .song_ended() will lead back here (via .next()).
